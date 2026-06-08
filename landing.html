@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<!-- saved from url=(0271)https://static.coze.site/7644113258022175002-data_volume/files/%E6%89%80%E6%9C%89%E5%AF%B9%E8%AF%9D/%E4%B8%BB%E5%AF%B9%E8%AF%9D/%E7%94%A8%E6%88%B7%E4%B8%8A%E4%BC%A0/landing.html?sign=1783440944-19193bb88b-0-2194bc543b42fa037dc211bbdd9fff650d785d5c43f379fd039f0df9f3e6b903 -->
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
+<title>房东管家 - 简单好用的租房管理系统</title>
+<meta name="description" content="专为房东打造的租房管理工具，租户管理、账单生成、缴费提醒一站式搞定">
+<meta name="theme-color" content="#4F46E5">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--p:#4F46E5;--p-light:#818CF8;--p-dark:#3730A3;--g:#10B981;--w:#F59E0B;--bg:#F8FAFC;--c:#fff;--t:#1E293B;--ts:#64748B;--bd:#E2E8F0}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--t);line-height:1.6;overflow-x:hidden}
+
+/* 导航栏 */
+.nav{position:fixed;top:0;left:0;right:0;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--bd);z-index:100;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:var(--t)}
+.nav-logo span{font-size:24px}
+.nav-btn{padding:8px 20px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:.2s}
+.nav-btn-primary{background:var(--p);color:#fff}
+.nav-btn-primary:hover{background:var(--p-dark)}
+.nav-btn-ghost{background:transparent;color:var(--p);margin-right:8px}
+.nav-btn-ghost:hover{background:#EEF2FF}
+
+/* Hero区 */
+.hero{padding:100px 20px 60px;text-align:center;background:linear-gradient(180deg,#EEF2FF 0%,var(--bg) 100%)}
+.hero-badge{display:inline-block;background:#EEF2FF;color:var(--p);font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;margin-bottom:16px}
+.hero h1{font-size:32px;font-weight:800;line-height:1.3;margin-bottom:12px;background:linear-gradient(135deg,var(--p) 0%,#7C3AED 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:16px;color:var(--ts);max-width:480px;margin:0 auto 28px}
+.hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.hero-cta .btn{padding:13px 32px;font-size:15px;border-radius:10px}
+.btn-primary{background:var(--p);color:#fff;border:none;cursor:pointer;font-weight:700;transition:.2s;box-shadow:0 4px 14px rgba(79,70,229,.3)}
+.btn-primary:hover{background:var(--p-dark);transform:translateY(-1px);box-shadow:0 6px 20px rgba(79,70,229,.35)}
+.btn-outline{background:#fff;color:var(--p);border:2px solid var(--p);cursor:pointer;font-weight:700;transition:.2s}
+.btn-outline:hover{background:#EEF2FF}
+
+/* 手机模拟 */
+.phone-mock{max-width:280px;margin:40px auto 0;background:#fff;border-radius:28px;box-shadow:0 20px 60px rgba(0,0,0,.12),0 0 0 8px #1E293B;padding:8px;position:relative;overflow:hidden}
+.phone-screen{background:var(--bg);border-radius:22px;overflow:hidden;min-height:420px}
+.phone-notch{width:100px;height:24px;background:#1E293B;border-radius:0 0 14px 14px;margin:0 auto}
+.phone-content{padding:12px}
+.phone-stat{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.phone-stat-item{background:#fff;border-radius:10px;padding:10px;text-align:left;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.phone-stat-item .num{font-size:18px;font-weight:700}
+.phone-stat-item .label{font-size:10px;color:var(--ts)}
+.phone-stat-item.blue .num{color:var(--p)}
+.phone-stat-item.green .num{color:var(--g)}
+.phone-stat-item.yellow .num{color:var(--w)}
+.phone-stat-item.red .num{color:#EF4444}
+.phone-list{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.phone-list-item{padding:10px 12px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.phone-list-item:last-child{border:none}
+.phone-tag{padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600}
+.phone-tag-green{background:#ECFDF5;color:#059669}
+.phone-tag-red{background:#FEF2F2;color:#DC2626}
+.phone-tag-yellow{background:#FFFBEB;color:#D97706}
+
+/* 数据亮点 */
+.stats-bar{background:var(--p);color:#fff;padding:36px 20px;display:flex;justify-content:center;gap:40px;flex-wrap:wrap;text-align:center}
+.stats-bar .stat h3{font-size:28px;font-weight:800}
+.stats-bar .stat p{font-size:13px;opacity:.8;margin-top:2px}
+
+/* 功能区 */
+.features{padding:60px 20px;max-width:800px;margin:0 auto}
+.section-title{text-align:center;margin-bottom:40px}
+.section-title h2{font-size:24px;font-weight:800;margin-bottom:8px}
+.section-title p{color:var(--ts);font-size:14px}
+.feature-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.feature-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.06);transition:.2s}
+.feature-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.1)}
+.feature-card .icon{font-size:28px;margin-bottom:10px}
+.feature-card h3{font-size:14px;font-weight:700;margin-bottom:4px}
+.feature-card p{font-size:12px;color:var(--ts);line-height:1.5}
+
+/* 定价区 */
+.pricing{padding:60px 20px;background:#EEF2FF}
+.pricing .section-title h2{color:var(--p-dark)}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:800px;margin:0 auto}
+.price-card{background:#fff;border-radius:14px;padding:24px 20px;box-shadow:0 2px 12px rgba(0,0,0,.06);position:relative;transition:.2s}
+.price-card:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,0,0,.1)}
+.price-card.popular{border:2px solid var(--p)}
+.price-card.popular::before{content:'推荐';position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--p);color:#fff;font-size:11px;font-weight:700;padding:3px 12px;border-radius:10px}
+.price-card h3{font-size:16px;font-weight:700;margin-bottom:4px}
+.price-card .price{font-size:32px;font-weight:800;color:var(--p);margin:8px 0}
+.price-card .price small{font-size:14px;font-weight:400;color:var(--ts)}
+.price-card .price-desc{font-size:12px;color:var(--ts);margin-bottom:16px}
+.price-card ul{list-style:none;margin-bottom:20px}
+.price-card li{font-size:13px;padding:5px 0;color:var(--t);display:flex;align-items:center;gap:6px}
+.price-card li::before{content:'✓';color:var(--g);font-weight:700;font-size:14px;flex-shrink:0}
+.price-card li.disabled{color:var(--ts)}
+.price-card li.disabled::before{content:'—';color:var(--bd)}
+.price-card .btn{width:100%;justify-content:center;padding:10px}
+
+/* 适合人群 */
+.audience{padding:60px 20px;max-width:800px;margin:0 auto}
+.audience-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.audience-card{background:#fff;border-radius:12px;padding:20px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.audience-card .icon{font-size:36px;margin-bottom:8px}
+.audience-card h3{font-size:14px;font-weight:700;margin-bottom:4px}
+.audience-card p{font-size:12px;color:var(--ts)}
+
+/* 底部CTA */
+.cta-section{padding:60px 20px;text-align:center;background:linear-gradient(135deg,var(--p) 0%,#7C3AED 100%);color:#fff}
+.cta-section h2{font-size:24px;font-weight:800;margin-bottom:8px}
+.cta-section p{font-size:14px;opacity:.85;margin-bottom:24px}
+.cta-section .btn{background:#fff;color:var(--p);border:none;padding:13px 36px;font-size:15px;border-radius:10px;font-weight:700;cursor:pointer;transition:.2s;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+.cta-section .btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.2)}
+
+/* 页脚 */
+.footer{padding:24px 20px;text-align:center;border-top:1px solid var(--bd);background:#fff}
+.footer p{font-size:12px;color:var(--ts)}
+.footer a{color:var(--p);text-decoration:none}
+
+/* FAQ */
+.faq{padding:60px 20px;max-width:600px;margin:0 auto}
+.faq-item{background:#fff;border-radius:10px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden}
+.faq-q{padding:14px 16px;font-size:14px;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:.2s}
+.faq-q:hover{background:#F8FAFC}
+.faq-q .arrow{transition:.3s;font-size:12px;color:var(--ts)}
+.faq-q.open .arrow{transform:rotate(180deg)}
+.faq-a{padding:0 16px;max-height:0;overflow:hidden;transition:.3s;font-size:13px;color:var(--ts);line-height:1.6}
+.faq-a.open{max-height:200px;padding:0 16px 14px}
+
+/* 微信提示 */
+.wechat-tip{background:#ECFDF5;border-radius:10px;padding:14px 16px;margin:20px auto;max-width:600px;display:flex;align-items:center;gap:12px}
+.wechat-tip .icon{font-size:28px;flex-shrink:0}
+.wechat-tip p{font-size:13px;color:#065F46}
+.wechat-tip strong{color:#047857}
+
+@media(max-width:768px){
+.hero h1{font-size:24px}
+.hero p{font-size:14px}
+.feature-grid{grid-template-columns:1fr}
+.pricing-grid{grid-template-columns:1fr;max-width:360px}
+.audience-grid{grid-template-columns:1fr}
+.stats-bar{gap:24px}
+.stats-bar .stat h3{font-size:22px}
+.phone-mock{max-width:240px;min-height:360px}
+.nav-btn-ghost{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- 导航栏 -->
+<nav class="nav">
+  <div class="nav-logo"><span>🏠</span> 房东管家</div>
+  <div>
+    <button class="nav-btn nav-btn-ghost" onclick="scrollToPricing()">价格</button>
+    <button class="nav-btn nav-btn-primary" onclick="window.open(&#39;app.html&#39;,&#39;_blank&#39;)">立即使用</button>
+  </div>
+</nav>
+
+<!-- Hero区 -->
+<section class="hero">
+  <div class="hero-badge">🔥 超过100位房东正在使用</div>
+  <h1>管理房源，原来可以这么简单</h1>
+  <p>租户管理、账单生成、缴费提醒，一部手机全搞定。<br>不再用纸笔和备忘录记房租了！</p>
+  <div class="hero-cta">
+    <button class="btn btn-primary" onclick="window.open(&#39;app.html&#39;,&#39;_blank&#39;)">免费开始使用</button>
+    <button class="btn btn-outline" onclick="scrollToFeatures()">了解功能</button>
+  </div>
+  
+  <!-- 手机模拟展示 -->
+  <div class="phone-mock">
+    <div class="phone-screen">
+      <div class="phone-notch"></div>
+      <div class="phone-content">
+        <div class="phone-stat">
+          <div class="phone-stat-item blue"><div class="num">12</div><div class="label">总房源</div></div>
+          <div class="phone-stat-item green"><div class="num">9</div><div class="label">在住租户</div></div>
+          <div class="phone-stat-item yellow"><div class="num">3</div><div class="label">待缴租金</div></div>
+          <div class="phone-stat-item red"><div class="num">1</div><div class="label">逾期提醒</div></div>
+        </div>
+        <div class="phone-list">
+          <div class="phone-list-item"><span>🏠 301室 张某某</span><span class="phone-tag phone-tag-green">已缴</span></div>
+          <div class="phone-list-item"><span>🏠 502室 李某某</span><span class="phone-tag phone-tag-red">逾期3天</span></div>
+          <div class="phone-list-item"><span>🏠 203室 王某某</span><span class="phone-tag phone-tag-yellow">即将到期</span></div>
+          <div class="phone-list-item"><span>🏠 108室 赵某某</span><span class="phone-tag phone-tag-green">已缴</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 数据亮点 -->
+<section class="stats-bar">
+  <div class="stat"><h3>3秒</h3><p>生成一条账单</p></div>
+  <div class="stat"><h3>0遗漏</h3><p>逾期自动提醒</p></div>
+  <div class="stat"><h3>100%</h3><p>数据云端加密</p></div>
+  <div class="stat"><h3>24h</h3><p>随时随地管理</p></div>
+</section>
+
+<!-- 功能区 -->
+<section class="features" id="features">
+  <div class="section-title">
+    <h2>核心功能</h2>
+    <p>房东最需要的功能，一个不少</p>
+  </div>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="icon">🏠</div>
+      <h3>房源管理</h3>
+      <p>添加房间、标注状态（空置/已租），一目了然看到所有房源情况</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">👥</div>
+      <h3>租户档案</h3>
+      <p>姓名、电话、身份证、入住日期、合同到期，所有信息一处管理</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">💰</div>
+      <h3>智能账单</h3>
+      <p>自动生成月/季/半年/年付账单，支持预缴模式，一键标记已收</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">⏰</div>
+      <h3>逾期提醒</h3>
+      <p>自动标记逾期账单，首页醒目倒计时，再也不会忘记催租</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🌍</div>
+      <h3>外籍租户支持</h3>
+      <p>国籍选择含东南亚国家，适合边境城市公寓管理场景</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">☁️</div>
+      <h3>云端同步</h3>
+      <p>数据实时保存在云端，换手机不丢数据，多人可协作管理</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">📸</div>
+      <h3>合同拍照存档</h3>
+      <p>拍摄合同照片直接上传，租户详情里随时查看，不用翻箱倒柜</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">💾</div>
+      <h3>数据备份恢复</h3>
+      <p>一键导出备份文件，支持覆盖恢复和合并恢复，数据安全有保障</p>
+    </div>
+  </div>
+</section>
+
+<!-- 适合人群 -->
+<section class="audience">
+  <div class="section-title">
+    <h2>谁在用房东管家？</h2>
+    <p>如果你是以下人群，这个系统就是为你做的</p>
+  </div>
+  <div class="audience-grid">
+    <div class="audience-card">
+      <div class="icon">🏢</div>
+      <h3>公寓房东</h3>
+      <p>管理十几间甚至几十间房，用纸笔记不住了</p>
+    </div>
+    <div class="audience-card">
+      <div class="icon">🏘️</div>
+      <h3>二房东/中介</h3>
+      <p>帮多个房东管房，需要清晰区分不同房源</p>
+    </div>
+    <div class="audience-card">
+      <div class="icon">👨‍👩‍👧</div>
+      <h3>家庭房东</h3>
+      <p>家里有几套房出租，不想再用Excel记账了</p>
+    </div>
+    <div class="audience-card">
+      <div class="icon">📱</div>
+      <h3>手机党房东</h3>
+      <p>主要用手机操作，需要随时随地查租金</p>
+    </div>
+  </div>
+</section>
+
+<!-- 定价区 -->
+<section class="pricing" id="pricing">
+  <div class="section-title">
+    <h2>简单透明的价格</h2>
+    <p>先免费体验，满意再付费</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <h3>免费版</h3>
+      <div class="price">0元<small>/永久</small></div>
+      <p class="price-desc">适合小规模房东体验</p>
+      <ul>
+        <li>最多管理 5 间房</li>
+        <li>租户信息管理</li>
+        <li>账单生成与记录</li>
+        <li>逾期自动提醒</li>
+        <li>数据云端存储</li>
+        <li class="disabled">数据导出</li>
+        <li class="disabled">多人协作</li>
+      </ul>
+      <button class="btn btn-outline" onclick="window.open(&#39;app.html&#39;,&#39;_blank&#39;)">免费开始</button>
+    </div>
+    <div class="price-card popular">
+      <h3>基础版</h3>
+      <div class="price">9.9元<small>/月</small></div>
+      <p class="price-desc">适合绝大多数房东</p>
+      <ul>
+        <li>不限房间数量</li>
+        <li>租户信息管理</li>
+        <li>账单生成与记录</li>
+        <li>逾期自动提醒</li>
+        <li>数据云端存储</li>
+        <li>数据导出</li>
+        <li class="disabled">多人协作</li>
+      </ul>
+      <button class="btn btn-primary" onclick="window.open(&#39;app.html&#39;,&#39;_blank&#39;)">立即订阅</button>
+    </div>
+    <div class="price-card">
+      <h3>专业版</h3>
+      <div class="price">19.9元<small>/月</small></div>
+      <p class="price-desc">适合团队协作管理</p>
+      <ul>
+        <li>不限房间数量</li>
+        <li>租户信息管理</li>
+        <li>账单生成与记录</li>
+        <li>逾期自动提醒</li>
+        <li>数据云端存储</li>
+        <li>数据导出</li>
+        <li>多人协作管理</li>
+      </ul>
+      <button class="btn btn-outline" onclick="window.open(&#39;app.html&#39;,&#39;_blank&#39;)">立即订阅</button>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq">
+  <div class="section-title">
+    <h2>常见问题</h2>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">免费版够用吗？<span class="arrow">▼</span></div>
+    <div class="faq-a">如果你只有5间以内的房源，免费版完全够用。超过5间房再升级也不迟，数据会自动保留。</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">数据安全吗？<span class="arrow">▼</span></div>
+    <div class="faq-a">所有数据加密存储在云端（Supabase），每个房东的数据完全隔离，别人看不到你的信息。同时支持本地备份导出。</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">怎么付款？<span class="arrow">▼</span></div>
+    <div class="faq-a">目前支持微信转账，付款后系统会自动开通。后续会接入微信支付，更方便。</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">可以试用付费功能吗？<span class="arrow">▼</span></div>
+    <div class="faq-a">新注册用户可以免费体验7天基础版全部功能，到期后自动降为免费版，不会自动扣费。</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">换手机数据还在吗？<span class="arrow">▼</span></div>
+    <div class="faq-a">数据在云端，换手机登录同一个账号就能看到所有数据，不会丢失。</div>
+  </div>
+</section>
+
+<!-- 微信咨询 -->
+<div style="text-align:center;margin:20px auto;max-width:600px;background:#fff;border-radius:14px;padding:24px 20px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+  <p style="font-size:14px;font-weight:600;margin-bottom:12px">💬 扫码加微信咨询</p>
+  <img src="./landing_files/wechat-qr.jpg" alt="微信咨询" style="width:160px;height:160px;border-radius:8px;display:block;margin:0 auto 10px">
+  <p style="font-size:12px;color:var(--ts)">有任何问题随时联系，或直接点击"立即使用"注册体验</p>
+</div>
+
+<!-- 底部CTA -->
+<section class="cta-section">
+  <h2>开始用房东管家管理你的房源</h2>
+  <p>免费注册，3分钟上手，告别纸笔记账</p>
+  <button class="btn" onclick="window.open(&#39;app.html&#39;,&#39;_blank&#39;)">免费开始使用 →</button>
+</section>
+
+<!-- 页脚 -->
+<footer class="footer">
+  <p>© 2026 房东管家 · 简单好用的租房管理系统</p>
+  <p style="margin-top:4px">技术支持：<a href="mailto:18213501784@163.com">18213501784@163.com</a></p>
+</footer>
+
+<script>
+function scrollToPricing(){document.getElementById('pricing').scrollIntoView({behavior:'smooth'})}
+function scrollToFeatures(){document.getElementById('features').scrollIntoView({behavior:'smooth'})}
+function toggleFaq(el){var a=el.nextElementSibling;var wasOpen=el.classList.contains('open');document.querySelectorAll('.faq-q').forEach(function(q){q.classList.remove('open');q.nextElementSibling.classList.remove('open')});if(!wasOpen){el.classList.add('open');a.classList.add('open')}}
+</script>
+
+
+</body></html>
