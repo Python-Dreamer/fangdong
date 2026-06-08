@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<!-- saved from url=(0305)https://static.coze.site/7644113258022175002-data_volume/files/%E6%89%80%E6%9C%89%E5%AF%B9%E8%AF%9D/%E4%B8%BB%E5%AF%B9%E8%AF%9D/%E6%88%BF%E4%B8%9C%E7%A7%9F%E6%88%BF%E7%AE%A1%E7%90%86%E7%B3%BB%E7%BB%9F/index.html?sign=1783451205-c84fd34391-0-d9cbe1e21229155e8369542bc7aec904a5e23d8cee4e14f55257c92edbf9b72f -->
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
+<title>房东管家 - 简单好用的租房管理系统</title>
+<meta name="description" content="专为房东打造的租房管理工具，租户管理、账单生成、缴费提醒一站式搞定">
+<meta name="theme-color" content="#4F46E5">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--p:#4F46E5;--p-light:#818CF8;--p-dark:#3730A3;--g:#10B981;--w:#F59E0B;--bg:#F8FAFC;--c:#fff;--t:#1E293B;--ts:#64748B;--bd:#E2E8F0}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--t);line-height:1.6;overflow-x:hidden}
+
+/* 导航栏 */
+.nav{position:fixed;top:0;left:0;right:0;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--bd);z-index:100;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:var(--t)}
+.nav-logo span{font-size:24px}
+.nav-btn{padding:8px 20px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:.2s}
+.nav-btn-primary{background:var(--p);color:#fff}
+.nav-btn-primary:hover{background:var(--p-dark)}
+.nav-btn-ghost{background:transparent;color:var(--p);margin-right:8px}
+.nav-btn-ghost:hover{background:#EEF2FF}
+
+/* Hero区 */
+.hero{padding:100px 20px 60px;text-align:center;background:linear-gradient(180deg,#EEF2FF 0%,var(--bg) 100%)}
+.hero-badge{display:inline-block;background:#EEF2FF;color:var(--p);font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;margin-bottom:16px}
+.hero h1{font-size:32px;font-weight:800;line-height:1.3;margin-bottom:12px;background:linear-gradient(135deg,var(--p) 0%,#7C3AED 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:16px;color:var(--ts);max-width:480px;margin:0 auto 28px}
+.hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.hero-cta .btn{padding:13px 32px;font-size:15px;border-radius:10px}
+.btn-primary{background:var(--p);color:#fff;border:none;cursor:pointer;font-weight:700;transition:.2s;box-shadow:0 4px 14px rgba(79,70,229,.3)}
+.btn-primary:hover{background:var(--p-dark);transform:translateY(-1px);box-shadow:0 6px 20px rgba(79,70,229,.35)}
+.btn-outline{background:#fff;color:var(--p);border:2px solid var(--p);cursor:pointer;font-weight:700;transition:.2s}
+.btn-outline:hover{background:#EEF2FF}
+
+/* 手机模拟 */
+.phone-mock{max-width:280px;margin:40px auto 0;background:#fff;border-radius:28px;box-shadow:0 20px 60px rgba(0,0,0,.12),0 0 0 8px #1E293B;padding:8px;position:relative;overflow:hidden}
+.phone-screen{background:var(--bg);border-radius:22px;overflow:hidden;min-height:420px}
+.phone-notch{width:100px;height:24px;background:#1E293B;border-radius:0 0 14px 14px;margin:0 auto}
+.phone-content{padding:12px}
+.phone-stat{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.phone-stat-item{background:#fff;border-radius:10px;padding:10px;text-align:left;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.phone-stat-item .num{font-size:18px;font-weight:700}
+.phone-stat-item .label{font-size:10px;color:var(--ts)}
+.phone-stat-item.blue .num{color:var(--p)}
+.phone-stat-item.green .num{color:var(--g)}
+.phone-stat-item.yellow .num{color:var(--w)}
+.phone-stat-item.red .num{color:#EF4444}
+.phone-list{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.phone-list-item{padding:10px 12px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.phone-list-item:last-child{border:none}
+.phone-tag{padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600}
+.phone-tag-green{background:#ECFDF5;color:#059669}
+.phone-tag-red{background:#FEF2F2;color:#DC2626}
+.phone-tag-yellow{background:#FFFBEB;color:#D97706}
+
+/* 数据亮点 */
+.stats-bar{background:var(--p);color:#fff;padding:36px 20px;display:flex;justify-content:center;gap:40px;flex-wrap:wrap;text-align:center}
+.stats-bar .stat h3{font-size:28px;font-weight:800}
+.stats-bar .stat p{font-size:13px;opacity:.8;margin-top:2px}
+
+/* 功能区 */
+.features{padding:60px 20px;max-width:800px;margin:0 auto}
+.section-title{text-align:center;margin-bottom:40px}
+.section-title h2{font-size:24px;font-weight:800;margin-bottom:8px}
+.section-title p{color:var(--ts);font-size:14px}
+.feature-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.feature-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.06);transition:.2s}
+.feature-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.1)}
+.feature-card .icon{font-size:28px;margin-bottom:10px}
+.feature-card h3{font-size:14px;font-weight:700;margin-bottom:4px}
+.feature-card p{font-size:12px;color:var(--ts);line-height:1.5}
+
+/* 定价区 */
+.pricing{padding:60px 20px;background:#EEF2FF}
+.pricing .section-title h2{color:var(--p-dark)}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:800px;margin:0 auto}
+.price-card{background:#fff;border-radius:14px;padding:24px 20px;box-shadow:0 2px 12px rgba(0,0,0,.06);position:relative;transition:.2s}
+.price-card:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,0,0,.1)}
+.price-card.popular{border:2px solid var(--p)}
+.price-card.popular::before{content:'推荐';position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--p);color:#fff;font-size:11px;font-weight:700;padding:3px 12px;border-radius:10px}
+.price-card h3{font-size:16px;font-weight:700;margin-bottom:4px}
+.price-card .price{font-size:32px;font-weight:800;color:var(--p);margin:8px 0}
+.price-card .price small{font-size:14px;font-weight:400;color:var(--ts)}
+.price-card .price-desc{font-size:12px;color:var(--ts);margin-bottom:16px}
+.price-card ul{list-style:none;margin-bottom:20px}
+.price-card li{font-size:13px;padding:5px 0;color:var(--t);display:flex;align-items:center;gap:6px}
+.price-card li::before{content:'✓';color:var(--g);font-weight:700;font-size:14px;flex-shrink:0}
+.price-card li.disabled{color:var(--ts)}
+.price-card li.disabled::before{content:'—';color:var(--bd)}
+.price-card .btn{width:100%;justify-content:center;padding:10px}
+
+/* 适合人群 */
+.audience{padding:60px 20px;max-width:800px;margin:0 auto}
+.audience-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.audience-card{background:#fff;border-radius:12px;padding:20px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.audience-card .icon{font-size:36px;margin-bottom:8px}
+.audience-card h3{font-size:14px;font-weight:700;margin-bottom:4px}
+.audience-card p{font-size:12px;color:var(--ts)}
+
+/* 底部CTA */
+.cta-section{padding:60px 20px;text-align:center;background:linear-gradient(135deg,var(--p) 0%,#7C3AED 100%);color:#fff}
+.cta-section h2{font-size:24px;font-weight:800;margin-bottom:8px}
+.cta-section p{font-size:14px;opacity:.85;margin-bottom:24px}
+.cta-section .btn{background:#fff;color:var(--p);border:none;padding:13px 36px;font-size:15px;border-radius:10px;font-weight:700;cursor:pointer;transition:.2s;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+.cta-section .btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.2)}
+
+/* 页脚 */
+.footer{padding:24px 20px;text-align:center;border-top:1px solid var(--bd);background:#fff}
+.footer p{font-size:12px;color:var(--ts)}
+.footer a{color:var(--p);text-decoration:none}
+
+/* FAQ */
+.faq{padding:60px 20px;max-width:600px;margin:0 auto}
+.faq-item{background:#fff;border-radius:10px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden}
+.faq-q{padding:14px 16px;font-size:14px;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:.2s}
+.faq-q:hover{background:#F8FAFC}
+.faq-q .arrow{transition:.3s;font-size:12px;color:var(--ts)}
+.faq-q.open .arrow{transform:rotate(180deg)}
+.faq-a{padding:0 16px;max-height:0;overflow:hidden;transition:.3s;font-size:13px;color:var(--ts);line-height:1.6}
+.faq-a.open{max-height:300px;padding:0 16px 14px;overflow:visible}
+
+/* 微信提示 */
+.wechat-tip{background:#ECFDF5;border-radius:10px;padding:14px 16px;margin:20px auto;max-width:600px;display:flex;align-items:center;gap:12px}
+.wechat-tip .icon{font-size:28px;flex-shrink:0}
+.wechat-tip p{font-size:13px;color:#065F46}
+.wechat-tip strong{color:#047857}
+
+@media(max-width:768px){
+.hero h1{font-size:24px}
+.hero p{font-size:14px}
+.feature-grid{grid-template-columns:1fr}
+.pricing-grid{grid-template-columns:1fr;max-width:360px}
+.audience-grid{grid-template-columns:1fr}
+.stats-bar{gap:24px}
+.stats-bar .stat h3{font-size:22px}
+.phone-mock{max-width:240px;min-height:360px}
+.nav-btn-ghost{display:inline-block;font-size:12px;padding:6px 12px}
+}
+</style>
+</head>
+<body>
+
+<!-- 导航栏 -->
+<nav class="nav">
+  <div class="nav-logo"><span>🏠</span> 房东管家</div>
+  <div>
+    <button class="nav-btn nav-btn-ghost" onclick="scrollToPricing()">价格</button>
+    <button class="nav-btn nav-btn-primary" onclick="window.open(&#39;app.html&#39;,&#39;_blank&#39;)">立即使用</button>
+  </div>
+</nav>
+
+<!-- Hero区 -->
+<section class="hero">
+  <div class="hero-badge">🔥 超过100位房东正在使用</div>
+  <h1>管理房源，原来可以这么简单</h1>
+  <p>租户管理、账单生成、缴费提醒，一部手机全搞定。<br>不再用纸笔和备忘录记房租了！</p>
+  <div class="hero-cta">
+    <button class="btn btn-primary" onclick="window.open(&#39;app.html&#39;,&#39;_blank&#39;)">免费开始使用</button>
+    <button class="btn btn-outline" onclick="scrollToFeatures()">了解功能</button>
+  </div>
+  
+  <!-- 手机模拟展示 -->
+  <div class="phone-mock">
+    <div class="phone-screen">
+      <div class="phone-notch"></div>
+      <div class="phone-content">
+        <div class="phone-stat">
+          <div class="phone-stat-item blue"><div class="num">12</div><div class="label">总房源</div></div>
+          <div class="phone-stat-item green"><div class="num">9</div><div class="label">在住租户</div></div>
+          <div class="phone-stat-item yellow"><div class="num">3</div><div class="label">待缴租金</div></div>
+          <div class="phone-stat-item red"><div class="num">1</div><div class="label">逾期提醒</div></div>
+        </div>
+        <div class="phone-list">
+          <div class="phone-list-item"><span>🏠 301室 张某某</span><span class="phone-tag phone-tag-green">已缴</span></div>
+          <div class="phone-list-item"><span>🏠 502室 李某某</span><span class="phone-tag phone-tag-red">逾期3天</span></div>
+          <div class="phone-list-item"><span>🏠 203室 王某某</span><span class="phone-tag phone-tag-yellow">即将到期</span></div>
+          <div class="phone-list-item"><span>🏠 108室 赵某某</span><span class="phone-tag phone-tag-green">已缴</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 数据亮点 -->
+<section class="stats-bar">
+  <div class="stat"><h3>3秒</h3><p>生成一条账单</p></div>
+  <div class="stat"><h3>0遗漏</h3><p>逾期自动提醒</p></div>
+  <div class="stat"><h3>100%</h3><p>数据云端加密</p></div>
+  <div class="stat"><h3>24h</h3><p>随时随地管理</p></div>
+</section>
+
+<!-- 功能区 -->
+<section class="features" id="features">
+  <div class="section-title">
+    <h2>核心功能</h2>
+    <p>房东最需要的功能，一个不少</p>
+  </div>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="icon">🏠</div>
+      <h3>房源管理</h3>
+      <p>添加房间、标注状态（空置/已租），一目了然看到所有房源情况</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">👥</div>
+      <h3>租户档案</h3>
+      <p>姓名、电话、身份证、入住日期、合同到期，所有信息一处管理</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">💰</div>
+      <h3>智能账单</h3>
+      <p>自动生成月/季/半年/年付账单，支持预缴模式，一键标记已收</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">⏰</div>
+      <h3>逾期提醒</h3>
+      <p>自动标记逾期账单，首页醒目倒计时，再也不会忘记催租</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🌍</div>
+      <h3>外籍租户支持</h3>
+      <p>国籍选择含东南亚国家，适合边境城市公寓管理场景</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">☁️</div>
+      <h3>云端同步</h3>
+      <p>数据实时保存在云端，换手机不丢数据，多人可协作管理</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">📸</div>
+      <h3>合同拍照存档</h3>
+      <p>拍摄合同照片直接上传，租户详情里随时查看，不用翻箱倒柜</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">💾</div>
+      <h3>数据备份恢复</h3>
+      <p>一键导出备份文件，支持覆盖恢复和合并恢复，数据安全有保障</p>
+    </div>
+  </div>
+</section>
+
+<!-- 适合人群 -->
+<section class="audience">
+  <div class="section-title">
+    <h2>谁在用房东管家？</h2>
+    <p>如果你是以下人群，这个系统就是为你做的</p>
+  </div>
+  <div class="audience-grid">
+    <div class="audience-card">
+      <div class="icon">🏢</div>
+      <h3>公寓房东</h3>
+      <p>管理十几间甚至几十间房，用纸笔记不住了</p>
+    </div>
+    <div class="audience-card">
+      <div class="icon">🏘️</div>
+      <h3>二房东/中介</h3>
+      <p>帮多个房东管房，需要清晰区分不同房源</p>
+    </div>
+    <div class="audience-card">
+      <div class="icon">👨‍👩‍👧</div>
+      <h3>家庭房东</h3>
+      <p>家里有几套房出租，不想再用Excel记账了</p>
+    </div>
+    <div class="audience-card">
+      <div class="icon">📱</div>
+      <h3>手机党房东</h3>
+      <p>主要用手机操作，需要随时随地查租金</p>
+    </div>
+  </div>
+</section>
+
+<!-- 定价区 -->
+<section class="pricing" id="pricing">
+  <div class="section-title">
+    <h2>简单透明的价格</h2>
+    <p>先免费体验，满意再付费</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <h3>免费版</h3>
+      <div class="price">0元<small>/永久</small></div>
+      <p class="price-desc">适合小规模房东体验</p>
+      <ul>
+        <li>最多管理 5 间房</li>
+        <li>租户信息管理</li>
+        <li>账单生成与记录</li>
+        <li>逾期自动提醒</li>
+        <li>数据云端存储</li>
+        <li class="disabled">数据导出</li>
+        <li class="disabled">多人协作</li>
+      </ul>
+      <button class="btn btn-outline" onclick="window.open(&#39;app.html&#39;,&#39;_blank&#39;)">免费开始</button>
+    </div>
+    <div class="price-card popular">
+      <h3>基础版</h3>
+      <div class="price">9.9元<small>/月</small></div>
+      <p class="price-desc">适合绝大多数房东</p>
+      <ul>
+        <li>最多管理 50 间房</li>
+        <li>租户信息管理</li>
+        <li>账单生成与记录</li>
+        <li>逾期自动提醒</li>
+        <li>数据云端存储</li>
+        <li>数据导出</li>
+        <li class="disabled">收入统计报表</li>
+      </ul>
+      <button class="btn btn-primary" onclick="window.open(&#39;app.html&#39;,&#39;_blank&#39;)">立即订阅</button>
+    </div>
+    <div class="price-card">
+      <h3>专业版</h3>
+      <div class="price">19.9元<small>/月</small></div>
+      <p class="price-desc">适合团队协作管理</p>
+      <ul>
+        <li>不限房间数量</li>
+        <li>租户信息管理</li>
+        <li>账单生成与记录</li>
+        <li>逾期自动提醒</li>
+        <li>数据云端存储</li>
+        <li>数据导出</li>
+        <li>多人协作管理</li>
+      </ul>
+      <button class="btn btn-outline" onclick="window.open(&#39;app.html&#39;,&#39;_blank&#39;)">立即订阅</button>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq">
+  <div class="section-title">
+    <h2>常见问题</h2>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">免费版够用吗？<span class="arrow">▼</span></div>
+    <div class="faq-a">如果你只有5间以内的房源，免费版完全够用。超过5间房再升级也不迟，数据会自动保留。</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">数据安全吗？<span class="arrow">▼</span></div>
+    <div class="faq-a">所有数据加密存储在云端（Supabase），每个房东的数据完全隔离，别人看不到你的信息。同时支持本地备份导出。</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">怎么付款？<span class="arrow">▼</span></div>
+    <div class="faq-a">目前支持微信转账，付款后系统会自动开通。后续会接入微信支付，更方便。</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">可以试用付费功能吗？<span class="arrow">▼</span></div>
+    <div class="faq-a">新注册用户可以免费体验7天基础版全部功能，到期后自动降为免费版，不会自动扣费。</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">换手机数据还在吗？<span class="arrow">▼</span></div>
+    <div class="faq-a">数据在云端，换手机登录同一个账号就能看到所有数据，不会丢失。</div>
+  </div>
+</section>
+
+<!-- 微信咨询 -->
+<div style="text-align:center;margin:20px auto;max-width:600px;background:#fff;border-radius:14px;padding:24px 20px;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+  <p style="font-size:14px;font-weight:600;margin-bottom:12px">💬 扫码加微信咨询</p>
+  <img src="data:image/jpeg;base64,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" alt="微信咨询" style="width:160px;height:160px;border-radius:8px;display:block;margin:0 auto 10px">
+  <p style="font-size:12px;color:var(--ts)">有任何问题随时联系，或直接点击"立即使用"注册体验</p>
+</div>
+
+<!-- 底部CTA -->
+<section class="cta-section">
+  <h2>开始用房东管家管理你的房源</h2>
+  <p>免费注册，3分钟上手，告别纸笔记账</p>
+  <button class="btn" onclick="window.open(&#39;app.html&#39;,&#39;_blank&#39;)">免费开始使用 →</button>
+</section>
+
+<!-- 页脚 -->
+<footer class="footer">
+  <p>© 2026 房东管家 · 简单好用的租房管理系统</p>
+  <p style="margin-top:4px">技术支持：<a href="mailto:18213501784@163.com">18213501784@163.com</a></p>
+</footer>
+
+<script>
+function scrollToPricing(){var el=document.getElementById('pricing');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+function scrollToFeatures(){var el=document.getElementById('features');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+function toggleFaq(el){var a=el.nextElementSibling;if(!a)return;var wasOpen=el.classList.contains('open');document.querySelectorAll('.faq-q').forEach(function(q){q.classList.remove('open');if(q.nextElementSibling)q.nextElementSibling.classList.remove('open')});if(!wasOpen){el.classList.add('open');a.classList.add('open')}}
+</script>
+
+
+</body></html>
