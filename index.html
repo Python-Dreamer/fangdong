@@ -6,6 +6,11 @@
 <title>房东管家 - 简单好用的租房管理系统</title>
 <meta name="description" content="专为房东打造的租房管理工具，租户管理、账单生成、缴费提醒一站式搞定">
 <meta name="theme-color" content="#4F46E5">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192x192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="房东管家">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--p:#4F46E5;--p-light:#818CF8;--p-dark:#3730A3;--g:#10B981;--w:#F59E0B;--bg:#F8FAFC;--c:#fff;--t:#1E293B;--ts:#64748B;--bd:#E2E8F0}
@@ -376,6 +381,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei
 function scrollToPricing(){var el=document.getElementById('pricing');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
 function scrollToFeatures(){var el=document.getElementById('features');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
 function toggleFaq(el){var a=el.nextElementSibling;if(!a)return;var wasOpen=el.classList.contains('open');document.querySelectorAll('.faq-q').forEach(function(q){q.classList.remove('open');if(q.nextElementSibling)q.nextElementSibling.classList.remove('open')});if(!wasOpen){el.classList.add('open');a.classList.add('open')}}
+// PWA: 注册Service Worker
+if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').catch(function(){})}
+// PWA: 安装提示
+var deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredPrompt=e;showInstallBanner()});
+function showInstallBanner(){var b=document.createElement('div');b.id='install-banner';b.style.cssText='position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;z-index:9999;box-shadow:0 -2px 16px rgba(0,0,0,.15)';b.innerHTML='<div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">📱</span><div><div style="font-weight:700;font-size:14px">添加到主屏幕</div><div style="font-size:12px;opacity:.85">像App一样使用，更方便</div></div></div><div style="display:flex;gap:8px"><button onclick="installApp()" style="background:#fff;color:#4F46E5;border:none;padding:8px 18px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer">安装</button><button onclick="dismissInstall()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);padding:8px 14px;border-radius:6px;font-size:13px;cursor:pointer">稍后</button></div>';document.body.appendChild(b)}
+function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(function(){deferredPrompt=null;var b=document.getElementById('install-banner');if(b)b.remove()})}
+function dismissInstall(){var b=document.getElementById('install-banner');if(b)b.remove()}
 </script>
 </body>
 </html>

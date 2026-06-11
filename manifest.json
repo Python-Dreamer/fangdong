@@ -1,18 +1,13 @@
 {
-  "name": "房东管家",
+  "name": "房东管家 - 租房管理系统",
   "short_name": "房东管家",
-  "description": "租房管理系统 - 房源、租户、租金一站式管理",
-  "start_url": "./app.html",
+  "description": "房源、租户、租金一站式管理，房东的收租神器",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#F1F5F9",
+  "background_color": "#4F46E5",
   "theme_color": "#4F46E5",
+  "lang": "zh-CN",
   "icons": [
-    {
-      "src": "icon.jpg",
-      "sizes": "2048x2048",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
-    }
-  ]
-}
+    { "src": "icons/icon-72x72.png", "sizes": "72x72", "type": "imag
