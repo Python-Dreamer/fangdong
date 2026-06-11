@@ -377,18 +377,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei
   <p style="margin-top:4px">技术支持：<a href="mailto:18213501784@163.com">18213501784@163.com</a></p>
 </footer>
 
-<script>
-function scrollToPricing(){var el=document.getElementById('pricing');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
-function scrollToFeatures(){var el=document.getElementById('features');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
-function toggleFaq(el){var a=el.nextElementSibling;if(!a)return;var wasOpen=el.classList.contains('open');document.querySelectorAll('.faq-q').forEach(function(q){q.classList.remove('open');if(q.nextElementSibling)q.nextElementSibling.classList.remove('open')});if(!wasOpen){el.classList.add('open');a.classList.add('open')}}
-// PWA: 注册Service Worker
-if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').catch(function(){})}
-// PWA: 安装提示
-var deferredPrompt=null;
-window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredPrompt=e;showInstallBanner()});
-function showInstallBanner(){var b=document.createElement('div');b.id='install-banner';b.style.cssText='position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;z-index:9999;box-shadow:0 -2px 16px rgba(0,0,0,.15)';b.innerHTML='<div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">📱</span><div><div style="font-weight:700;font-size:14px">添加到主屏幕</div><div style="font-size:12px;opacity:.85">像App一样使用，更方便</div></div></div><div style="display:flex;gap:8px"><button onclick="installApp()" style="background:#fff;color:#4F46E5;border:none;padding:8px 18px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer">安装</button><button onclick="dismissInstall()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);padding:8px 14px;border-radius:6px;font-size:13px;cursor:pointer">稍后</button></div>';document.body.appendChild(b)}
-function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(function(){deferredPrompt=null;var b=document.getElementById('install-banner');if(b)b.remove()})}
-function dismissInstall(){var b=document.getElementById('install-banner');if(b)b.remove()}
-</script>
-</body>
-</html>
+<!-- 安装引导浮窗 -->
+<div id="install-guide" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;z-index:9999;box-shadow:0 -4px 24px rgba(0,0,0,.15);border-radius:20px 20px 0 0;padding:24px 20px 32px;max-width:500px;margin:0 auto">
+  <div style="text-align:center;margin-bottom:16px">
+    <div style="width:40px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 12px"></div>
+    <div style="font-size:18px;font-weight:800;color:#1E293B">📱 添加到主屏幕</div>
+    <div style="font-size:13px;color:#64748B;margin-top:4px">像App一样使用，更方便快捷</div>
+  </div>
+  <div id="install-ios-steps" style="display:none">
+    <div style="background:#F8FAFC;border-radius:12px;padding:16px;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:700;color:#1E293B;margin-bottom:12px">iPhone安装步骤：</div>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
+        <span style="background:#4F46E5;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">1</span>
+        <span style="font-size:13px;color:#334155">点击底部浏览器菜单栏的 <b style="color:#4F46E5">分享按钮</b> <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjNEY0NkU1Ij48cGF0aCBkPSJNMTIgMTZsLTYtNmgzLjVWNGg1djZIMTh6Ii8+PHBhdGggZD0iTTQgMTR2NmgyMHYtNiIgc3Ryb2tlPSIjNEY0NkU1IiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48L3N2Zz4=" style="width:18px;height:18px;vertical-align:middle"> （方框+向上箭头）</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
+        <span style="background:#4F46E5;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">2</span>
+        <span style="font-size:13px;color:#334155">在弹出的菜单中找到 <b style="color:#4F46E5">"添加到主屏幕"</b></span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <span style="background:#4F46E5;colo
