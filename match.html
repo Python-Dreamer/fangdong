@@ -179,12 +179,22 @@ async function init(){
 async function loadRooms(){
   var r=await sb.from('rooms').select('*').eq('listed',true).eq('status','vacant');
   if(r.error){
-    console.warn('查询失败，尝试兼容模式:',r.error.message);
+    console.warn('listed查询失败:',r.error.message);
     // 兼容：如果listed字段还不存在，查所有空房
     var r2=await sb.from('rooms').select('*').eq('status','vacant');
+    if(r2.error){
+      document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">⚠️</div><h3>数据加载失败</h3><p style="color:var(--d);font-size:12px">'+esc(r2.error.message)+'</p><p style="font-size:12px;margin-top:8px">可能原因：数据库访问权限未配置，请联系管理员</p></div>';
+      return;
+    }
     allRooms=r2.data||[];
+    if(!allRooms.length){
+      document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">⚠️</div><h3>暂无上架房源</h3><p>房东还未上架任何房源，请稍后再来</p></div>';
+    }
   }else{
     allRooms=r.data||[];
+    if(!allRooms.length){
+      document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">📭</div><h3>暂无上架房源</h3><p>房东还未上架任何房源，请稍后再来</p></div>';
+    }
   }
   // 为每个房源计算匹配分（初始为0）
   allRooms.forEach(function(rm){rm._score=0});
