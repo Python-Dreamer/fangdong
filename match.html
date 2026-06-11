@@ -390,11 +390,6 @@ function doSearch(){
       if(floor==='mid'&&(fl<4||fl>6))return false;
       if(floor==='high'&&fl<7)return false;
     }
-          if(moveIn==='month'){
-        var m=new Date(now.getTime()+30*86400000);
-        if(avail>m)return false;
-      }
-    }
     // 配置筛选（选中的配置必须都有）
     if(amenList.length){
       var rmAmens=(rm.amenities||'').split(',').map(function(s){return s.trim()});
