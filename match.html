@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>瑞丽找房 - 租客智能匹配</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--p:#4f6ef7;--p2:#6b8aff;--pbg:rgba(79,110,247,.08);--t:#1a1a2e;--ts:#6b7280;--bd:#e5e7eb;--g:#10b981;--w:#f59e0b;--d:#ef4444;--r:12px;--sh:0 2px 12px rgba(0,0,0,.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB',sans-serif;background:var(--bg);color:var(--t);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+/* 顶部横幅 */
+.hero{background:linear-gradient(135deg,#4f6ef7 0%,#7c3aed 100%);color:#fff;padding:40px 20px 30px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;right:-20%;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.06)}
+.hero::after{content:'';position:absolute;bottom:-40%;left:-10%;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.04)}
+.hero h1{font-size:24px;font-weight:700;margin-bottom:6px;position:relative}
+.hero p{font-size:14px;opacity:.85;position:relative}
+
+/* 需求表单 */
+.form-wrap{max-width:500px;margin:-20px auto 0;padding:0 16px;position:relative;z-index:2}
+.form-card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:20px}
+.form-title{font-size:16px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:6px}
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:13px;color:var(--ts);margin-bottom:6px;font-weight:500}
+.fg label .req{color:var(--d)}
+.frow{display:flex;gap:10px}
+.frow .fg{flex:1;margin-bottom:0}
+input,select{width:100%;padding:10px 12px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;outline:none;transition:border-color .2s;background:#fff}
+input:focus,select:focus{border-color:var(--p)}
+select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748B' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.btn-search{width:100%;padding:12px;background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px;transition:opacity .2s}
+.btn-search:active{opacity:.85}
+.btn-search:disabled{opacity:.5;cursor:not-allowed}
+
+/* 标签快捷选择 */
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.tag{padding:6px 14px;border-radius:20px;border:1.5px solid var(--bd);font-size:13px;cursor:pointer;transition:all .2s;background:#fff;color:var(--ts);user-select:none}
+.tag.on{border-color:var(--p);background:var(--pbg);color:var(--p);font-weight:500}
+
+/* 结果区 */
+.results{max-width:500px;margin:20px auto;padding:0 16px 40px}
+.results-hd{font-size:15px;color:var(--ts);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.results-hd strong{color:var(--t)}
+.room-card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:12px;transition:transform .15s}
+.room-card:active{transform:scale(.985)}
+.room-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.room-name{font-size:16px;font-weight:600}
+.room-price{font-size:18px;font-weight:700;color:var(--p)}
+.room-price small{font-size:12px;font-weight:400;color:var(--ts)}
+.room-info{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.room-tag{padding:3px 10px;border-radius:4px;font-size:12px;background:var(--pbg);color:var(--p)}
+.room-tag.loc{background:#f0fdf4;color:var(--g)}
+.room-tag.area{background:#fef3c7;color:var(--w)}
+.room-addr{font-size:12px;color:var(--ts);margin-bottom:10px;display:flex;align-items:center;gap:4px}
+.room-contact{display:flex;align-items:center;gap:8px;padding-top:10px;border-top:1px solid var(--bd)}
+.room-contact .avatar{width:32px;height:32px;border-radius:50%;background:var(--pbg);display:flex;align-items:center;justify-content:center;font-size:14px}
+.room-contact .info{flex:1}
+.room-contact .info .name{font-size:13px;font-weight:600}
+.room-contact .info .phone{font-size:12px;color:var(--ts)}
+.btn-call{padding:7px 16px;background:var(--g);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:4px;text-decoration:none}
+.btn-call:active{opacity:.85}
+
+/* 空状态 */
+.empty{text-align:center;padding:50px 20px}
+.empty .ei{font-size:48px;margin-bottom:12px}
+.empty h3{font-size:16px;margin-bottom:6px}
+.empty p{font-size:13px;color:var(--ts)}
+
+/* 加载 */
+.loading{text-align:center;padding:40px;color:var(--ts);font-size:14px}
+.loading::after{content:'';display:inline-block;width:20px;height:20px;border:2px solid var(--bd);border-top-color:var(--p);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-left:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* 匹配度 */
+.match-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.match-high{background:#dcfce7;color:#16a34a}
+.match-mid{background:#fef3c7;color:#d97706}
+.match-low{background:#fee2e2;color:#dc2626}
+
+/* 底部 */
+.footer{text-align:center;padding:20px;font-size:11px;color:var(--ts)}
+.footer a{color:var(--p);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>🏠 瑞丽找房</h1>
+  <p>说出你的需求，智能匹配最适合你的房源</p>
+</div>
+
+<div class="form-wrap">
+  <div class="form-card">
+    <div class="form-title">📋 填写租房需求</div>
+
+    <div class="fg">
+      <label>预算范围 <span class="req">*</span></label>
+      <div class="frow">
+        <div class="fg">
+          <input type="number" id="fMinPrice" placeholder="最低 元/月" min="0">
+        </div>
+        <div class="fg">
+          <input type="number" id="fMaxPrice" placeholder="最高 元/月" min="0">
+        </div>
+      </div>
+    </div>
+
+    <div class="fg">
+      <label>快捷预算</label>
+      <div class="tags" id="priceTags">
+        <span class="tag" data-min="0" data-max="500" onclick="setPrice(this)">500以下</span>
+        <span class="tag" data-min="500" data-max="800" onclick="setPrice(this)">500-800</span>
+        <span class="tag" data-min="800" data-max="1200" onclick="setPrice(this)">800-1200</span>
+        <span class="tag" data-min="1200" data-max="2000" onclick="setPrice(this)">1200-2000</span>
+        <span class="tag" data-min="2000" data-max="99999" onclick="setPrice(this)">2000以上</span>
+        <span class="tag" data-min="0" data-max="99999" onclick="setPrice(this)">不限预算</span>
+      </div>
+    </div>
+
+    <div class="fg">
+      <label>区域/位置</label>
+      <select id="fArea">
+        <option value="">全部区域</option>
+      </select>
+    </div>
+
+    <div class="fg">
+      <label>房型</label>
+      <div class="tags" id="typeTags">
+        <span class="tag on" data-val="" onclick="setType(this)">不限</span>
+      </div>
+    </div>
+
+    <div class="fg">
+      <label>排序方式</label>
+      <select id="fSort">
+        <option value="match">匹配度优先</option>
+        <option value="price-asc">价格从低到高</option>
+        <option value="price-desc">价格从高到低</option>
+      </select>
+    </div>
+
+    <button class="btn-search" id="btnSearch" onclick="doSearch()">🔍 搜索匹配房源</button>
+  </div>
+</div>
+
+<div class="results" id="resultsArea">
+  <div class="empty">
+    <div class="ei">🎯</div>
+    <h3>填写需求，开始匹配</h3>
+    <p>我们会从所有房东发布的房源中找到最适合你的</p>
+  </div>
+</div>
+
+<div class="footer">
+  由 <a href="https://python-dreamer.github.io/fangdong" target="_blank">房东管家</a> 提供技术支持 · 瑞丽便民租房平台
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+var SB_URL='https://eszdbwmazsdltngrjjkm.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzemRid21henNkbHRuZ3JqamttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4Mjc5MTMsImV4cCI6MjA5NTQwMzkxM30.VWZg_O4TheXudhdgUMEPoQRAjyEic95vber3FxnxTss';
+var sb,allRooms=[];
+
+// 初始化
+async function init(){
+  try{
+    sb=window.supabase.createClient(SB_URL,SB_KEY);
+    await loadRooms();
+    buildFilters();
+  }catch(e){
+    console.error('初始化失败:',e);
+    document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">⚠️</div><h3>加载失败</h3><p>请刷新页面重试</p></div>';
+  }
+}
+
+// 加载所有对外展示的空房
+async function loadRooms(){
+  var r=await sb.from('rooms').select('*').eq('listed',true).eq('status','vacant');
+  if(r.error){
+    console.warn('查询失败，尝试兼容模式:',r.error.message);
+    // 兼容：如果listed字段还不存在，查所有空房
+    var r2=await sb.from('rooms').select('*').eq('status','vacant');
+    allRooms=r2.data||[];
+  }else{
+    allRooms=r.data||[];
+  }
+  // 为每个房源计算匹配分（初始为0）
+  allRooms.forEach(function(rm){rm._score=0});
+}
+
+// 构建筛选器选项
+function buildFilters(){
+  // 提取区域
+  var areas={};
+  allRooms.forEach(function(rm){
+    if(rm.address){
+      // 取地址的第一段作为区域
+      var a=rm.address.split(/[,，、\s]+/)[0];
+      if(a)areas[a]=true;
+    }
+  });
+  var sel=document.getElementById('fArea');
+  Object.keys(areas).sort().forEach(function(a){
+    var o=document.createElement('option');
+    o.value=a;o.textContent=a;sel.appendChild(o);
+  });
+
+  // 提取房型
+  var types={};
+  allRooms.forEach(function(rm){
+    if(rm.type)types[rm.type]=true;
+  });
+  var tc=document.getElementById('typeTags');
+  Object.keys(types).sort().forEach(function(t){
+    var s=document.createElement('span');
+    s.className='tag';s.dataset.val=t;s.textContent=t;
+    s.onclick=function(){setType(this)};
+    tc.appendChild(s);
+  });
+}
+
+// 快捷预算选择
+function setPrice(el){
+  document.querySelectorAll('#priceTags .tag').forEach(function(t){t.classList.remove('on')});
+  el.classList.add('on');
+  document.getElementById('fMinPrice').value=el.dataset.min>0?el.dataset.min:'';
+  document.getElementById('fMaxPrice').value=el.dataset.max<99999?el.dataset.max:'';
+}
+
+// 房型选择
+function setType(el){
+  document.querySelectorAll('#typeTags .tag').forEach(function(t){t.classList.remove('on')});
+  el.classList.add('on');
+}
+
+// 搜索匹配
+function doSearch(){
+  var minP=parseInt(document.getElementById('fMinPrice').value)||0;
+  var maxP=parseInt(document.getElementById('fMaxPrice').value)||99999;
+  var area=document.getElementById('fArea').value;
+  var typeEl=document.querySelector('#typeTags .tag.on');
+  var type=typeEl?typeEl.dataset.val:'';
+  var sort=document.getElementById('fSort').value;
+
+  if(minP===0&&maxP===99999&&!area&&!type){
+    // 无筛选条件，展示所有
+    var rooms=allRooms.slice();
+  }else{
+    var rooms=allRooms.filter(function(rm){
+      var price=rm.rent_amount||0;
+      // 价格过滤
+      if(price<minP||price>maxP)return false;
+      // 区域过滤
+      if(area&&(!rm.address||!rm.address.includes(area)))return false;
+      // 房型过滤
+      if(type&&rm.type!==type)return false;
+      return true;
+    });
+  }
+
+  // 计算匹配度
+  rooms.forEach(function(rm){
+    var score=0;
+    var price=rm.rent_amount||0;
+    // 价格越接近预算中间值，分越高
+    if(minP>0||maxP<99999){
+      var mid=(minP+maxP)/2;
+      var range=maxP-minP;
+      if(range>0){
+        var dist=Math.abs(price-mid)/range;
+        score+=Math.max(0,30*(1-dist));
+      }else{
+        score+=price<=maxP?30:0;
+      }
+    }
+    // 区域匹配
+    if(area&&rm.address&&rm.address.includes(area))score+=30;
+    else if(!area)score+=15; // 没选区域不算减分
+    // 房型匹配
+    if(type&&rm.type===type)score+=25;
+    else if(!type)score+=12;
+    // 基础分（有照片/描述的加分）
+    if(rm.notes&&rm.notes.length>5)score+=10;
+    if(rm.image_url)score+=5;
+    rm._score=Math.round(score);
+  });
+
+  // 排序
+  if(sort==='match'){
+    rooms.sort(function(a,b){return b._score-a._score});
+  }else if(sort==='price-asc'){
+    rooms.sort(function(a,b){return(a.rent_amount||0)-(b.rent_amount||0)});
+  }else{
+    rooms.sort(function(a,b){return(b.rent_amount||0)-(a.rent_amount||0)});
+  }
+
+  renderResults(rooms);
+}
+
+// 渲染结果
+function renderResults(rooms){
+  var el=document.getElementById('resultsArea');
+  if(!rooms.length){
+    el.innerHTML='<div class="empty"><div class="ei">😔</div><h3>暂无匹配房源</h3><p>试试放宽条件，或稍后再来看看</p></div>';
+    return;
+  }
+  var html='<div class="results-hd">找到 <strong>'+rooms.length+'</strong> 套匹配房源</div>';
+  rooms.forEach(function(rm){
+    var matchClass=rm._score>=60?'match-high':rm._score>=30?'match-mid':'match-low';
+    var matchLabel=rm._score>=60?'高度匹配':rm._score>=30?'较为匹配':'基本匹配';
+    var price=rm.rent_amount||0;
+    var contact=rm.landlord_contact||'房东';
+    var contactName=contact;
+    var contactPhone='';
+    // 如果联系方式包含手机号
+    var phoneMatch=contact.match(/1[3-9]\d{9}/);
+    if(phoneMatch){
+      contactPhone=phoneMatch[0];
+      contactName=contact.replace(phoneMatch[0],'').replace(/[\s,，、:：]/g,'').trim()||'房东';
+    }
+    html+='<div class="room-card">';
+    html+='<div class="room-top"><div><div class="room-name">'+esc(rm.name||'未命名')+'</div></div>';
+    html+='<div class="room-price">¥'+price.toLocaleString()+'<small>/月</small></div></div>';
+    html+='<div class="room-info">';
+    if(rm.type)html+='<span class="room-tag">'+esc(rm.type)+'</span>';
+    if(rm.address)html+='<span class="room-tag loc">📍 '+esc(rm.address)+'</span>';
+    if(rm.area)html+='<span class="room-tag area">'+esc(rm.area)+'m²</span>';
+    html+='<span class="'+matchClass+' match-badge">🎯 '+matchLabel+' '+rm._score+'%</span>';
+    html+='</div>';
+    if(rm.notes)html+='<div class="room-addr">💬 '+esc(rm.notes)+'</div>';
+    html+='<div class="room-contact">';
+    html+='<div class="avatar">🏠</div>';
+    html+='<div class="info"><div class="name">'+esc(contactName)+'</div>';
+    html+='<div class="phone">'+(contactPhone?esc(contactPhone):'请联系平台获取')+'</div></div>';
+    if(contactPhone){
+      html+='<a class="btn-call" href="tel:'+contactPhone+'">📞 拨打</a>';
+    }
+    html+='</div></div>';
+  });
+  el.innerHTML=html;
+}
+
+function esc(s){if(!s)return'';var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+// 启动
+init();
+</script>
+</body>
+</html>
