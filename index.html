@@ -396,4 +396,57 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei
         <span style="font-size:13px;color:#334155">在弹出的菜单中找到 <b style="color:#4F46E5">"添加到主屏幕"</b></span>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px">
-        <span style="background:#4F46E5;colo
+        <span style="background:#4F46E5;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">3</span>
+        <span style="font-size:13px;color:#334155">点击 <b style="color:#10B981">"添加"</b>，桌面就会出现房东管家图标</span>
+      </div>
+    </div>
+  </div>
+  <div id="install-android-steps" style="display:none">
+    <div style="background:#F8FAFC;border-radius:12px;padding:16px;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:700;color:#1E293B;margin-bottom:12px">Android安装步骤：</div>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
+        <span style="background:#4F46E5;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">1</span>
+        <span style="font-size:13px;color:#334155">点击右上角 <b style="color:#4F46E5">⋮ 菜单</b> 按钮</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
+        <span style="background:#4F46E5;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">2</span>
+        <span style="font-size:13px;color:#334155">选择 <b style="color:#4F46E5">"添加到主屏幕"</b> 或 <b style="color:#4F46E5">"安装应用"</b></span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <span style="background:#4F46E5;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">3</span>
+        <span style="font-size:13px;color:#334155">点击 <b style="color:#10B981">"添加"</b>，桌面就会出现房东管家图标</span>
+      </div>
+    </div>
+  </div>
+  <button onclick="closeInstallGuide()" style="width:100%;padding:14px;background:#4F46E5;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">我知道了</button>
+</div>
+<!-- 安装引导触发按钮 -->
+<div id="install-float-btn" style="position:fixed;right:16px;bottom:20px;z-index:9998">
+  <button onclick="openInstallGuide()" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;border:none;font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(79,70,229,.4);display:flex;align-items:center;justify-content:center">📱</button>
+</div>
+
+<script>
+function scrollToPricing(){var el=document.getElementById('pricing');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+function scrollToFeatures(){var el=document.getElementById('features');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+function toggleFaq(el){var a=el.nextElementSibling;if(!a)return;var wasOpen=el.classList.contains('open');document.querySelectorAll('.faq-q').forEach(function(q){q.classList.remove('open');if(q.nextElementSibling)q.nextElementSibling.classList.remove('open')});if(!wasOpen){el.classList.add('open');a.classList.add('open')}}
+// PWA: 注册Service Worker
+if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').catch(function(){})}
+// PWA: 安装引导
+var deferredPrompt=null;
+var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+var isStandalone=window.navigator.standalone===true||window.matchMedia('(display-mode:standalone)').matches;
+// 已安装为App则隐藏引导按钮
+if(isStandalone){var fb=document.getElementById('install-float-btn');if(fb)fb.style.display='none'}
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredPrompt=e});
+function openInstallGuide(){
+  var g=document.getElementById('install-guide');
+  if(isIOS){document.getElementById('install-ios-steps').style.display='block';document.getElementById('install-android-steps').style.display='none'}
+  else{document.getElementById('install-android-steps').style.display='block';document.getElementById('install-ios-steps').style.display='none'}
+  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(function(){deferredPrompt=null});return}
+  g.style.display='block';
+}
+function closeInstallGuide(){var g=document.getElementById('install-guide');if(g)g.style.display='none'}
+function dismissInstall(){var b=document.getElementById('install-banner');if(b)b.remove()}
+</script>
+</body>
+</html>
