@@ -74,7 +74,6 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
 .rt-loc{background:#f0fdf4;color:var(--g)}
 .rt-area{background:#fef3c7;color:var(--w)}
 .rt-floor{background:#f0f9ff;color:#0284c7}
-.rt-orient{background:#fdf4ff;color:#a855f7}
 .rc-amenities{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
 .amenity{font-size:11px;color:var(--ts);display:flex;align-items:center;gap:2px}
 .rc-desc{font-size:12px;color:var(--ts);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -111,7 +110,6 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
 .dm-amenities{display:flex;flex-wrap:wrap;gap:6px}
 .dm-amen{padding:5px 12px;border-radius:6px;font-size:12px;background:#f0fdf4;color:var(--g);display:flex;align-items:center;gap:3px}
 .dm-amen.no{background:#f9fafb;color:var(--ts);text-decoration:line-through;opacity:.5}
-.dm-nearby{font-size:13px;line-height:1.8;color:var(--t)}
 .dm-contact-bar{display:flex;gap:10px;padding:14px 16px;border-top:1px solid var(--bd);background:#fff;flex-shrink:0}
 .dm-contact-bar .info{flex:1}
 .dm-contact-bar .info .name{font-size:14px;font-weight:600}
@@ -135,10 +133,9 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
 .footer a{color:var(--p);text-decoration:none}
 
 /* 可入住标签 */
-.available-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:4px;font-size:11px;background:#dcfce7;color:#16a34a}
-.available-badge.soon{background:#fef3c7;color:#d97706}
-.available-badge.later{background:#fee2e2;color:#dc2626}
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
@@ -222,16 +219,7 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
         </select>
       </div>
 
-      <!-- 入住时间 -->
-      <div class="fg">
-        <label>期望入住时间</label>
-        <select id="fMoveIn">
-          <option value="">不限</option>
-          <option value="now">随时入住</option>
-          <option value="week">一周内</option>
-          <option value="month">一个月内</option>
-        </select>
-      </div>
+      
 
       <!-- 楼层 -->
       <div class="fg">
@@ -244,16 +232,7 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
         </select>
       </div>
 
-      <!-- 朝向 -->
-      <div class="fg">
-        <label>朝向</label>
-        <div class="tags" id="orientTags">
-          <span class="tag on" data-val="" onclick="setOrient(this)">不限</span>
-          <span class="tag" data-val="南" onclick="setOrient(this)">朝南</span>
-          <span class="tag" data-val="北" onclick="setOrient(this)">朝北</span>
-          <span class="tag" data-val="东" onclick="setOrient(this)">朝东</span>
-          <span class="tag" data-val="西" onclick="setOrient(this)">朝西</span>
-        </div>
+      
       </div>
     </div>
 
@@ -367,11 +346,6 @@ function setType(el){
 function toggleAmen(el){el.classList.toggle('on')}
 
 // 朝向
-function setOrient(el){
-  document.querySelectorAll('#orientTags .tag').forEach(function(t){t.classList.remove('on')});
-  el.classList.add('on');
-}
-
 // 高级筛选折叠
 function toggleAdv(){
   var f=document.getElementById('advFilters');
@@ -392,10 +366,7 @@ function doSearch(){
   var typeEl=document.querySelector('#typeTags .tag.on');
   var type=typeEl?typeEl.dataset.val:'';
   var payMethod=document.getElementById('fPayMethod').value;
-  var moveIn=document.getElementById('fMoveIn').value;
   var floor=document.getElementById('fFloor').value;
-  var orientEl=document.querySelector('#orientTags .tag.on');
-  var orient=orientEl?orientEl.dataset.val:'';
   // 获取选中的配置
   var amenList=[];
   document.querySelectorAll('#amenTags .tag.on').forEach(function(t){amenList.push(t.dataset.val)});
@@ -412,8 +383,6 @@ function doSearch(){
     if(type&&rm.type!==type)return false;
     // 付款方式
     if(payMethod&&rm.pay_method&&rm.pay_method!==payMethod)return false;
-    // 朝向
-    if(orient&&rm.orientation&&!rm.orientation.includes(orient))return false;
     // 楼层
     if(floor&&rm.floor){
       var fl=parseInt(rm.floor)||0;
@@ -421,16 +390,7 @@ function doSearch(){
       if(floor==='mid'&&(fl<4||fl>6))return false;
       if(floor==='high'&&fl<7)return false;
     }
-    // 入住时间
-    if(moveIn&&rm.available_date){
-      var avail=new Date(rm.available_date);
-      var now=new Date();
-      if(moveIn==='now'&&avail>now)return false;
-      if(moveIn==='week'){
-        var w=new Date(now.getTime()+7*86400000);
-        if(avail>w)return false;
-      }
-      if(moveIn==='month'){
+          if(moveIn==='month'){
         var m=new Date(now.getTime()+30*86400000);
         if(avail>m)return false;
       }
@@ -477,9 +437,6 @@ function doSearch(){
     // 付款方式(10分)
     if(payMethod){total+=10;if(rm.pay_method===payMethod)score+=10;}
 
-    // 朝向(5分)
-    if(orient){total+=5;if(rm.orientation&&rm.orientation.includes(orient))score+=5;}
-
     // 楼层(5分)
     if(floor&&rm.floor){total+=5;var fl=parseInt(rm.floor)||0;
       if((floor==='low'&&fl<=3)||(floor==='mid'&&fl>=4&&fl<=6)||(floor==='high'&&fl>=7))score+=5;}
@@ -491,9 +448,7 @@ function doSearch(){
     // 加分项
     if(rm.notes&&rm.notes.length>5)score=Math.min(100,score+3);
     if(rm.image_url||rm.images)score=Math.min(100,score+2);
-    // 可立即入住加分
-    if(!rm.available_date||new Date(rm.available_date)<=new Date())score=Math.min(100,score+3);
-
+    
     rm._score=total>0?Math.round(score):60; // 无筛选条件时给默认分
   });
 
@@ -532,7 +487,6 @@ function renderResults(rooms){
     if(rm.address)tagsHtml+='<span class="rt rt-loc">📍 '+esc(rm.address)+'</span>';
     if(rm.area)tagsHtml+='<span class="rt rt-area">'+esc(rm.area)+'m²</span>';
     if(rm.floor)tagsHtml+='<span class="rt rt-floor">🏢 '+esc(rm.floor)+'层</span>';
-    if(rm.orientation)tagsHtml+='<span class="rt rt-orient">🧭 '+esc(rm.orientation)+'</span>';
     tagsHtml+='</div>';
 
     // 配置图标（最多显示5个）
@@ -556,26 +510,10 @@ function renderResults(rooms){
       contactName=contact.replace(phoneMatch[0],'').replace(/[\s,，、:：]/g,'').trim()||'房东';
     }
 
-    // 可入住状态
-    var availHtml='';
-    if(rm.available_date){
-      var avail=new Date(rm.available_date);
-      var now=new Date();
-      if(avail<=now){
-        availHtml='<span class="available-badge">✅ 随时可住</span>';
-      }else{
-        var days=Math.ceil((avail-now)/86400000);
-        if(days<=7)availHtml='<span class="available-badge soon">📅 '+days+'天后可住</span>';
-        else availHtml='<span class="available-badge later">📅 '+fmtDate(rm.available_date)+'可住</span>';
-      }
-    }else{
-      availHtml='<span class="available-badge">✅ 随时可住</span>';
-    }
-
     html+='<div class="room-card" onclick="showDetail(\''+rm.id+'\')">';
     html+=imgHtml;
     html+='<div class="rc-body">';
-    html+='<div class="rc-top"><div class="rc-name">'+esc(rm.name||'未命名')+' '+availHtml+'</div>';
+    html+='<div class="rc-top"><div class="rc-name">'+esc(rm.name||'未命名')+'</div>';
     html+='<span class="rc-score '+matchClass+'">🎯'+rm._score+'分</span></div>';
     html+=tagsHtml;
     html+=amenHtml;
@@ -619,14 +557,12 @@ function showDetail(id){
   infoHtml+='<div class="dm-item"><div class="dl">房型</div><div class="dv">'+esc(rm.type||'-')+'</div></div>';
   infoHtml+='<div class="dm-item"><div class="dl">面积</div><div class="dv">'+(rm.area?esc(rm.area)+'m²':'-')+'</div></div>';
   infoHtml+='<div class="dm-item"><div class="dl">楼层</div><div class="dv">'+(rm.floor?esc(rm.floor)+'层':'-')+'</div></div>';
-  infoHtml+='<div class="dm-item"><div class="dl">朝向</div><div class="dv">'+esc(rm.orientation||'-')+'</div></div>';
-  infoHtml+='<div class="dm-item"><div class="dl">付款方式</div><div class="dv">'+esc(rm.pay_method||'月付')+'</div></div>';
-  infoHtml+='<div class="dm-item"><div class="dl">可入住</div><div class="dv">'+(rm.available_date?fmtDate(rm.available_date):'随时')+'</div></div>';
-  infoHtml+='</div></div>';
+    infoHtml+='<div class="dm-item"><div class="dl">付款方式</div><div class="dv">'+esc(rm.pay_method||'月付')+'</div></div>';
+    infoHtml+='</div></div>';
 
   // 位置
   if(rm.address){
-    infoHtml+='<div class="dm-section"><div class="st">📍 位置</div><div style="font-size:13px">'+esc(rm.address)+'</div></div>';
+    infoHtml+='<div class="dm-section"><div class="st">📍 位置</div><div style="font-size:13px;margin-bottom:8px">'+esc(rm.address)+'</div><div id="detailMap" style="width:100%;height:180px;border-radius:8px;overflow:hidden"></div></div>';
   }
 
   // 房屋配置
@@ -642,10 +578,6 @@ function showDetail(id){
   amenHtml+='</div></div>';
   infoHtml+=amenHtml;
 
-  // 周边环境
-  if(rm.nearby){
-    infoHtml+='<div class="dm-section"><div class="st">🏘️ 周边环境</div><div class="dm-nearby">'+esc(rm.nearby)+'</div></div>';
-  }
 
   // 备注
   if(rm.notes){
@@ -669,6 +601,7 @@ function showDetail(id){
 
   document.getElementById('detailModal').classList.add('show');
   document.body.style.overflow='hidden';
+  setTimeout(function(){showDetailMap(rm.address)},300);
 }
 
 function closeDetail(e){
@@ -686,6 +619,33 @@ function fmtDate(d){
 function esc(s){if(!s)return '';var d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
 init();
+
+// 地图相关
+var _detailMap=null;
+function showDetailMap(address){
+  if(!address)return;
+  var mapDiv=document.getElementById('detailMap');
+  if(!mapDiv)return;
+  if(_detailMap){_detailMap.remove();_detailMap=null}
+  try{
+    _detailMap=L.map('detailMap').setView([24.08,97.85],13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'© OpenStreetMap'
+    }).addTo(_detailMap);
+    // Geocode address using Nominatim
+    var q=encodeURIComponent(address+' 瑞丽');
+    fetch('https://nominatim.openstreetmap.org/search?format=json&q='+q+'&limit=1')
+      .then(function(r){return r.json()})
+      .then(function(data){
+        if(data&&data.length>0){
+          var lat=parseFloat(data[0].lat);
+          var lon=parseFloat(data[0].lon);
+          _detailMap.setView([lat,lon],16);
+          L.marker([lat,lon]).addTo(_detailMap).bindPopup(address).openPopup();
+        }
+      }).catch(function(){});
+  }catch(e){}
+}
 </script>
 </body>
 </html>
