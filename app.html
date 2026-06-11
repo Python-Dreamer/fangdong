@@ -487,8 +487,8 @@ if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded'
 <script>if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').catch(function(){})}
 // ========== 留言板功能 ==========
 function showFeedbackModal(){
-  var html='<div class="modal-mask" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()"><div class="modal-hd"><h3>💬 意见反馈</h3><button class="close-btn" onclick="closeModal()">×</button></div><div class="modal-bd"><div class="fg"><label>您的称呼</label><input class="fc" id="fbName" placeholder="怎么称呼您？"></div><div class="fg"><label>联系方式</label><input class="fc" id="fbContact" placeholder="微信/手机/邮箱，方便回复您"></div><div class="fg"><label>反馈内容<span class="req">*</span></label><textarea class="fc" id="fbContent" rows="4" placeholder="请描述您的问题或建议..." style="resize:vertical"></textarea></div></div><div class="modal-ft"><button class="btn btn-gh" onclick="closeModal()">取消</button><button class="btn btn-p" id="fbSubmitBtn" onclick="doSubmitFeedback()">提交反馈</button></div></div></div>';
-  document.body.insertAdjacentHTML('beforeend',html);
+  var html='<div class="m-hd"><h3>💬 意见反馈</h3><button class="m-x" onclick="closeModal()">×</button></div><div class="m-bd"><div class="fg"><label>您的称呼</label><input class="fc" id="fbName" placeholder="怎么称呼您？"></div><div class="fg"><label>联系方式</label><input class="fc" id="fbContact" placeholder="微信/手机/邮箱，方便回复您"></div><div class="fg"><label>反馈内容<span class="req">*</span></label><textarea class="fc" id="fbContent" rows="4" placeholder="请描述您的问题或建议..." style="resize:vertical"></textarea></div></div><div class="m-ft"><button class="btn btn-gh" onclick="closeModal()">取消</button><button class="btn btn-p" id="fbSubmitBtn" onclick="doSubmitFeedback()">提交反馈</button></div>';
+  openModal(html);
 }
 async function doSubmitFeedback(){
   var name=document.getElementById('fbName').value.trim();
