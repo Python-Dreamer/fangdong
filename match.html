@@ -156,17 +156,7 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
         <div class="fg"><input type="number" id="fMaxPrice" placeholder="最高 元/月" min="0"></div>
       </div>
     </div>
-    <div class="fg">
-      <label>快捷预算</label>
-      <div class="tags" id="priceTags">
-        <span class="tag" data-min="0" data-max="500" onclick="setPrice(this)">500以下</span>
-        <span class="tag" data-min="500" data-max="800" onclick="setPrice(this)">500-800</span>
-        <span class="tag" data-min="800" data-max="1200" onclick="setPrice(this)">800-1200</span>
-        <span class="tag" data-min="1200" data-max="2000" onclick="setPrice(this)">1200-2000</span>
-        <span class="tag" data-min="2000" data-max="99999" onclick="setPrice(this)">2000以上</span>
-        <span class="tag" data-min="0" data-max="99999" onclick="setPrice(this)">不限预算</span>
-      </div>
-    </div>
+
 
     <!-- 区域 -->
     <div class="fg">
@@ -179,6 +169,13 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
       <label>房型</label>
       <div class="tags" id="typeTags">
         <span class="tag on" data-val="" onclick="setType(this)">不限</span>
+        <span class="tag" data-val="单间" onclick="setType(this)">单间</span>
+        <span class="tag" data-val="一室一厅" onclick="setType(this)">一室一厅</span>
+        <span class="tag" data-val="两室一厅" onclick="setType(this)">两室一厅</span>
+        <span class="tag" data-val="三室一厅" onclick="setType(this)">三室一厅</span>
+        <span class="tag" data-val="四室及以上" onclick="setType(this)">四室及以上</span>
+        <span class="tag" data-val="复式" onclick="setType(this)">复式</span>
+        <span class="tag" data-val="其他" onclick="setType(this)">其他</span>
       </div>
     </div>
 
@@ -309,31 +306,17 @@ async function loadRooms(){
 
 // 构建筛选器
 function buildFilters(){
-  var areas={},types={};
+  var areas={};
   allRooms.forEach(function(rm){
     if(rm.address){
       var a=rm.address.split(/[,，、\s]+/)[0];
       if(a)areas[a]=true;
     }
-    if(rm.type)types[rm.type]=true;
   });
   var sel=document.getElementById('fArea');
   Object.keys(areas).sort().forEach(function(a){
     var o=document.createElement('option');o.value=a;o.textContent=a;sel.appendChild(o);
   });
-  var tc=document.getElementById('typeTags');
-  Object.keys(types).sort().forEach(function(t){
-    var s=document.createElement('span');s.className='tag';s.dataset.val=t;s.textContent=t;
-    s.onclick=function(){setType(this)};tc.appendChild(s);
-  });
-}
-
-// 快捷预算
-function setPrice(el){
-  document.querySelectorAll('#priceTags .tag').forEach(function(t){t.classList.remove('on')});
-  el.classList.add('on');
-  document.getElementById('fMinPrice').value=el.dataset.min>0?el.dataset.min:'';
-  document.getElementById('fMaxPrice').value=el.dataset.max<99999?el.dataset.max:'';
 }
 
 // 房型
@@ -465,12 +448,15 @@ function renderResults(rooms){
     var matchLabel=rm._score>=70?'高度匹配':rm._score>=40?'较为匹配':'基本匹配';
 
     // 图片
+    var cardImgs=[];
+    if(rm.image_url)cardImgs.push(rm.image_url);
+    if(rm.images){
+      rm.images.split(',').forEach(function(s){s=s.trim();if(s&&cardImgs.indexOf(s)===-1)cardImgs.push(s)});
+    }
     var imgHtml='<div class="rc-img">';
-    if(rm.image_url){
-      imgHtml+='<img src="'+esc(rm.image_url)+'" alt="'+esc(rm.type||'房源')+'" onerror="this.style.display=\'none\'">';
-    }else if(rm.images){
-      var imgs=rm.images.split(',').map(function(s){return s.trim()}).filter(Boolean);
-      if(imgs.length)imgHtml+='<img src="'+esc(imgs[0])+'" alt="'+esc(rm.type||'房源')+'" onerror="this.style.display=\'none\'">';
+    if(cardImgs.length){
+      imgHtml+='<img src="'+esc(cardImgs[0])+'" alt="'+esc(rm.type||'房源')+'" onerror="this.style.display=\'none\'">';
+      if(cardImgs.length>1)imgHtml+='<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.5);color:#fff;padding:2px 8px;border-radius:10px;font-size:11px">🖼️ '+cardImgs.length+'</div>';
     }else{
       imgHtml+='🏠';
     }
@@ -530,17 +516,39 @@ function showDetail(id){
   var price=rm.rent_amount||0;
   var deposit=rm.deposit||0;
 
-  // 图片
-  var imgHtml='<div class="dm-img">';
-  if(rm.image_url){
-    imgHtml+='<img src="'+esc(rm.image_url)+'" onerror="this.style.display=\'none\'">';
-  }else if(rm.images){
-    var imgs=rm.images.split(',').map(function(s){return s.trim()}).filter(Boolean);
-    if(imgs.length)imgHtml+='<img src="'+esc(imgs[0])+'" onerror="this.style.display=\'none\'">';
-  }else{
-    imgHtml+='🏠';
+  // 收集所有图片
+  var allImgs=[];
+  if(rm.image_url)allImgs.push(rm.image_url);
+  if(rm.images){
+    rm.images.split(',').forEach(function(s){
+      s=s.trim();
+      if(s&&allImgs.indexOf(s)===-1)allImgs.push(s);
+    });
   }
-  imgHtml+='</div>';
+
+  // 图片画廊
+  var imgHtml='';
+  if(allImgs.length>0){
+    imgHtml+='<div class="dm-img" style="position:relative;overflow:hidden">';
+    imgHtml+='<div id="imgGallery" style="position:relative;width:100%;height:200px">';
+    allImgs.forEach(function(src,i){
+      imgHtml+='<img src="'+esc(src)+'" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:'+(i===0?'1':'0')+';transition:opacity .3s" onerror="this.style.display=\'none\'">';
+    });
+    imgHtml+='</div>';
+    if(allImgs.length>1){
+      imgHtml+='<button style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;border:none;background:rgba(0,0,0,.4);color:#fff;font-size:16px;cursor:pointer;z-index:2" onclick="prevImg()">‹</button>';
+      imgHtml+='<button style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;border:none;background:rgba(0,0,0,.4);color:#fff;font-size:16px;cursor:pointer;z-index:2" onclick="nextImg()">›</button>';
+      imgHtml+='<div style="position:absolute;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:2">';
+      allImgs.forEach(function(src,i){
+        imgHtml+='<span class="img-dot" style="display:inline-block;width:'+(i===0?'16px':'6px')+';height:6px;border-radius:3px;background:'+(i===0?'var(--p)':'#ddd')+';transition:all .3s;cursor:pointer" onclick="goImg('+i+')"></span>';
+      });
+      imgHtml+='</div>';
+      imgHtml+='<div id="imgCounter" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.5);color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;z-index:2">1/'+allImgs.length+'</div>';
+    }
+    imgHtml+='</div>';
+  }else{
+    imgHtml='<div class="dm-img">🏠</div>';
+  }
 
   // 价格
   var priceHtml='<div class="dm-price"><span class="val">¥'+price.toLocaleString()+'</span><span class="unit">/月</span>';
@@ -623,20 +631,41 @@ init();
 
 // 地图相关
 var _detailMap=null;
+var RL_LOCATIONS={'滇弄':'24.015,97.845','勐卯':'24.010,97.855','瑞丽':'24.0127,97.849','姐告':'24.020,97.860','弄莫':'24.008,97.840','目脑':'24.005,97.850','团结':'24.018,97.842','建设路':'24.012,97.852','南拨河':'24.001,97.838','芒沙':'24.025,97.835'};
+function geocodeLocal(address){
+  for(var key in RL_LOCATIONS){
+    if(address.indexOf(key)!==-1){
+      var parts=RL_LOCATIONS[key].split(',');
+      return{lat:parseFloat(parts[0]),lon:parseFloat(parts[1])};
+    }
+  }
+  return null;
+}
 function showDetailMap(address){
   if(!address)return;
   var mapDiv=document.getElementById('detailMap');
   if(!mapDiv)return;
   if(_detailMap){_detailMap.remove();_detailMap=null}
   try{
-    // 瑞丽市中心坐标
     var center=[24.0127,97.8490];
+    // 先尝试本地地理编码
+    var local=geocodeLocal(address);
+    if(local){
+      center=[local.lat,local.lon];
+      _detailMap=L.map('detailMap',{zoomControl:false}).setView(center,16);
+      L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{
+        subdomains:'1234',maxZoom:18
+      }).addTo(_detailMap);
+      L.control.zoom({position:'bottomright'}).addTo(_detailMap);
+      L.marker(center).addTo(_detailMap).bindPopup(address).openPopup();
+      return;
+    }
     _detailMap=L.map('detailMap',{zoomControl:false}).setView(center,14);
     L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{
       subdomains:'1234',maxZoom:18
     }).addTo(_detailMap);
     L.control.zoom({position:'bottomright'}).addTo(_detailMap);
-    // 尝试地理编码
+    // Nominatim在线地理编码
     var q=encodeURIComponent(address+' 瑞丽');
     fetch('https://nominatim.openstreetmap.org/search?format=json&q='+q+'&limit=1',{headers:{'Accept-Language':'zh'}})
       .then(function(r){return r.json()})
