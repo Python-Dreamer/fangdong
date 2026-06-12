@@ -315,7 +315,7 @@ AMEN_LIST=["空调","热水器","WiFi","独卫","厨房","衣柜","洗衣机","�
 var _roomMap=null,_roomMarker=null;
 // ===== 高德地图API =====
 var AMAP_KEY='78e8b2ba0158936878e7e028174cb480'; // 填入高德Web服务API Key（免费申请：lbs.amap.com → 控制台 → 创建应用 → 添加Key → 选Web服务）
-function amapJsonp(url,cb){var cbN='_amap_'+Date.now()+'_'+Math.floor(Math.random()*1e4);window[cbN]=function(d){cb(d);delete window[cbN]};var s=document.createElement('script');s.src=url+'&callback='+cbN;s.onerror=function(){delete window[cbN];cb(null);s.remove()};document.head.appendChild(s)}
+function amapJsonp(url,cb){var cbN='_amap_'+Date.now()+'_'+Math.floor(Math.random()*1e4);var s=document.createElement('script');window[cbN]=function(d){cb(d);delete window[cbN];s.remove()};s.src=url+'&callback='+cbN;s.onerror=function(){delete window[cbN];cb(null);s.remove()};document.head.appendChild(s)}
 function amapSearchLoc(q,cb){
   if(!AMAP_KEY){cb(null);return}
   amapJsonp('https://restapi.amap.com/v3/assistant/inputtips?key='+AMAP_KEY+'&keywords='+encodeURIComponent(q)+'&city=德宏&citylimit=true&datatype=poi',cb);
@@ -330,18 +330,19 @@ var _locResults=[],_locSearchTimer=null,_locDDOpen=false;
 function addMapPicker(lat,lng){
   var mb=document.querySelector('.m-bd');if(!mb)return;
   var sec=document.createElement('div');sec.className='fg';sec.id='mapPickerSection';
-  sec.innerHTML='<label>📍 精确定位</label><div style="position:relative"><input class="fc" id="fLocSearch" placeholder="搜索地址/地点..." autocomplete="off" oninput="filterLocOptions()" onfocus="this.select();showLocDropdown()"><div id="locDropdown" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--bd);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:50;max-height:220px;overflow-y:auto;display:none;margin-top:4px"></div></div><input type="hidden" id="fRLat" value=""><input type="hidden" id="fRLng" value=""><div id="locMapPreview" style="width:100%;height:150px;border-radius:8px;overflow:hidden;border:1.5px solid var(--bd);margin-top:8px;display:none"></div><div id="locSelectedInfo" style="font-size:12px;color:var(--g);margin-top:4px;display:none">✅ 已选择位置</div>';
+  sec.innerHTML='<label>📍 精确定位</label><div style="position:relative"><input class="fc" id="fLocSearch" placeholder="搜索地址/地点..." autocomplete="off" oninput="filterLocOptions()" onfocus="onFocusLocSearch()"><div id="locDropdown" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--bd);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:50;max-height:220px;overflow-y:auto;display:none;margin-top:4px"></div></div><input type="hidden" id="fRLat" value=""><input type="hidden" id="fRLng" value=""><div id="locMapPreview" style="width:100%;height:150px;border-radius:8px;overflow:hidden;border:1.5px solid var(--bd);margin-top:8px;display:none"></div><div id="locSelectedInfo" style="font-size:12px;color:var(--g);margin-top:4px;display:none">✅ 已选择位置</div>';
   mb.appendChild(sec);
   if(lat)document.getElementById('fRLat').value=lat;
   if(lng)document.getElementById('fRLng').value=lng;
   if(lat&&lng){document.getElementById('fLocSearch').value='已设置定位';showLocMapPreview(parseFloat(lat),parseFloat(lng))}
 }
+function onFocusLocSearch(){var inp=document.getElementById('fLocSearch');if(!inp)return;if(inp.value.indexOf('\u{1F4CD}')===0||inp.value==='已设置定位'){inp.value='';document.getElementById('fRLat').value='';document.getElementById('fRLng').value='';var mp=document.getElementById('locMapPreview');if(mp)mp.style.display='none';var info=document.getElementById('locSelectedInfo');if(info)info.style.display='none'}showLocDropdown()}
 function showLocDropdown(){_locDDOpen=true;document.getElementById('locDropdown').style.display='block'}
 function hideLocDropdown(){_locDDOpen=false;var dd=document.getElementById('locDropdown');if(dd)dd.style.display='none'}
 document.addEventListener('click',function(e){if(!_locDDOpen)return;var dd=document.getElementById('locDropdown'),inp=document.getElementById('fLocSearch');if(dd&&inp&&!dd.contains(e.target)&&e.target!==inp)hideLocDropdown()});
 function filterLocOptions(){
   var q=document.getElementById('fLocSearch').value.trim();
-  var sq=q.indexOf('\u{1F4CD}')===0?'':q;
+  var sq=q.indexOf('\u{1F4CD}')===0?q.replace(/\u{1F4CD}\s*/,'').trim():q;
   _locResults=[];
   var dd=document.getElementById('locDropdown');
   if(!sq){dd.style.display='none';return}
