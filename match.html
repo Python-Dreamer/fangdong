@@ -58,7 +58,7 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
 .room-card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:12px;overflow:hidden;transition:transform .15s;cursor:pointer}
 .room-card:active{transform:scale(.985)}
 .rc-img{width:100%;height:160px;background:linear-gradient(135deg,#e0e7ff,#c7d2fe);display:flex;align-items:center;justify-content:center;font-size:40px;position:relative}
-.rc-img img{width:100%;height:100%;object-fit:cover}
+.rc-img img{width:100%;height:100%;object-fit:cover;background:#e0e7ff}
 .rc-img .price-tag{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.65);color:#fff;padding:4px 10px;border-radius:6px;font-size:14px;font-weight:700}
 .rc-img .price-tag small{font-size:10px;font-weight:400;opacity:.8}
 .rc-body{padding:14px}
@@ -74,6 +74,7 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
 .rt-loc{background:#f0fdf4;color:var(--g)}
 .rt-area{background:#fef3c7;color:var(--w)}
 .rt-floor{background:#f0f9ff;color:#0284c7}
+.rt-dist{background:#fef2f2;color:#ef4444;font-weight:600}
 .rc-amenities{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
 .amenity{font-size:11px;color:var(--ts);display:flex;align-items:center;gap:2px}
 .rc-desc{font-size:12px;color:var(--ts);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -161,7 +162,10 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
     <!-- 区域 -->
     <div class="fg">
       <label>区域/位置</label>
-      <select id="fArea"><option value="">全部区域</option></select>
+      <div style="display:flex;gap:8px">
+        <select id="fArea" style="flex:1"><option value="">全部区域</option><option value="nearby">📍 附近优先</option></select>
+        <button id="btnLocate" type="button" onclick="doLocate()" style="padding:9px 12px;border:1.5px solid var(--bd);border-radius:8px;background:#fff;font-size:13px;cursor:pointer;white-space:nowrap;transition:all .2s">📍定位</button>
+      </div>
     </div>
 
     <!-- 房型 -->
@@ -266,8 +270,77 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
 var SB_URL='https://eszdbwmazsdltngrjjkm.supabase.co';
 var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzemRid21henNkbHRuZ3JqamttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4Mjc5MTMsImV4cCI6MjA5NTQwMzkxM30.VWZg_O4TheXudhdgUMEPoQRAjyEic95vber3FxnxTss';
 var sb,allRooms=[];
+var _userLat=null,_userLon=null; // 用户GPS坐标
 
 var AMEN_ICONS={'空调':'❄️','热水器':'🚿','WiFi':'📶','独卫':'🚽','厨房':'🍳','衣柜':'🗄️','洗衣机':'🫧','冰箱':'🧊','阳台':'🌅','停车位':'🅿️','智能锁':'🔐','桌椅':'🪑','电视':'📺','窗帘':'🪟'};
+
+// 瑞丽本地地理编码（精确到社区/村寨级别）
+var RL_LOCATIONS={'滇弄':'24.015,97.845','勐卯':'24.010,97.855','瑞丽':'24.0127,97.849','姐告':'24.020,97.860','弄莫':'24.008,97.840','目脑':'24.005,97.850','团结':'24.018,97.842','建设路':'24.012,97.852','南拨河':'24.001,97.838','芒沙':'24.025,97.835','祥和':'24.013,97.847','禾峻':'24.018,97.840','华丰':'24.009,97.853','边贸街':'24.016,97.858','人民路':'24.011,97.850','目瑙路':'24.006,97.849','勐龙':'24.030,97.820','弄岛':'24.001,97.800','畹町':'24.086,97.970'};
+function geocodeLocal(address){
+  for(var key in RL_LOCATIONS){
+    if(address.indexOf(key)!==-1){
+      var parts=RL_LOCATIONS[key].split(',');
+      return{lat:parseFloat(parts[0]),lon:parseFloat(parts[1])};
+    }
+  }
+  return null;
+}
+
+// 图片缩略图URL（Supabase Storage图片缩小展示，提速）
+function thumbUrl(url){
+  if(!url)return url;
+  // Supabase Storage URL转缩略图
+  if(url.indexOf('/storage/v1/object/public/')!==-1){
+    return url.replace('/storage/v1/object/public/','/storage/v1/render/image/public/')+'?width=400&quality=60';
+  }
+  return url;
+}
+
+// 计算两点距离(km) Haversine公式
+function calcDist(lat1,lon1,lat2,lon2){
+  var R=6371;
+  var dLat=(lat2-lat1)*Math.PI/180;
+  var dLon=(lon2-lon1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// 格式化距离显示
+function fmtDist(km){
+  if(km<1)return Math.round(km*1000)+'m';
+  return km.toFixed(1)+'km';
+}
+
+// GPS定位
+function doLocate(){
+  var btn=document.getElementById('btnLocate');
+  if(!navigator.geolocation){
+    btn.textContent='❌不支持';return;
+  }
+  btn.textContent='定位中...';btn.disabled=true;
+  navigator.geolocation.getCurrentPosition(function(pos){
+    _userLat=pos.coords.latitude;
+    _userLon=pos.coords.longitude;
+    btn.textContent='✅已定位';
+    btn.style.borderColor='var(--g)';btn.style.color='var(--g)';
+    // 给每个房间计算距离
+    allRooms.forEach(function(rm){
+      if(rm._lat!=null&&rm._lon!=null){
+        rm._dist=calcDist(_userLat,_userLon,rm._lat,rm._lon);
+      }else{
+        rm._dist=null;
+      }
+    });
+    // 自动选"附近优先"并搜索
+    document.getElementById('fArea').value='nearby';
+    doSearch();
+  },function(err){
+    btn.textContent='📍定位';
+    btn.disabled=false;
+    if(err.code===1)alert('请允许位置权限后再试');
+    else alert('定位失败，请检查GPS是否开启');
+  },{enableHighAccuracy:true,timeout:8000,maximumAge:60000});
+}
 
 // 初始化
 async function init(){
@@ -295,7 +368,14 @@ async function loadRooms(){
   }else{
     allRooms=r.data||[];
   }
-  allRooms.forEach(function(rm){rm._score=0});
+  allRooms.forEach(function(rm){rm._score=0;rm._dist=null;
+    // 本地地理编码，给每个房间预计算坐标
+    if(rm.address){
+      var loc=geocodeLocal(rm.address);
+      if(loc){rm._lat=loc.lat;rm._lon=loc.lon}
+      else{rm._lat=null;rm._lon=null}
+    }else{rm._lat=null;rm._lon=null}
+  });
   // 如果有房源，初始显示全部
   if(allRooms.length){
     renderResults(allRooms);
@@ -346,6 +426,7 @@ function doSearch(){
   var minP=parseInt(document.getElementById('fMinPrice').value)||0;
   var maxP=parseInt(document.getElementById('fMaxPrice').value)||99999;
   var area=document.getElementById('fArea').value;
+  var isNearby=area==='nearby';
   var typeEl=document.querySelector('#typeTags .tag.on');
   var type=typeEl?typeEl.dataset.val:'';
   var payMethod=document.getElementById('fPayMethod').value;
@@ -361,7 +442,10 @@ function doSearch(){
     // 价格
     if(price<minP||price>maxP)return false;
     // 区域
-    if(area&&(!rm.address||!rm.address.includes(area)))return false;
+    if(isNearby){
+      if(!_userLat||!_userLon)return false; // 未定位则不筛
+      if(rm._dist===null)return false; // 没坐标的房源不在附近
+    }else if(area&&(!rm.address||!rm.address.includes(area)))return false;
     // 房型
     if(type&&rm.type!==type)return false;
     // 付款方式
@@ -430,7 +514,12 @@ function doSearch(){
     rm._score=total>0?Math.round(score):60; // 无筛选条件时给默认分
   });
 
-  rooms.sort(function(a,b){return b._score-a._score});
+  // 附近模式按距离排序，其他按匹配度
+  if(isNearby&&_userLat){
+    rooms.sort(function(a,b){return(a._dist||999)-(b._dist||999)});
+  }else{
+    rooms.sort(function(a,b){return b._score-a._score});
+  }
   renderResults(rooms);
 }
 
@@ -455,7 +544,7 @@ function renderResults(rooms){
     }
     var imgHtml='<div class="rc-img">';
     if(cardImgs.length){
-      imgHtml+='<img src="'+esc(cardImgs[0])+'" alt="'+esc(rm.type||'房源')+'" onerror="this.style.display=\'none\'">';
+      imgHtml+='<img src="'+esc(thumbUrl(cardImgs[0]))+'" alt="'+esc(rm.type||'房源')+'" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">';
       if(cardImgs.length>1)imgHtml+='<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.5);color:#fff;padding:2px 8px;border-radius:10px;font-size:11px">🖼️ '+cardImgs.length+'</div>';
     }else{
       imgHtml+='🏠';
@@ -465,6 +554,7 @@ function renderResults(rooms){
     // 标签
     var tagsHtml='<div class="rc-tags">';
     if(rm.type)tagsHtml+='<span class="rt rt-type">'+esc(rm.type)+'</span>';
+    if(rm._dist!=null&&_userLat)tagsHtml+='<span class="rt rt-dist">📍 距你'+fmtDist(rm._dist)+'</span>';
     if(rm.address)tagsHtml+='<span class="rt rt-loc">📍 '+esc(rm.address)+'</span>';
     if(rm.area)tagsHtml+='<span class="rt rt-area">'+esc(rm.area)+'m²</span>';
     if(rm.floor)tagsHtml+='<span class="rt rt-floor">🏢 '+esc(rm.floor)+'层</span>';
@@ -532,7 +622,7 @@ function showDetail(id){
     imgHtml+='<div class="dm-img" style="position:relative;overflow:hidden">';
     imgHtml+='<div id="imgGallery" style="position:relative;width:100%;height:200px">';
     allImgs.forEach(function(src,i){
-      imgHtml+='<img src="'+esc(src)+'" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:'+(i===0?'1':'0')+';transition:opacity .3s" onerror="this.style.display=\'none\'">';
+      imgHtml+='<img src="'+esc(thumbUrl(src))+'" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:'+(i===0?'1':'0')+';transition:opacity .3s" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">';
     });
     imgHtml+='</div>';
     if(allImgs.length>1){
@@ -631,16 +721,6 @@ init();
 
 // 地图相关
 var _detailMap=null;
-var RL_LOCATIONS={'滇弄':'24.015,97.845','勐卯':'24.010,97.855','瑞丽':'24.0127,97.849','姐告':'24.020,97.860','弄莫':'24.008,97.840','目脑':'24.005,97.850','团结':'24.018,97.842','建设路':'24.012,97.852','南拨河':'24.001,97.838','芒沙':'24.025,97.835'};
-function geocodeLocal(address){
-  for(var key in RL_LOCATIONS){
-    if(address.indexOf(key)!==-1){
-      var parts=RL_LOCATIONS[key].split(',');
-      return{lat:parseFloat(parts[0]),lon:parseFloat(parts[1])};
-    }
-  }
-  return null;
-}
 function showDetailMap(address){
   if(!address)return;
   var mapDiv=document.getElementById('detailMap');
