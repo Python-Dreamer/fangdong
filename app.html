@@ -220,7 +220,7 @@ function toast(msg,type){type=type||'s';var cls={s:'t-s',e:'t-e',w:'t-w',i:'t-i'
 
 // ========== 弹窗与确认 ==========
 function openModal(html){document.getElementById('modal').innerHTML=html;document.getElementById('overlay').classList.add('show')}
-function closeModal(){document.getElementById('overlay').classList.remove('show');if(_roomMap){_roomMap.remove();_roomMap=null;_roomMarker=null}}
+function closeModal(){document.getElementById('overlay').classList.remove('show');if(_roomMap){_roomMap.remove();_roomMap=null;_roomMarker=null}_locResults=[];clearTimeout(_locSearchTimer)}
 function confirmDialog(msg,sub,onOk){openModal('<div class="cf-wrap"><div class="cf-ico">⚠️</div><div class="cf-msg">'+esc(msg)+'</div><div class="cf-sub">'+esc(sub||'')+'</div><div class="cf-btns"><button class="btn btn-gh" onclick="closeModal()" style="padding:9px 18px">取消</button><button class="btn btn-d" id="cfOk" style="padding:9px 18px">确认</button></div></div>');document.getElementById('cfOk').onclick=function(){closeModal();onOk()}}
 
 // ========== 认证相关 ==========
@@ -313,31 +313,87 @@ function syncImgInput(mode){var c=document.getElementById('imgPreview'+mode);if(
 function loadImgPreview(mode,imagesStr){var c=document.getElementById('imgPreview'+mode);if(!c)return;c.innerHTML='';if(!imagesStr)return;imagesStr.split(',').forEach(function(url){url=url.trim();if(url)appendImgPreview(mode,url)})}
 AMEN_LIST=["空调","热水器","WiFi","独卫","厨房","衣柜","洗衣机","冰箱","阳台","停车位","智能锁","桌椅","电视","窗帘"];var AMEN_ICONS={"空调":"❄️","热水器":"🚿","WiFi":"📶","独卫":"🚽","厨房":"🍳","衣柜":"🗄️","洗衣机":"🫧","冰箱":"🧊","阳台":"🌅","停车位":"🅿️","智能锁":"🔐","桌椅":"🪑","电视":"📺","窗帘":"🪟"};function initAmenCheck(cid,selStr){var c=document.getElementById(cid);if(!c)return;var sel=(selStr||"").split(",").map(function(s){return s.trim()});c.innerHTML=AMEN_LIST.map(function(a){var isOn=sel.indexOf(a)!==-1;return '<span class="amem-tag'+(isOn?' on':'')+'" data-val="'+a+'" onclick="this.classList.toggle(\'on\')">'+(AMEN_ICONS[a]||'')+' '+a+'</span>'}).join('')}function getAmenities(cid){var tags=document.querySelectorAll('#'+cid+' .amem-tag.on');return Array.from(tags).map(function(t){return t.dataset.val}).join(',')||''}
 var _roomMap=null,_roomMarker=null;
+var RL_LOCATIONS={'滇弄':'24.015,97.845','勐卯':'24.010,97.855','瑞丽':'24.0127,97.849','姐告':'24.020,97.860','弄莫':'24.008,97.840','目脑':'24.005,97.850','团结':'24.018,97.842','建设路':'24.012,97.852','南拨河':'24.001,97.838','芒沙':'24.025,97.835','祥和':'24.013,97.847','禾峻':'24.018,97.840','华丰':'24.009,97.853','边贸街':'24.016,97.858','人民路':'24.011,97.850','目瑙路':'24.006,97.849','勐龙':'24.030,97.820','弄岛':'24.001,97.800','畹町':'24.086,97.970','滇弄二社':'24.014,97.846'};
+var _locResults=[],_locSearchTimer=null;
 function addMapPicker(lat,lng){
   var mb=document.querySelector('.m-bd');if(!mb)return;
   var sec=document.createElement('div');sec.className='fg';sec.id='mapPickerSection';
-  sec.innerHTML='<label>📍 精确定位（点击地图标记位置）</label><div id="roomMapPicker" style="width:100%;height:180px;border-radius:8px;overflow:hidden;border:1.5px solid var(--bd);margin-top:5px"></div><input type="hidden" id="fRLat" value=""><input type="hidden" id="fRLng" value=""><div style="font-size:11px;color:var(--ts);margin-top:4px">👆 点击地图设置房源精确位置，让租客准确定位</div>';
+  sec.innerHTML='<label>📍 精确定位</label><div style="position:relative"><input class="fc" id="fLocSearch" placeholder="搜索地址/地点..." autocomplete="off" oninput="filterLocOptions()" onfocus="this.select();showLocDropdown()" onblur="hideLocDropdown()"><div id="locDropdown" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--bd);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:50;max-height:220px;overflow-y:auto;display:none;margin-top:4px"></div></div><input type="hidden" id="fRLat" value=""><input type="hidden" id="fRLng" value=""><div id="locMapPreview" style="width:100%;height:150px;border-radius:8px;overflow:hidden;border:1.5px solid var(--bd);margin-top:8px;display:none"></div><div id="locSelectedInfo" style="font-size:12px;color:var(--g);margin-top:4px;display:none">✅ 已选择位置</div>';
   mb.appendChild(sec);
   if(lat)document.getElementById('fRLat').value=lat;
   if(lng)document.getElementById('fRLng').value=lng;
-  setTimeout(function(){
-    var center=lat&&lng?[parseFloat(lat),parseFloat(lng)]:[24.0127,97.8490];
-    var zoom=lat&&lng?16:14;
-    _roomMap=L.map('roomMapPicker',{zoomControl:false}).setView(center,zoom);
+  if(lat&&lng){document.getElementById('fLocSearch').value='已设置定位';showLocMapPreview(parseFloat(lat),parseFloat(lng))}
+  setTimeout(function(){renderLocOptions('')},100);
+}
+function showLocDropdown(){document.getElementById('locDropdown').style.display='block'}
+function hideLocDropdown(){setTimeout(function(){var dd=document.getElementById('locDropdown');if(dd)dd.style.display='none'},200)}
+function filterLocOptions(){
+  var q=document.getElementById('fLocSearch').value.trim();
+  var sq=q.indexOf('\u{1F4CD}')===0?'':q;
+  renderLocOptions(sq);
+  document.getElementById('locDropdown').style.display='block';
+  clearTimeout(_locSearchTimer);
+  if(sq.length>=2)_locSearchTimer=setTimeout(function(){searchNominatim(sq)},600);
+}
+function renderLocOptions(query){
+  var dd=document.getElementById('locDropdown');if(!dd)return;
+  _locResults=[];
+  var html='';
+  var keys=Object.keys(RL_LOCATIONS);
+  if(query)keys=keys.filter(function(k){return k.indexOf(query)!==-1});
+  keys.sort().forEach(function(key){
+    var coords=RL_LOCATIONS[key].split(',');
+    var idx=_locResults.length;
+    _locResults.push({name:key,lat:parseFloat(coords[0]),lng:parseFloat(coords[1])});
+    html+='<div style="padding:9px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px" onmouseover="this.style.background=\'#f5f7fa\'" onmouseout="this.style.background=\'\'" onmousedown="selectLocIdx('+idx+')"><span style="font-size:14px">🏘️</span><span style="flex:1">'+esc(key)+'</span></div>';
+  });
+  if(!keys.length&&query){
+    html+='<div id="nominatimLoading" style="padding:9px 12px;font-size:13px;color:var(--ts)">🔍 搜索中...</div>';
+  }else if(!keys.length){
+    html+='<div style="padding:9px 12px;font-size:13px;color:var(--ts)">输入关键词搜索地点</div>';
+  }
+  dd.innerHTML=html;
+}
+function selectLocIdx(idx){var loc=_locResults[idx];if(!loc)return;selectLocOption(loc.name,loc.lat,loc.lng)}
+function selectLocOption(name,lat,lng){
+  document.getElementById('fRLat').value=lat;
+  document.getElementById('fRLng').value=lng;
+  document.getElementById('fLocSearch').value='📍 '+name;
+  hideLocDropdown();
+  showLocMapPreview(lat,lng);
+  var info=document.getElementById('locSelectedInfo');if(info)info.style.display='block';
+}
+function showLocMapPreview(lat,lng){
+  var mapDiv=document.getElementById('locMapPreview');if(!mapDiv)return;
+  mapDiv.style.display='block';
+  if(_roomMap){_roomMap.remove();_roomMap=null;_roomMarker=null}
+  try{
+    _roomMap=L.map('locMapPreview',{zoomControl:false}).setView([lat,lng],16);
     L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:18}).addTo(_roomMap);
     L.control.zoom({position:'bottomright'}).addTo(_roomMap);
-    if(lat&&lng){
-      _roomMarker=L.marker(center).addTo(_roomMap);
-    }
-    _roomMap.on('click',function(e){
-      var latlng=e.latlng;
-      document.getElementById('fRLat').value=latlng.lat.toFixed(6);
-      document.getElementById('fRLng').value=latlng.lng.toFixed(6);
-      if(_roomMarker){_roomMarker.setLatLng(latlng)}
-      else{_roomMarker=L.marker(latlng).addTo(_roomMap)}
-    });
-    _roomMap.invalidateSize();
-  },300);
+    _roomMarker=L.marker([lat,lng]).addTo(_roomMap);
+    setTimeout(function(){if(_roomMap)_roomMap.invalidateSize()},100);
+  }catch(e){}
+}
+function searchNominatim(q){
+  fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q+' 瑞丽')+'&limit=5',{headers:{'Accept-Language':'zh'}})
+    .then(function(r){return r.json()})
+    .then(function(data){
+      var dd=document.getElementById('locDropdown');
+      if(!dd||dd.style.display==='none')return;
+      var loading=document.getElementById('nominatimLoading');if(loading)loading.remove();
+      if(!data||!data.length)return;
+      var html='';
+      data.forEach(function(item){
+        var name=item.display_name.split(',')[0];
+        var lat=parseFloat(item.lat).toFixed(6);
+        var lng=parseFloat(item.lon).toFixed(6);
+        var idx=_locResults.length;
+        _locResults.push({name:name,lat:parseFloat(lat),lng:parseFloat(lng)});
+        html+='<div style="padding:9px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;border-top:1px solid var(--bd)" onmouseover="this.style.background=\'#f5f7fa\'" onmouseout="this.style.background=\'\'" onmousedown="selectLocIdx('+idx+')"><span style="font-size:14px">📍</span><span style="flex:1">'+esc(name)+'</span></div>';
+      });
+      dd.insertAdjacentHTML('beforeend',html);
+    }).catch(function(){});
 }
 function showAddRoom(){if(!canEdit()){toast('只读权限','w');return}openModal('<div class="m-hd"><h3>添加房源</h3><button class="m-x" onclick="closeModal()">×</button></div><div class="m-bd"><div class="fg"><label>房源名称<span class="req">*</span></label><input class="fc" id="fRN" placeholder="如：阳光小区1号楼201"></div><div class="fg"><label>地址</label><input class="fc" id="fRA" placeholder="详细地址"></div><div class="fr"><div class="fg"><label>房型</label><select class="fc" id="fRTy" autocomplete="off" data-lpignore="true"><option value="">选择</option><option>一室一厅</option><option>两室一厅</option><option>三室一厅</option><option>四室及以上</option><option>单间</option><option>复式</option><option>其他</option></select></div><div class="fg"><label>面积(㎡)</label><input class="fc" id="fRAr" type="number" placeholder="建筑面积"></div></div><div class="fr"><div class="fg"><label>月租金(元)</label><input class="fc" id="fRRe" type="number" placeholder="租金"></div><div class="fg"><label>状态</label><select class="fc" id="fRSt" autocomplete="off" data-lpignore="true"><option value="vacant">空置</option><option value="occupied">入住</option></select></div></div><div class="fg"><label>备注</label><textarea class="fc" id="fRNo" placeholder="备注信息"></textarea></div><div class="fg"><div class="s-item"><div><h4>上架到找房平台</h4><p>空置房源上架后，租客可在瑞丽找房页看到</p></div><button class="tgl on" id="fRListed" onclick="this.classList.toggle(\'on\')">上架</button></div></div><div class="fg"><label>对外联系方式</label><input class="fc" id="fRContact" placeholder="如：微信xxx 或 手机号"></div><div style="border-top:1px dashed var(--bd);margin:12px 0;padding-top:12px"><div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--p)">🏠 租房平台展示信息</div><div class="fr"><div class="fg"><label>楼层</label><input class="fc" id="fRFloor" type="number" placeholder="几楼"></div><div class="fg"><label>押金(元)</label><input class="fc" id="fRDeposit" type="number" placeholder="押金金额"></div><div class="fg"><label>付款方式</label><select class="fc" id="fRPayMethod" autocomplete="off" data-lpignore="true"><option value="月付">月付</option><option value="季付">季付</option><option value="半年付">半年付</option><option value="年付">年付</option></select></div></div><div class="fg"><label>房屋配置（有就勾选）</label><div class="amem-tags" id="amenCheckAdd"></div></div><div class="fg"><label>房间图片</label><div id="imgPreviewAdd" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px"></div><div style="display:flex;gap:8px;align-items:center"><input type="hidden" id="fRImages"><label class="btn btn-gh" style="padding:4px 10px;font-size:12px;cursor:pointer">📷拍照/选图<input type="file" accept="image/*" style="display:none" onchange="handlePhotoInput(this,&#39;Add&#39;)"></label></div></div></div></div><div class="m-ft"><button class="btn btn-gh" onclick="closeModal()">取消</button><button class="btn btn-p" id="saveRoomBtn" onclick="doAddRoom()">保存</button></div>');initAmenCheck('amenCheckAdd','');loadImgPreview('Add','');if(_roomMap){_roomMap.remove();_roomMap=null;_roomMarker=null}addMapPicker(null,null)}
 
