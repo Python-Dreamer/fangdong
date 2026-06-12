@@ -295,7 +295,7 @@ var _selectedAreaType=''; // 'nearby'|'area'|''
 var AMEN_ICONS={'空调':'❄️','热水器':'🚿','WiFi':'📶','独卫':'🚽','厨房':'🍳','衣柜':'🗄️','洗衣机':'🫧','冰箱':'🧊','阳台':'🌅','停车位':'🅿️','智能锁':'🔐','桌椅':'🪑','电视':'📺','窗帘':'🪟'};
 
 // 瑞丽本地地理编码
-var RL_LOCATIONS={'滇弄':'24.015,97.845','勐卯':'24.010,97.855','瑞丽':'24.0127,97.849','姐告':'24.020,97.860','弄莫':'24.008,97.840','目脑':'24.005,97.850','团结':'24.018,97.842','建设路':'24.012,97.852','南拨河':'24.001,97.838','芒沙':'24.025,97.835','祥和':'24.013,97.847','禾峻':'24.018,97.840','华丰':'24.009,97.853','边贸街':'24.016,97.858','人民路':'24.011,97.850','目瑙路':'24.006,97.849','勐龙':'24.030,97.820','弄岛':'24.001,97.800','畹町':'24.086,97.970','滇弄二社':'24.014,97.846'};
+var RL_LOCATIONS={'滇弄':'24.015,97.845','勐卯':'24.010,97.855','瑞丽':'24.0127,97.849','姐告':'24.020,97.860','弄莫':'24.008,97.840','目脑':'24.005,97.850','团结':'24.018,97.842','建设路':'24.012,97.852','南拨河':'24.001,97.838','芒沙':'24.025,97.835','祥和':'24.013,97.847','禾峻':'24.018,97.840','华丰':'24.009,97.853','边贸街':'24.016,97.858','人民路':'24.011,97.850','目瑙路':'24.006,97.849','勐龙':'24.030,97.820','弄岛':'24.001,97.800','畹町':'24.086,97.970','滇弄二社':'24.014,97.846','瑞丽市区':'24.0127,97.849','姐告口岸':'24.022,97.862','弄莫湖':'24.008,97.840','勐卯古镇':'24.010,97.855','瑞丽火车站':'24.025,97.835','南坎':'23.998,97.830','广拉':'24.005,97.845','喊沙':'24.020,97.838','允井':'24.008,97.835','瑞丽农场':'24.015,97.830','勐秀':'24.035,97.810','户育':'24.040,97.825','等嘎':'24.018,97.865','莫里':'24.045,97.790','班养':'24.010,97.860','瑞丽江':'24.010,97.845','友谊路':'24.013,97.851','边防路':'24.015,97.856'};
 
 function geocodeLocal(address){
   // 按名称长度降序匹配，优先精确匹配
@@ -802,15 +802,17 @@ function showDetailMap(rm){
     L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:18}).addTo(_detailMap);
     L.control.zoom({position:'bottomright'}).addTo(_detailMap);
     var q=encodeURIComponent((rm.address||'')+' 瑞丽');
-    fetch('https://nominatim.openstreetmap.org/search?format=json&q='+q+'&limit=1',{headers:{'Accept-Language':'zh'}})
-      .then(function(r){return r.json()})
+    var ctrl2=new AbortController();
+    var tid2=setTimeout(function(){ctrl2.abort()},8000);
+    fetch('https://nominatim.openstreetmap.org/search?format=json&q='+q+'&limit=1',{headers:{'Accept-Language':'zh'},signal:ctrl2.signal})
+      .then(function(r){clearTimeout(tid2);return r.json()})
       .then(function(data){
         if(data&&data.length>0){
           var lat=parseFloat(data[0].lat),lon=parseFloat(data[0].lon);
           _detailMap.setView([lat,lon],16);
           L.marker([lat,lon]).addTo(_detailMap).bindPopup(rm.address).openPopup();
         }else{L.marker(center).addTo(_detailMap).bindPopup(rm.address||'').openPopup()}
-      }).catch(function(){L.marker(center).addTo(_detailMap).bindPopup(rm.address||'').openPopup()});
+      }).catch(function(){clearTimeout(tid2);L.marker(center).addTo(_detailMap).bindPopup(rm.address||'').openPopup()});
   }catch(e){}
 }
 </script>

@@ -313,7 +313,7 @@ function syncImgInput(mode){var c=document.getElementById('imgPreview'+mode);if(
 function loadImgPreview(mode,imagesStr){var c=document.getElementById('imgPreview'+mode);if(!c)return;c.innerHTML='';if(!imagesStr)return;imagesStr.split(',').forEach(function(url){url=url.trim();if(url)appendImgPreview(mode,url)})}
 AMEN_LIST=["空调","热水器","WiFi","独卫","厨房","衣柜","洗衣机","冰箱","阳台","停车位","智能锁","桌椅","电视","窗帘"];var AMEN_ICONS={"空调":"❄️","热水器":"🚿","WiFi":"📶","独卫":"🚽","厨房":"🍳","衣柜":"🗄️","洗衣机":"🫧","冰箱":"🧊","阳台":"🌅","停车位":"🅿️","智能锁":"🔐","桌椅":"🪑","电视":"📺","窗帘":"🪟"};function initAmenCheck(cid,selStr){var c=document.getElementById(cid);if(!c)return;var sel=(selStr||"").split(",").map(function(s){return s.trim()});c.innerHTML=AMEN_LIST.map(function(a){var isOn=sel.indexOf(a)!==-1;return '<span class="amem-tag'+(isOn?' on':'')+'" data-val="'+a+'" onclick="this.classList.toggle(\'on\')">'+(AMEN_ICONS[a]||'')+' '+a+'</span>'}).join('')}function getAmenities(cid){var tags=document.querySelectorAll('#'+cid+' .amem-tag.on');return Array.from(tags).map(function(t){return t.dataset.val}).join(',')||''}
 var _roomMap=null,_roomMarker=null;
-var RL_LOCATIONS={'滇弄':'24.015,97.845','勐卯':'24.010,97.855','瑞丽':'24.0127,97.849','姐告':'24.020,97.860','弄莫':'24.008,97.840','目脑':'24.005,97.850','团结':'24.018,97.842','建设路':'24.012,97.852','南拨河':'24.001,97.838','芒沙':'24.025,97.835','祥和':'24.013,97.847','禾峻':'24.018,97.840','华丰':'24.009,97.853','边贸街':'24.016,97.858','人民路':'24.011,97.850','目瑙路':'24.006,97.849','勐龙':'24.030,97.820','弄岛':'24.001,97.800','畹町':'24.086,97.970','滇弄二社':'24.014,97.846'};
+var RL_LOCATIONS={'滇弄':'24.015,97.845','勐卯':'24.010,97.855','瑞丽':'24.0127,97.849','姐告':'24.020,97.860','弄莫':'24.008,97.840','目脑':'24.005,97.850','团结':'24.018,97.842','建设路':'24.012,97.852','南拨河':'24.001,97.838','芒沙':'24.025,97.835','祥和':'24.013,97.847','禾峻':'24.018,97.840','华丰':'24.009,97.853','边贸街':'24.016,97.858','人民路':'24.011,97.850','目瑙路':'24.006,97.849','勐龙':'24.030,97.820','弄岛':'24.001,97.800','畹町':'24.086,97.970','滇弄二社':'24.014,97.846','瑞丽市区':'24.0127,97.849','姐告口岸':'24.022,97.862','弄莫湖':'24.008,97.840','勐卯古镇':'24.010,97.855','瑞丽火车站':'24.025,97.835','南坎':'23.998,97.830','广拉':'24.005,97.845','喊沙':'24.020,97.838','允井':'24.008,97.835','瑞丽农场':'24.015,97.830','勐秀':'24.035,97.810','户育':'24.040,97.825','等嘎':'24.018,97.865','莫里':'24.045,97.790','班养':'24.010,97.860','瑞丽江':'24.010,97.845','友谊路':'24.013,97.851','边防路':'24.015,97.856'};
 var _locResults=[],_locSearchTimer=null;
 function addMapPicker(lat,lng){
   var mb=document.querySelector('.m-bd');if(!mb)return;
@@ -348,7 +348,7 @@ function renderLocOptions(query){
     html+='<div style="padding:9px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px" onmouseover="this.style.background=\'#f5f7fa\'" onmouseout="this.style.background=\'\'" onmousedown="selectLocIdx('+idx+')"><span style="font-size:14px">🏘️</span><span style="flex:1">'+esc(key)+'</span></div>';
   });
   if(!keys.length&&query){
-    html+='<div id="nominatimLoading" style="padding:9px 12px;font-size:13px;color:var(--ts)">🔍 搜索中...</div>';
+    html+='<div id="nominatimLoading" style="padding:9px 12px;font-size:13px;color:var(--ts)">🔍 正在搜索在线地址...</div>';
   }else if(!keys.length){
     html+='<div style="padding:9px 12px;font-size:13px;color:var(--ts)">输入关键词搜索地点</div>';
   }
@@ -376,13 +376,18 @@ function showLocMapPreview(lat,lng){
   }catch(e){}
 }
 function searchNominatim(q){
-  fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q+' 瑞丽')+'&limit=5',{headers:{'Accept-Language':'zh'}})
-    .then(function(r){return r.json()})
+  var ctrl=new AbortController();
+  var tid=setTimeout(function(){ctrl.abort()},8000);
+  fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q+' 瑞丽')+'&limit=5',{headers:{'Accept-Language':'zh'},signal:ctrl.signal})
+    .then(function(r){clearTimeout(tid);return r.json()})
     .then(function(data){
       var dd=document.getElementById('locDropdown');
       if(!dd||dd.style.display==='none')return;
       var loading=document.getElementById('nominatimLoading');if(loading)loading.remove();
-      if(!data||!data.length)return;
+      if(!data||!data.length){
+        dd.insertAdjacentHTML('beforeend','<div style="padding:9px 12px;font-size:13px;color:var(--ts)">未找到匹配地点，请尝试其他关键词</div>');
+        return;
+      }
       var html='';
       data.forEach(function(item){
         var name=item.display_name.split(',')[0];
@@ -393,7 +398,12 @@ function searchNominatim(q){
         html+='<div style="padding:9px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;border-top:1px solid var(--bd)" onmouseover="this.style.background=\'#f5f7fa\'" onmouseout="this.style.background=\'\'" onmousedown="selectLocIdx('+idx+')"><span style="font-size:14px">📍</span><span style="flex:1">'+esc(name)+'</span></div>';
       });
       dd.insertAdjacentHTML('beforeend',html);
-    }).catch(function(){});
+    }).catch(function(){
+      clearTimeout(tid);
+      var dd=document.getElementById('locDropdown');
+      var loading=document.getElementById('nominatimLoading');
+      if(loading)loading.outerHTML='<div style="padding:9px 12px;font-size:13px;color:var(--ts)">网络搜索超时，请从上方选择或换个关键词</div>';
+    });
 }
 function showAddRoom(){if(!canEdit()){toast('只读权限','w');return}openModal('<div class="m-hd"><h3>添加房源</h3><button class="m-x" onclick="closeModal()">×</button></div><div class="m-bd"><div class="fg"><label>房源名称<span class="req">*</span></label><input class="fc" id="fRN" placeholder="如：阳光小区1号楼201"></div><div class="fg"><label>地址</label><input class="fc" id="fRA" placeholder="详细地址"></div><div class="fr"><div class="fg"><label>房型</label><select class="fc" id="fRTy" autocomplete="off" data-lpignore="true"><option value="">选择</option><option>一室一厅</option><option>两室一厅</option><option>三室一厅</option><option>四室及以上</option><option>单间</option><option>复式</option><option>其他</option></select></div><div class="fg"><label>面积(㎡)</label><input class="fc" id="fRAr" type="number" placeholder="建筑面积"></div></div><div class="fr"><div class="fg"><label>月租金(元)</label><input class="fc" id="fRRe" type="number" placeholder="租金"></div><div class="fg"><label>状态</label><select class="fc" id="fRSt" autocomplete="off" data-lpignore="true"><option value="vacant">空置</option><option value="occupied">入住</option></select></div></div><div class="fg"><label>备注</label><textarea class="fc" id="fRNo" placeholder="备注信息"></textarea></div><div class="fg"><div class="s-item"><div><h4>上架到找房平台</h4><p>空置房源上架后，租客可在瑞丽找房页看到</p></div><button class="tgl on" id="fRListed" onclick="this.classList.toggle(\'on\')">上架</button></div></div><div class="fg"><label>对外联系方式</label><input class="fc" id="fRContact" placeholder="如：微信xxx 或 手机号"></div><div style="border-top:1px dashed var(--bd);margin:12px 0;padding-top:12px"><div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--p)">🏠 租房平台展示信息</div><div class="fr"><div class="fg"><label>楼层</label><input class="fc" id="fRFloor" type="number" placeholder="几楼"></div><div class="fg"><label>押金(元)</label><input class="fc" id="fRDeposit" type="number" placeholder="押金金额"></div><div class="fg"><label>付款方式</label><select class="fc" id="fRPayMethod" autocomplete="off" data-lpignore="true"><option value="月付">月付</option><option value="季付">季付</option><option value="半年付">半年付</option><option value="年付">年付</option></select></div></div><div class="fg"><label>房屋配置（有就勾选）</label><div class="amem-tags" id="amenCheckAdd"></div></div><div class="fg"><label>房间图片</label><div id="imgPreviewAdd" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px"></div><div style="display:flex;gap:8px;align-items:center"><input type="hidden" id="fRImages"><label class="btn btn-gh" style="padding:4px 10px;font-size:12px;cursor:pointer">📷拍照/选图<input type="file" accept="image/*" style="display:none" onchange="handlePhotoInput(this,&#39;Add&#39;)"></label></div></div></div></div><div class="m-ft"><button class="btn btn-gh" onclick="closeModal()">取消</button><button class="btn btn-p" id="saveRoomBtn" onclick="doAddRoom()">保存</button></div>');initAmenCheck('amenCheckAdd','');loadImgPreview('Add','');if(_roomMap){_roomMap.remove();_roomMap=null;_roomMarker=null}addMapPicker(null,null)}
 
