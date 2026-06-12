@@ -314,7 +314,7 @@ function loadImgPreview(mode,imagesStr){var c=document.getElementById('imgPrevie
 AMEN_LIST=["空调","热水器","WiFi","独卫","厨房","衣柜","洗衣机","冰箱","阳台","停车位","智能锁","桌椅","电视","窗帘"];var AMEN_ICONS={"空调":"❄️","热水器":"🚿","WiFi":"📶","独卫":"🚽","厨房":"🍳","衣柜":"🗄️","洗衣机":"🫧","冰箱":"🧊","阳台":"🌅","停车位":"🅿️","智能锁":"🔐","桌椅":"🪑","电视":"📺","窗帘":"🪟"};function initAmenCheck(cid,selStr){var c=document.getElementById(cid);if(!c)return;var sel=(selStr||"").split(",").map(function(s){return s.trim()});c.innerHTML=AMEN_LIST.map(function(a){var isOn=sel.indexOf(a)!==-1;return '<span class="amem-tag'+(isOn?' on':'')+'" data-val="'+a+'" onclick="this.classList.toggle(\'on\')">'+(AMEN_ICONS[a]||'')+' '+a+'</span>'}).join('')}function getAmenities(cid){var tags=document.querySelectorAll('#'+cid+' .amem-tag.on');return Array.from(tags).map(function(t){return t.dataset.val}).join(',')||''}
 var _roomMap=null,_roomMarker=null;
 // ===== 高德地图API =====
-var AMAP_KEY=''; // 填入高德Web服务API Key（免费申请：lbs.amap.com → 控制台 → 创建应用 → 添加Key → 选Web服务）
+var AMAP_KEY='78e8b2ba0158936878e7e028174cb480'; // 填入高德Web服务API Key（免费申请：lbs.amap.com → 控制台 → 创建应用 → 添加Key → 选Web服务）
 function amapJsonp(url,cb){var cbN='_amap_'+Date.now()+'_'+Math.floor(Math.random()*1e4);window[cbN]=function(d){cb(d);delete window[cbN]};var s=document.createElement('script');s.src=url+'&callback='+cbN;s.onerror=function(){delete window[cbN];cb(null);s.remove()};document.head.appendChild(s)}
 function amapSearchLoc(q,cb){
   if(!AMAP_KEY){cb(null);return}
