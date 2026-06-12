@@ -758,7 +758,7 @@ function showDetail(id){
 
   if(rm.address){
     var mapHint=rm.lat&&rm.lng?'📍 精确定位':'📍 大致位置';
-    infoHtml+='<div class="dm-section"><div class="st">'+mapHint+'</div><div style="font-size:13px;margin-bottom:8px">'+esc(rm.address)+'</div><div id="detailMap" style="width:100%;height:180px;border-radius:8px;overflow:hidden"></div></div>';
+    infoHtml+='<div class="dm-section"><div class="st">'+mapHint+'</div><div style="font-size:13px;margin-bottom:8px">'+esc(rm.address)+'</div><div id="detailMap" style="width:100%;height:180px;border-radius:8px;overflow:hidden;cursor:pointer" onclick="openFullMap()"></div><div style="display:flex;gap:8px;margin-top:8px"><button onclick="openFullMap()" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--bd);background:#fff;font-size:13px;cursor:pointer">🗺️ 查看大地图</button><button onclick="openNavApp()" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--p);color:#fff;font-size:13px;cursor:pointer">🧭 导航到这里</button></div></div>';
   }
 
   var amenHtml='<div class="dm-section"><div class="st">🏠 房屋配置</div><div class="dm-amenities">';
@@ -819,7 +819,7 @@ function showDetailMap(rm){
     var center=[24.0127,97.8490];
     // 优先使用数据库精确坐标
     if(rm._lat!=null&&rm._lon!=null){
-      center=[rm._lat,rm._lon];
+      center=[rm._lat,rm._lon];_detailMapCenter=center;
       _detailMap=L.map('detailMap',{zoomControl:false}).setView(center,16);
       L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:18}).addTo(_detailMap);
       L.control.zoom({position:'bottomright'}).addTo(_detailMap);
@@ -832,10 +832,10 @@ function showDetailMap(rm){
       amapGeocode(rm.address,function(data){
         if(data&&data.status==='1'&&data.geocodes&&data.geocodes.length){
           var loc=data.geocodes[0].location.split(',');
-          center=[parseFloat(loc[1]),parseFloat(loc[0])];
+          center=[parseFloat(loc[1]),parseFloat(loc[0])];_detailMapCenter=center;
         }else{
           var local=geocodeLocal(rm.address);
-          if(local)center=[local.lat,local.lon];
+          if(local)center=[local.lat,local.lon];_detailMapCenter=center;
         }
         _detailMap=L.map('detailMap',{zoomControl:false}).setView(center,16);
         L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:18}).addTo(_detailMap);
@@ -847,13 +847,53 @@ function showDetailMap(rm){
     }
     // 降级：本地地理编码
     var local=rm.address?geocodeLocal(rm.address):null;
-    if(local)center=[local.lat,local.lon];
+    if(local)center=[local.lat,local.lon];_detailMapCenter=center;
     _detailMap=L.map('detailMap',{zoomControl:false}).setView(center,15);
     L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:18}).addTo(_detailMap);
     L.control.zoom({position:'bottomright'}).addTo(_detailMap);
     var markerIcon2=L.divIcon({className:'',html:'<div style="font-size:28px;text-shadow:0 2px 6px rgba(0,0,0,.3)">📍</div>',iconSize:[28,28],iconAnchor:[14,28]});
     L.marker(center,{icon:markerIcon2}).addTo(_detailMap).bindPopup(rm.address||'').openPopup();
   }catch(e){}
+}
+</script>
+
+<div id="fullMapOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:#fff;display:none;flex-direction:column">
+  <div style="display:flex;align-items:center;padding:12px 16px;background:#fff;border-bottom:1px solid #eee">
+    <button onclick="closeFullMap()" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px 8px">✕</button>
+    <span id="fullMapTitle" style="flex:1;text-align:center;font-size:15px;font-weight:600">地图</span>
+    <button onclick="openNavApp()" style="background:none;border:none;font-size:13px;color:var(--p);cursor:pointer;padding:4px 8px">导航</button>
+  </div>
+  <div id="fullMapContainer" style="flex:1;width:100%"></div>
+</div>
+<script>
+var _fullMap=null,_detailMapCenter=null;
+function openFullMap(){
+  if(!_detailMapCenter)return;
+  var ov=document.getElementById('fullMapOverlay');
+  ov.style.display='flex';
+  document.body.style.overflow='hidden';
+  var ct=document.getElementById('fullMapContainer');
+  ct.innerHTML='';
+  if(_fullMap){try{_fullMap.remove()}catch(e){}_fullMap=null}
+  setTimeout(function(){
+    _fullMap=L.map('fullMapContainer',{zoomControl:false}).setView(_detailMapCenter,17);
+    L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:18}).addTo(_fullMap);
+    L.control.zoom({position:'bottomright'}).addTo(_fullMap);
+    var mi=L.divIcon({className:'',html:'<div style="font-size:36px;text-shadow:0 2px 8px rgba(0,0,0,.3)">📍</div>',iconSize:[36,36],iconAnchor:[18,36]});
+    L.marker(_detailMapCenter,{icon:mi}).addTo(_fullMap);
+  },100);
+}
+function closeFullMap(){
+  document.getElementById('fullMapOverlay').style.display='none';
+  document.body.style.overflow='';
+  if(_fullMap){try{_fullMap.remove()}catch(e){}_fullMap=null}
+}
+function openNavApp(){
+  if(!_detailMapCenter)return;
+  var lat=_detailMapCenter[0],lng=_detailMapCenter[1];
+  // Try Amap app first, fallback to web
+  var url='https://uri.amap.com/navigation?to='+lng+','+lat+'&mode=bus&src=fangdong';
+  window.open(url,'_blank');
 }
 </script>
 </body>
