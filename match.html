@@ -507,9 +507,10 @@ function viewerNext(){if(_viewerIdx<_viewerImgs.length-1){_viewerIdx++;renderVie
 function viewerGo(i){_viewerIdx=i;renderViewer()}
 
 // 触摸滑动支持
-var _viewerSwiped=false,_swipeStartX=0,_swipeStartY=0,_swipeStartTime=0;
+var _viewerSwiped=false,_viewerSwipeBound=false,_swipeStartX=0,_swipeStartY=0,_swipeStartTime=0;
 function initViewerSwipe(){
   var wrap=document.getElementById('viewerWrap');
+  if(_viewerSwipeBound)return;_viewerSwipeBound=true;
   wrap.addEventListener('touchstart',function(e){
     _swipeStartX=e.touches[0].clientX;_swipeStartY=e.touches[0].clientY;_swipeStartTime=Date.now();_viewerSwiped=false;
   },{passive:true});
@@ -823,7 +824,8 @@ var _galleryIdx=0,_galleryTotal=0;
 function goImg(i){var gs=document.getElementById('imgGallery');if(!gs)return;var imgs=gs.querySelectorAll('img');_galleryTotal=imgs.length;_galleryIdx=Math.max(0,Math.min(i,_galleryTotal-1));imgs.forEach(function(img,j){img.style.opacity=j===_galleryIdx?'1':'0'});var dots=document.querySelectorAll('.img-dot');dots.forEach(function(d,j){d.style.width=j===_galleryIdx?'16px':'6px';d.style.background=j===_galleryIdx?'var(--p)':'#ddd'});var c=document.getElementById('imgCounter');if(c)c.textContent=(_galleryIdx+1)+'/'+_galleryTotal}
 function prevImg(){goImg(_galleryIdx-1)}
 function nextImg(){goImg(_galleryIdx+1)}
-function initGallerySwipe(){var g=document.getElementById('imgGallery');if(!g)return;var sx=0,sy=0,st=0;g.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now()},{passive:true});g.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy,dt=Date.now()-st;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>30&&dt<500){if(dx<0)nextImg();else prevImg()}},{passive:true})}
+var _gallerySwipeBound=false,_gallerySx=0,_gallerySy=0,_gallerySt=0;
+function initGallerySwipe(){var g=document.getElementById('imgGallery');if(!g)return;if(_gallerySwipeBound)return;_gallerySwipeBound=true;g.addEventListener('touchstart',function(e){_gallerySx=e.touches[0].clientX;_gallerySy=e.touches[0].clientY;_gallerySt=Date.now()},{passive:true});g.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-_gallerySx,dy=e.changedTouches[0].clientY-_gallerySy,dt=Date.now()-_gallerySt;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>30&&dt<500){if(dx<0)nextImg();else prevImg()}},{passive:true})}
 
 init();
 
