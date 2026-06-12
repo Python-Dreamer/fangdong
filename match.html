@@ -614,7 +614,7 @@ function doSearch(){
     if(price<minP||price>maxP)return false;
     if(isNearby){
       if(!_userLat||!_userLon)return false;
-      if(rm._dist===null)return false;
+      if(rm._dist===null||rm._dist>50)return false;
     }else if(areaVal&&(!rm.address||!rm.address.includes(areaVal)))return false;
     if(type&&rm.type!==type)return false;
     if(payMethod&&rm.pay_method&&rm.pay_method!==payMethod)return false;
