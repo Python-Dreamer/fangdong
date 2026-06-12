@@ -307,6 +307,10 @@ function amapInputTips(q,cb){
   if(!AMAP_KEY){cb(null);return}
   amapJsonp('https://restapi.amap.com/v3/assistant/inputtips?key='+AMAP_KEY+'&keywords='+encodeURIComponent(q)+'&city=德宏&citylimit=true&datatype=poi',cb);
 }
+function amapRegeocode(lat,lng,cb){
+  if(!AMAP_KEY){cb(null);return}
+  amapJsonp('https://restapi.amap.com/v3/geocode/regeo?key='+AMAP_KEY+'&location='+lng+','+lat+'&extensions=base',cb);
+}
 
 function geocodeLocal(address){
   // 按名称长度降序匹配，优先精确匹配
@@ -820,6 +824,20 @@ function showDetailMap(rm){
     // 优先使用数据库精确坐标
     if(rm._lat!=null&&rm._lon!=null){
       center=[rm._lat,rm._lon];_detailMapCenter=center;
+      // 逆地理编码获取真实地名
+      if(AMAP_KEY){
+        amapRegeocode(rm._lat,rm._lon,function(data){
+          var el=document.getElementById('detailAddrText');
+          if(el&&data&&data.status==='1'&&data.regeocode){
+            var rc=data.regeocode;
+            var poi=rc.pois&&rc.pois.length?rc.pois[0].name:'';
+            var road=rc.roads&&rc.roads.length?rc.roads[0].name:'';
+            var formatted=rc.formatted_address||'';
+            var displayName=poi||road||formatted;
+            if(displayName)el.textContent=displayName;
+          }else if(el){el.textContent=rm.address||'瑞丽市'}
+        });
+      }
       _detailMap=L.map('detailMap',{zoomControl:false}).setView(center,16);
       L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:18}).addTo(_detailMap);
       L.control.zoom({position:'bottomright'}).addTo(_detailMap);

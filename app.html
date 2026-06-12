@@ -324,6 +324,10 @@ function amapGeocode(addr,cb){
   if(!AMAP_KEY){cb(null);return}
   amapJsonp('https://restapi.amap.com/v3/geocode/geo?key='+AMAP_KEY+'&address='+encodeURIComponent(addr)+'&city=德宏',cb);
 }
+function amapRegeocode(lat,lng,cb){
+  if(!AMAP_KEY){cb(null);return}
+  amapJsonp('https://restapi.amap.com/v3/geocode/regeo?key='+AMAP_KEY+'&location='+lng+','+lat+'&extensions=base',cb);
+}
 // 本地地点降级
 var RL_LOCATIONS={'滇弄':'24.015,97.845','勐卯':'24.010,97.855','瑞丽':'24.0127,97.849','姐告':'24.020,97.860','弄莫':'24.008,97.840','目脑':'24.005,97.850','团结':'24.018,97.842','建设路':'24.012,97.852','南拨河':'24.001,97.838','芒沙':'24.025,97.835','祥和':'24.013,97.847','禾峻':'24.018,97.840','华丰':'24.009,97.853','边贸街':'24.016,97.858','人民路':'24.011,97.850','目瑙路':'24.006,97.849','勐龙':'24.030,97.820','弄岛':'24.001,97.800','畹町':'24.086,97.970','滇弄二社':'24.014,97.846'};
 var _locResults=[],_locSearchTimer=null,_locDDOpen=false;
@@ -334,7 +338,32 @@ function addMapPicker(lat,lng,addr){var rm_address=addr||'';
   mb.appendChild(sec);
   if(lat)document.getElementById('fRLat').value=lat;
   if(lng)document.getElementById('fRLng').value=lng;
-  if(lat&&lng){document.getElementById('fLocSearch').value='📍 已设置定位';document.getElementById('fRA').value=rm_address||'';document.getElementById('fRLat').value=lat;document.getElementById('fRLng').value=lng;showLocMapPreview(parseFloat(lat),parseFloat(lng));var info=document.getElementById('locSelectedInfo');if(info)info.style.display='block'}
+  if(lat&&lng){
+    document.getElementById('fRLat').value=lat;
+    document.getElementById('fRLng').value=lng;
+    document.getElementById('fRA').value=rm_address||'';
+    showLocMapPreview(parseFloat(lat),parseFloat(lng));
+    var info=document.getElementById('locSelectedInfo');if(info)info.style.display='block';
+    // 用逆地理编码获取真实地名显示
+    if(AMAP_KEY){
+      document.getElementById('fLocSearch').value='📍 定位中...';
+      amapRegeocode(parseFloat(lat),parseFloat(lng),function(data){
+        var displayName=rm_address;
+        if(data&&data.status==='1'&&data.regeocode){
+          var rc=data.regeocode;
+          var poi=rc.pois&&rc.pois.length?rc.pois[0].name:'';
+          var road=rc.roads&&rc.roads.length?rc.roads[0].name:'';
+          var formatted=rc.formatted_address||'';
+          displayName=poi||road||formatted||rm_address||'瑞丽市';
+          // 更新地址字段
+          var addrInp=document.getElementById('fRA');if(addrInp)addrInp.value=displayName;
+        }else if(!displayName){displayName='瑞丽市'}
+        document.getElementById('fLocSearch').value='📍 '+displayName;
+      });
+    }else{
+      document.getElementById('fLocSearch').value='📍 '+(rm_address||'已设置定位');
+    }
+  }
 }
 function onFocusLocSearch(){var inp=document.getElementById('fLocSearch');if(!inp)return;if(inp.value.indexOf('\u{1F4CD}')===0||inp.value==='已设置定位'||inp.value==='📍 已设置定位'){inp.value='';document.getElementById('fRA').value='';document.getElementById('fRLat').value='';document.getElementById('fRLng').value='';var mp=document.getElementById('locMapPreview');if(mp)mp.style.display='none';var info=document.getElementById('locSelectedInfo');if(info)info.style.display='none'}showLocDropdown()}
 function showLocDropdown(){_locDDOpen=true;document.getElementById('locDropdown').style.display='block'}
@@ -392,8 +421,21 @@ function selectLocOption(name,lat,lng){
   document.getElementById('fRLat').value=lat;
   document.getElementById('fRLng').value=lng;
   document.getElementById('fLocSearch').value='📍 '+name;
-  // 同步写入地址字段
+  // 先用搜索到的名称，再用逆地理编码获取更精确的地址
   var addrInp=document.getElementById('fRA');if(addrInp)addrInp.value=name;
+  if(AMAP_KEY){
+    amapRegeocode(lat,lng,function(data){
+      if(data&&data.status==='1'&&data.regeocode){
+        var rc=data.regeocode;
+        var poi=rc.pois&&rc.pois.length?rc.pois[0].name:'';
+        var road=rc.roads&&rc.roads.length?rc.roads[0].name:'';
+        var formatted=rc.formatted_address||'';
+        var displayName=poi||road||formatted||name;
+        if(addrInp)addrInp.value=displayName;
+        document.getElementById('fLocSearch').value='📍 '+displayName;
+      }
+    });
+  }
   hideLocDropdown();
   showLocMapPreview(lat,lng);
   var info=document.getElementById('locSelectedInfo');if(info)info.style.display='block';
