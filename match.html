@@ -123,7 +123,7 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
 .img-viewer{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.95);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;-webkit-user-select:none;user-select:none}
 .img-viewer.show{display:flex}
 .img-viewer .viewer-close{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:20px;cursor:pointer;z-index:3;display:flex;align-items:center;justify-content:center}
-.img-viewer .viewer-img-wrap{width:100%;height:calc(100% - 80px);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.img-viewer .viewer-img-wrap{width:100%;height:calc(100% - 80px);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:pan-y}
 .img-viewer .viewer-img-wrap img{max-width:100%;max-height:100%;object-fit:contain;transition:opacity .2s}
 .img-viewer .viewer-counter{position:absolute;bottom:50px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.2);color:#fff;padding:4px 14px;border-radius:12px;font-size:13px;z-index:3}
 .img-viewer .viewer-prev,.img-viewer .viewer-next{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:22px;cursor:pointer;z-index:3;display:flex;align-items:center;justify-content:center}
@@ -269,7 +269,7 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
 <!-- 全屏图片查看器 -->
 <div class="img-viewer" id="imgViewer">
   <button class="viewer-close" onclick="closeViewer()">✕</button>
-  <div class="viewer-img-wrap" id="viewerWrap" onclick="closeViewer()">
+  <div class="viewer-img-wrap" id="viewerWrap">
     <img id="viewerImg" src="" alt="">
   </div>
   <button class="viewer-prev" onclick="event.stopPropagation();viewerPrev()">‹</button>
@@ -298,15 +298,6 @@ var AMEN_ICONS={'空调':'❄️','热水器':'🚿','WiFi':'📶','独卫':'�
 var RL_LOCATIONS={'滇弄':'24.015,97.845','勐卯':'24.010,97.855','瑞丽':'24.0127,97.849','姐告':'24.020,97.860','弄莫':'24.008,97.840','目脑':'24.005,97.850','团结':'24.018,97.842','建设路':'24.012,97.852','南拨河':'24.001,97.838','芒沙':'24.025,97.835','祥和':'24.013,97.847','禾峻':'24.018,97.840','华丰':'24.009,97.853','边贸街':'24.016,97.858','人民路':'24.011,97.850','目瑙路':'24.006,97.849','勐龙':'24.030,97.820','弄岛':'24.001,97.800','畹町':'24.086,97.970','滇弄二社':'24.014,97.846'};
 // ===== 高德地图API =====
 var AMAP_KEY='78e8b2ba0158936878e7e028174cb480'; // 填入高德Web服务API Key（免费申请：lbs.amap.com）
-function smartAddr(name,district){
-  if(!name)return district||'';
-  var isShort=/^[\dA-Za-z一二三四五六七八九十百]+[幢栋号楼层室单元座区]+$/;
-  if(name.length<=2||isShort.test(name)){
-    var d=(district||'瑞丽市').replace(/^(德宏[^市]*市|云南省)/,'');
-    return d+'\u00b7'+name;
-  }
-  return name;
-}
 function amapJsonp(url,cb){var cbN='_amap_'+Date.now()+'_'+Math.floor(Math.random()*1e4);window[cbN]=function(d){cb(d);delete window[cbN]};var s=document.createElement('script');s.src=url+'&callback='+cbN;s.onerror=function(){delete window[cbN];cb(null);s.remove()};document.head.appendChild(s)}
 function amapGeocode(addr,cb){
   if(!AMAP_KEY){cb(null);return}
@@ -315,10 +306,6 @@ function amapGeocode(addr,cb){
 function amapInputTips(q,cb){
   if(!AMAP_KEY){cb(null);return}
   amapJsonp('https://restapi.amap.com/v3/assistant/inputtips?key='+AMAP_KEY+'&keywords='+encodeURIComponent(q)+'&city=德宏&citylimit=true&datatype=poi',cb);
-}
-function amapRegeocode(lat,lng,cb){
-  if(!AMAP_KEY){cb(null);return}
-  amapJsonp('https://restapi.amap.com/v3/geocode/regeo?key='+AMAP_KEY+'&location='+lng+','+lat+'&extensions=base',cb);
 }
 
 function geocodeLocal(address){
@@ -334,11 +321,10 @@ function geocodeLocal(address){
 }
 
 // 图片缩略图
-function thumbUrl(url,w){
+function thumbUrl(url){
   if(!url)return url;
-  w=w||400;
   if(url.indexOf('/storage/v1/object/public/')!==-1){
-    return url.replace('/storage/v1/object/public/','/storage/v1/render/image/public/')+'?width='+w+'&quality='+(w>400?'80':'60');
+    return url.replace('/storage/v1/object/public/','/storage/v1/render/image/public/')+'?width=400&quality=60';
   }
   return url;
 }
@@ -452,7 +438,7 @@ function selectAmapArea(name,lat,lng){
   document.getElementById('fAreaInput').value='📍 '+name;
   document.getElementById('fAreaValue').value=name;
   hideAreaDropdown();
-  renderRooms();
+  doSearch();
 }
 
 // GPS定位
@@ -521,19 +507,27 @@ function viewerNext(){if(_viewerIdx<_viewerImgs.length-1){_viewerIdx++;renderVie
 function viewerGo(i){_viewerIdx=i;renderViewer()}
 
 // 触摸滑动支持
-var _swipeStartX=0,_swipeStartY=0;
+var _viewerSwiped=false,_swipeStartX=0,_swipeStartY=0,_swipeStartTime=0;
 function initViewerSwipe(){
   var wrap=document.getElementById('viewerWrap');
-  var vst=0;
-  wrap.ontouchstart=function(e){_swipeStartX=e.touches[0].clientX;_swipeStartY=e.touches[0].clientY;vst=Date.now()};
-  wrap.ontouchend=function(e){
+  wrap.addEventListener('touchstart',function(e){
+    _swipeStartX=e.touches[0].clientX;_swipeStartY=e.touches[0].clientY;_swipeStartTime=Date.now();_viewerSwiped=false;
+  },{passive:true});
+  wrap.addEventListener('touchmove',function(e){
+    if(Math.abs(e.touches[0].clientX-_swipeStartX)>10)_viewerSwiped=true;
+  },{passive:true});
+  wrap.addEventListener('touchend',function(e){
     var dx=e.changedTouches[0].clientX-_swipeStartX;
     var dy=e.changedTouches[0].clientY-_swipeStartY;
-    var dt=Date.now()-vst;
-    if(Math.abs(dx)>30&&Math.abs(dx)>Math.abs(dy)&&dt<500){
+    var dt=Date.now()-_swipeStartTime;
+    if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>30&&dt<500){
+      _viewerSwiped=true;
       if(dx<0)viewerNext();else viewerPrev();
     }
-  };
+  },{passive:true});
+  wrap.addEventListener('click',function(){
+    if(!_viewerSwiped)closeViewer();
+  });
 }
 
 // 获取房间的所有图片
@@ -582,7 +576,7 @@ async function loadRooms(){
     rm._dist=calcRoomDist(rm);
   });
   if(allRooms.length){
-    renderResults(allRooms);
+    document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">🏠</div><h3>共'+allRooms.length+'套房源待匹配</h3><p>设置筛选条件，点击「搜索匹配房源」查看</p></div>';
   }else{
     document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">📭</div><h3>暂无上架房源</h3><p>房东还未上架任何房源，请稍后再来</p></div>';
   }
@@ -612,12 +606,20 @@ function doSearch(){
   var amenList=[];
   document.querySelectorAll('#amenTags .tag.on').forEach(function(t){amenList.push(t.dataset.val)});
 
+  // 至少需要设置一个筛选条件
+  var hasFilter=minP>0||maxP<99999||areaVal||isNearby||type||payMethod||floor||amenList.length;
+  if(!hasFilter){
+    document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">🔍</div><h3>请设置筛选条件</h3><p>至少填写预算、区域或房型等一个条件</p></div>';
+    return;
+  }
+
   var rooms=allRooms.filter(function(rm){
     var price=rm.rent_amount||0;
     if(price<minP||price>maxP)return false;
     if(isNearby){
       if(!_userLat||!_userLon)return false;
-      if(rm._dist===null||rm._dist>50)return false;
+      if(rm._dist===null)return false;
+      if(rm._dist>50)return false; // 50km距离上限
     }else if(areaVal&&(!rm.address||!rm.address.includes(areaVal)))return false;
     if(type&&rm.type!==type)return false;
     if(payMethod&&rm.pay_method&&rm.pay_method!==payMethod)return false;
@@ -735,15 +737,13 @@ function showDetail(id){
   var deposit=rm.deposit||0;
   var allImgs=getRoomImages(rm).map(function(u){return origUrl(u)});
 
-  // 图片画廊（双击可全屏查看）- 懒加载：只加载当前及相邻图
-  _galleryTotal=allImgs.length;_galleryIdx=0;
+  // 图片画廊（双击可全屏查看）
   var imgHtml='';
   if(allImgs.length>0){
-    imgHtml+='<div class="dm-img" style="position:relative;overflow:hidden;touch-action:pan-y">';
+    imgHtml+='<div class="dm-img" style="position:relative;overflow:hidden">';
     imgHtml+='<div id="imgGallery" style="position:relative;width:100%;height:200px;touch-action:pan-y">';
     allImgs.forEach(function(src,i){
-      var shouldLoad=i<=1;
-      imgHtml+='<img '+(shouldLoad?'src="'+esc(thumbUrl(src,600))+'"':'data-src="'+esc(thumbUrl(src,600))+'"')+' style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:'+(i===0?'1':'0')+';transition:opacity .3s" loading="lazy" decoding="async" onerror="this.style.display=\'none\'" ondblclick="openViewer(_detailImgs,'+i+')">';
+      imgHtml+='<img src="'+esc(thumbUrl(src))+'" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:'+(i===0?'1':'0')+';transition:opacity .3s" loading="lazy" decoding="async" onerror="this.style.display=\'none\'" ondblclick="openViewer(_detailImgs,'+i+')">';
     });
     imgHtml+='</div>';
     if(allImgs.length>1){
@@ -776,7 +776,7 @@ function showDetail(id){
 
   if(rm.address){
     var mapHint=rm.lat&&rm.lng?'📍 精确定位':'📍 大致位置';
-    infoHtml+='<div class="dm-section"><div class="st">'+mapHint+'</div><div style="font-size:13px;margin-bottom:8px">'+esc(rm.address)+'</div><div id="detailMap" style="width:100%;height:180px;border-radius:8px;overflow:hidden;cursor:pointer" onclick="openFullMap()"></div><div style="display:flex;gap:8px;margin-top:8px"><button onclick="openFullMap()" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--bd);background:#fff;font-size:13px;cursor:pointer">🗺️ 查看大地图</button><button onclick="openNavApp()" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--p);color:#fff;font-size:13px;cursor:pointer">🧭 导航到这里</button></div></div>';
+    infoHtml+='<div class="dm-section"><div class="st">'+mapHint+'</div><div style="font-size:13px;margin-bottom:8px">'+esc(rm.address)+'</div><div id="detailMap" style="width:100%;height:180px;border-radius:8px;overflow:hidden"></div></div>';
   }
 
   var amenHtml='<div class="dm-section"><div class="st">🏠 房屋配置</div><div class="dm-amenities">';
@@ -820,10 +820,10 @@ function closeDetail(e){
 function esc(s){if(!s)return '';var d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
 var _galleryIdx=0,_galleryTotal=0;
-function goImg(i){var gs=document.getElementById('imgGallery');if(!gs)return;var imgs=gs.querySelectorAll('img');_galleryTotal=imgs.length;_galleryIdx=Math.max(0,Math.min(i,_galleryTotal-1));imgs.forEach(function(img,j){img.style.opacity=j===_galleryIdx?'1':'0';if(j===_galleryIdx||j===_galleryIdx-1||j===_galleryIdx+1){var ds=img.getAttribute('data-src');if(ds){img.src=ds;img.removeAttribute('data-src')}}});var dots=document.querySelectorAll('.img-dot');dots.forEach(function(d,j){d.style.width=j===_galleryIdx?'16px':'6px';d.style.background=j===_galleryIdx?'var(--p)':'#ddd'});var c=document.getElementById('imgCounter');if(c)c.textContent=(_galleryIdx+1)+'/'+_galleryTotal}
+function goImg(i){var gs=document.getElementById('imgGallery');if(!gs)return;var imgs=gs.querySelectorAll('img');_galleryTotal=imgs.length;_galleryIdx=Math.max(0,Math.min(i,_galleryTotal-1));imgs.forEach(function(img,j){img.style.opacity=j===_galleryIdx?'1':'0'});var dots=document.querySelectorAll('.img-dot');dots.forEach(function(d,j){d.style.width=j===_galleryIdx?'16px':'6px';d.style.background=j===_galleryIdx?'var(--p)':'#ddd'});var c=document.getElementById('imgCounter');if(c)c.textContent=(_galleryIdx+1)+'/'+_galleryTotal}
 function prevImg(){goImg(_galleryIdx-1)}
 function nextImg(){goImg(_galleryIdx+1)}
-function initGallerySwipe(){var g=document.getElementById('imgGallery');if(!g)return;var sx=0,sy=0,st=0;g.ontouchstart=function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now()};g.ontouchend=function(e){var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy,dt=Date.now()-st;if(Math.abs(dx)>30&&Math.abs(dx)>Math.abs(dy)&&dt<500){if(dx<0)nextImg();else prevImg()}}}
+function initGallerySwipe(){var g=document.getElementById('imgGallery');if(!g)return;var sx=0,sy=0,st=0;g.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now()},{passive:true});g.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy,dt=Date.now()-st;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>30&&dt<500){if(dx<0)nextImg();else prevImg()}},{passive:true})}
 
 init();
 
@@ -837,23 +837,7 @@ function showDetailMap(rm){
     var center=[24.0127,97.8490];
     // 优先使用数据库精确坐标
     if(rm._lat!=null&&rm._lon!=null){
-      center=[rm._lat,rm._lon];_detailMapCenter=center;
-      // 逆地理编码获取真实地名
-      if(AMAP_KEY){
-        amapRegeocode(rm._lat,rm._lon,function(data){
-          var el=document.getElementById('detailAddrText');
-          if(el&&data&&data.status==='1'&&data.regeocode){
-            var rc=data.regeocode;
-            var poi=rc.pois&&rc.pois.length?rc.pois[0].name:'';
-            var road=rc.roads&&rc.roads.length?rc.roads[0].name:'';
-            var rgeoDistrict='瑞丽市';
-            if(rc.addressComponent&&rc.addressComponent.district)rgeoDistrict=rc.addressComponent.district;
-            var displayName=smartAddr(poi||road,rgeoDistrict);
-            if(!displayName)displayName=rm.address||'瑞丽市';
-            if(displayName)el.textContent=displayName;
-          }else if(el){el.textContent=rm.address||'瑞丽市'}
-        });
-      }
+      center=[rm._lat,rm._lon];
       _detailMap=L.map('detailMap',{zoomControl:false}).setView(center,16);
       L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:18}).addTo(_detailMap);
       L.control.zoom({position:'bottomright'}).addTo(_detailMap);
@@ -866,10 +850,10 @@ function showDetailMap(rm){
       amapGeocode(rm.address,function(data){
         if(data&&data.status==='1'&&data.geocodes&&data.geocodes.length){
           var loc=data.geocodes[0].location.split(',');
-          center=[parseFloat(loc[1]),parseFloat(loc[0])];_detailMapCenter=center;
+          center=[parseFloat(loc[1]),parseFloat(loc[0])];
         }else{
           var local=geocodeLocal(rm.address);
-          if(local)center=[local.lat,local.lon];_detailMapCenter=center;
+          if(local)center=[local.lat,local.lon];
         }
         _detailMap=L.map('detailMap',{zoomControl:false}).setView(center,16);
         L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:18}).addTo(_detailMap);
@@ -881,68 +865,13 @@ function showDetailMap(rm){
     }
     // 降级：本地地理编码
     var local=rm.address?geocodeLocal(rm.address):null;
-    if(local)center=[local.lat,local.lon];_detailMapCenter=center;
+    if(local)center=[local.lat,local.lon];
     _detailMap=L.map('detailMap',{zoomControl:false}).setView(center,15);
     L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:18}).addTo(_detailMap);
     L.control.zoom({position:'bottomright'}).addTo(_detailMap);
     var markerIcon2=L.divIcon({className:'',html:'<div style="font-size:28px;text-shadow:0 2px 6px rgba(0,0,0,.3)">📍</div>',iconSize:[28,28],iconAnchor:[14,28]});
     L.marker(center,{icon:markerIcon2}).addTo(_detailMap).bindPopup(rm.address||'').openPopup();
   }catch(e){}
-}
-</script>
-
-<div id="fullMapOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:#fff;display:none;flex-direction:column">
-  <div style="display:flex;align-items:center;padding:12px 16px;background:#fff;border-bottom:1px solid #eee">
-    <button onclick="closeFullMap()" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px 8px">✕</button>
-    <span id="fullMapTitle" style="flex:1;text-align:center;font-size:15px;font-weight:600">地图</span>
-    <button onclick="openNavApp()" style="background:none;border:none;font-size:13px;color:var(--p);cursor:pointer;padding:4px 8px">导航</button>
-  </div>
-  <div id="fullMapContainer" style="flex:1;width:100%"></div>
-</div>
-<script>
-var _fullMap=null,_detailMapCenter=null;
-function openFullMap(){
-  if(!_detailMapCenter)return;
-  var ov=document.getElementById('fullMapOverlay');
-  ov.style.display='flex';
-  document.body.style.overflow='hidden';
-  var ct=document.getElementById('fullMapContainer');
-  ct.innerHTML='';
-  if(_fullMap){try{_fullMap.remove()}catch(e){}_fullMap=null}
-  setTimeout(function(){
-    _fullMap=L.map('fullMapContainer',{zoomControl:false}).setView(_detailMapCenter,17);
-    L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:18}).addTo(_fullMap);
-    L.control.zoom({position:'bottomright'}).addTo(_fullMap);
-    var mi=L.divIcon({className:'',html:'<div style="font-size:36px;text-shadow:0 2px 8px rgba(0,0,0,.3)">📍</div>',iconSize:[36,36],iconAnchor:[18,36]});
-    L.marker(_detailMapCenter,{icon:mi}).addTo(_fullMap);
-  },100);
-}
-function closeFullMap(){
-  document.getElementById('fullMapOverlay').style.display='none';
-  document.body.style.overflow='';
-  if(_fullMap){try{_fullMap.remove()}catch(e){}_fullMap=null}
-}
-function openNavApp(){
-  if(!_detailMapCenter)return;
-  var lat=_detailMapCenter[0],lng=_detailMapCenter[1];
-  // Try native Amap app
-  var scheme='iosamap://path?dlat='+lat+'&dlon='+lng+'&dev=0&t=0';
-  if(navigator.userAgent.match(/Android/i))scheme='androidamap://route/plan/?dlat='+lat+'&dlon='+lng+'&dev=0&t=0';
-  var tried=false;
-  var fallback='https://uri.amap.com/navigation?to='+lng+','+lat+'&mode=car&src=fangdong&coordinate=gaode&callnative=1';
-  try{
-    var f=document.createElement('iframe');
-    f.style.display='none';
-    f.src=scheme;
-    document.body.appendChild(f);
-    // If app not installed, redirect to web after 1.5s
-    setTimeout(function(){
-      try{document.body.removeChild(f)}catch(e){}
-      window.location.href=fallback;
-    },1500);
-  }catch(e){
-    window.location.href=fallback;
-  }
 }
 </script>
 </body>
