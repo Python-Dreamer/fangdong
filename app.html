@@ -341,27 +341,27 @@ function addMapPicker(lat,lng,addr){var rm_address=addr||'';
   if(lat&&lng){
     document.getElementById('fRLat').value=lat;
     document.getElementById('fRLng').value=lng;
-    document.getElementById('fRA').value=rm_address||'';
     showLocMapPreview(parseFloat(lat),parseFloat(lng));
     var info=document.getElementById('locSelectedInfo');if(info)info.style.display='block';
-    // 用逆地理编码获取真实地名显示
+    // 有精确坐标时，用逆地理编码获取简洁POI名称（不使用旧的长地址）
     if(AMAP_KEY){
       document.getElementById('fLocSearch').value='📍 定位中...';
       amapRegeocode(parseFloat(lat),parseFloat(lng),function(data){
-        var displayName=rm_address;
+        var displayName='';
         if(data&&data.status==='1'&&data.regeocode){
           var rc=data.regeocode;
           var poi=rc.pois&&rc.pois.length?rc.pois[0].name:'';
           var road=rc.roads&&rc.roads.length?rc.roads[0].name:'';
-          var formatted=rc.formatted_address||'';
-          displayName=poi||road||formatted||rm_address||'瑞丽市';
-          // 更新地址字段
-          var addrInp=document.getElementById('fRA');if(addrInp)addrInp.value=displayName;
-        }else if(!displayName){displayName='瑞丽市'}
+          displayName=poi||road;
+        }
+        if(!displayName)displayName=rm_address||'瑞丽市';
         document.getElementById('fLocSearch').value='📍 '+displayName;
+        document.getElementById('fRA').value=displayName;
       });
     }else{
-      document.getElementById('fLocSearch').value='📍 '+(rm_address||'已设置定位');
+      var showName=rm_address||'已设置定位';
+      document.getElementById('fLocSearch').value='📍 '+showName;
+      document.getElementById('fRA').value=rm_address||'';
     }
   }
 }
