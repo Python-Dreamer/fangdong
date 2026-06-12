@@ -891,9 +891,24 @@ function closeFullMap(){
 function openNavApp(){
   if(!_detailMapCenter)return;
   var lat=_detailMapCenter[0],lng=_detailMapCenter[1];
-  // Try Amap app first, fallback to web
-  var url='https://uri.amap.com/navigation?to='+lng+','+lat+'&mode=bus&src=fangdong';
-  window.open(url,'_blank');
+  // Try native Amap app
+  var scheme='iosamap://path?dlat='+lat+'&dlon='+lng+'&dev=0&t=0';
+  if(navigator.userAgent.match(/Android/i))scheme='androidamap://route/plan/?dlat='+lat+'&dlon='+lng+'&dev=0&t=0';
+  var tried=false;
+  var fallback='https://uri.amap.com/navigation?to='+lng+','+lat+'&mode=car&src=fangdong&coordinate=gaode&callnative=1';
+  try{
+    var f=document.createElement('iframe');
+    f.style.display='none';
+    f.src=scheme;
+    document.body.appendChild(f);
+    // If app not installed, redirect to web after 1.5s
+    setTimeout(function(){
+      try{document.body.removeChild(f)}catch(e){}
+      window.location.href=fallback;
+    },1500);
+  }catch(e){
+    window.location.href=fallback;
+  }
 }
 </script>
 </body>
