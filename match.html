@@ -740,7 +740,7 @@ function renderResults(rooms){
     html+='<div class="room-card" data-imgs=\''+imgDataAttr+'\' onclick="showDetail(\''+rm.id+'\')">';
     html+=imgHtml;
     html+='<div class="rc-body">';
-    html+='<div class="rc-top"><div class="rc-name">'+esc((rm.floor?rm.floor+'层 ':'')+(rm.type||'房源'))+'</div>';
+    html+='<div class="rc-top"><div class="rc-name">'+esc(rm.address||((rm.floor?rm.floor+'层 ':'')+(rm.type||'房源')))+'</div>';
     html+='<span class="rc-score '+matchClass+'">🎯'+rm._score+'分</span></div>';
     html+=tagsHtml;
     html+=amenHtml;
