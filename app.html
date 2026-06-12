@@ -434,22 +434,9 @@ function selectLocIdx(idx){var loc=_locResults[idx];if(!loc)return;selectLocOpti
 function selectLocOption(name,lat,lng){
   document.getElementById('fRLat').value=lat;
   document.getElementById('fRLng').value=lng;
+  // 用户主动选的地点名，直接使用，不用逆地理编码覆盖
   document.getElementById('fLocSearch').value='📍 '+name;
-  // 先用搜索到的名称，再用逆地理编码获取更精确的地址
   var addrInp=document.getElementById('fRA');if(addrInp)addrInp.value=name;
-  if(AMAP_KEY){
-    amapRegeocode(lat,lng,function(data){
-      if(data&&data.status==='1'&&data.regeocode){
-        var rc=data.regeocode;
-        var poi=rc.pois&&rc.pois.length?rc.pois[0].name:'';
-        var road=rc.roads&&rc.roads.length?rc.roads[0].name:'';
-        var formatted=rc.formatted_address||'';
-        var displayName=poi||road||formatted||name;
-        if(addrInp)addrInp.value=displayName;
-        document.getElementById('fLocSearch').value='📍 '+displayName;
-      }
-    });
-  }
   hideLocDropdown();
   showLocMapPreview(lat,lng);
   var info=document.getElementById('locSelectedInfo');if(info)info.style.display='block';
