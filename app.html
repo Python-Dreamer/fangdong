@@ -334,9 +334,9 @@ function addMapPicker(lat,lng){
   mb.appendChild(sec);
   if(lat)document.getElementById('fRLat').value=lat;
   if(lng)document.getElementById('fRLng').value=lng;
-  if(lat&&lng){document.getElementById('fLocSearch').value='已设置定位';showLocMapPreview(parseFloat(lat),parseFloat(lng))}
+  if(lat&&lng){document.getElementById('fLocSearch').value='📍 已设置定位';document.getElementById('fRLat').value=lat;document.getElementById('fRLng').value=lng;showLocMapPreview(parseFloat(lat),parseFloat(lng));var info=document.getElementById('locSelectedInfo');if(info)info.style.display='block'}
 }
-function onFocusLocSearch(){var inp=document.getElementById('fLocSearch');if(!inp)return;if(inp.value.indexOf('\u{1F4CD}')===0||inp.value==='已设置定位'){inp.value='';document.getElementById('fRLat').value='';document.getElementById('fRLng').value='';var mp=document.getElementById('locMapPreview');if(mp)mp.style.display='none';var info=document.getElementById('locSelectedInfo');if(info)info.style.display='none'}showLocDropdown()}
+function onFocusLocSearch(){var inp=document.getElementById('fLocSearch');if(!inp)return;if(inp.value.indexOf('\u{1F4CD}')===0||inp.value==='已设置定位'||inp.value==='📍 已设置定位'){inp.value='';document.getElementById('fRLat').value='';document.getElementById('fRLng').value='';var mp=document.getElementById('locMapPreview');if(mp)mp.style.display='none';var info=document.getElementById('locSelectedInfo');if(info)info.style.display='none'}showLocDropdown()}
 function showLocDropdown(){_locDDOpen=true;document.getElementById('locDropdown').style.display='block'}
 function hideLocDropdown(){_locDDOpen=false;var dd=document.getElementById('locDropdown');if(dd)dd.style.display='none'}
 document.addEventListener('click',function(e){if(!_locDDOpen)return;var dd=document.getElementById('locDropdown'),inp=document.getElementById('fLocSearch');if(dd&&inp&&!dd.contains(e.target)&&e.target!==inp)hideLocDropdown()});
