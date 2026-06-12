@@ -365,13 +365,27 @@ function addMapPicker(lat,lng,addr){var rm_address=addr||'';
     }
   }
 }
-function onFocusLocSearch(){var inp=document.getElementById('fLocSearch');if(!inp)return;if(inp.value.indexOf('\u{1F4CD}')===0||inp.value==='已设置定位'||inp.value==='📍 已设置定位'){inp.value='';document.getElementById('fRA').value='';document.getElementById('fRLat').value='';document.getElementById('fRLng').value='';var mp=document.getElementById('locMapPreview');if(mp)mp.style.display='none';var info=document.getElementById('locSelectedInfo');if(info)info.style.display='none'}showLocDropdown()}
+function onFocusLocSearch(){
+  var inp=document.getElementById('fLocSearch');if(!inp)return;
+  var hasLoc=inp.value.indexOf('\u{1F4CD}')===0||inp.value.indexOf('📍')===0;
+  if(hasLoc||inp.value==='已设置定位'){
+    inp.value='';
+    document.getElementById('fRA').value='';
+    document.getElementById('fRLat').value='';
+    document.getElementById('fRLng').value='';
+    var mp=document.getElementById('locMapPreview');if(mp)mp.style.display='none';
+    var info=document.getElementById('locSelectedInfo');if(info)info.style.display='none';
+  }
+  showLocDropdown();
+  // 触发一次搜索
+  setTimeout(function(){filterLocOptions()},50);
+}
 function showLocDropdown(){_locDDOpen=true;document.getElementById('locDropdown').style.display='block'}
 function hideLocDropdown(){_locDDOpen=false;var dd=document.getElementById('locDropdown');if(dd)dd.style.display='none'}
 document.addEventListener('click',function(e){if(!_locDDOpen)return;var dd=document.getElementById('locDropdown'),inp=document.getElementById('fLocSearch');if(dd&&inp&&!dd.contains(e.target)&&e.target!==inp)hideLocDropdown()});
 function filterLocOptions(){
   var q=document.getElementById('fLocSearch').value.trim();
-  var sq=q.indexOf('\u{1F4CD}')===0?q.replace(/\u{1F4CD}\s*/,'').trim():q;
+  var sq=q;if(sq.indexOf('\u{1F4CD}')===0||sq.indexOf('📍')===0){sq=sq.replace(/^[\u{1F4CD}\s📍]+/,'').trim()}
   _locResults=[];
   var dd=document.getElementById('locDropdown');
   if(!sq){dd.style.display='none';return}
