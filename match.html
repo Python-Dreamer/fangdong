@@ -162,10 +162,10 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
 
     <!-- 预算 -->
     <div class="fg">
-      <label>预算范围 <span class="req">*</span></label>
+      <label>预算范围</label>
       <div class="frow">
-        <div class="fg"><input type="number" id="fMinPrice" placeholder="最低 元/月" min="0"></div>
-        <div class="fg"><input type="number" id="fMaxPrice" placeholder="最高 元/月" min="0"></div>
+        <div class="fg"><input type="number" id="fMinPrice" placeholder="最低 元/月" min="0" inputmode="numeric"></div>
+        <div class="fg"><input type="number" id="fMaxPrice" placeholder="最高 元/月" min="0" inputmode="numeric"></div>
       </div>
     </div>
 
@@ -175,7 +175,7 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
       <div style="display:flex;gap:8px">
         <div class="area-search-wrap" style="flex:1">
           <span class="search-ico">📍</span>
-          <input type="text" id="fAreaInput" placeholder="搜索区域/地点..." autocomplete="off" onfocus="showAreaDropdown()" oninput="filterAreaOptions()" onblur="setTimeout(function(){hideAreaDropdown()},200)">
+          <input type="text" id="fAreaInput" placeholder="搜索区域/地点..." autocomplete="off" onfocus="showAreaDropdown()" oninput="filterAreaOptions()">
           <input type="hidden" id="fAreaValue" value="">
           <div class="area-dropdown" id="areaDropdown"></div>
         </div>
@@ -245,6 +245,11 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
     <button class="btn-search" id="btnSearch" onclick="doSearch()">🔍 搜索匹配房源</button>
   </div>
 </div>
+
+<script>
+// 回车触发搜索
+document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.tagName==='INPUT')doSearch()});
+</script>
 
 <div class="results" id="resultsArea">
   <div class="empty">
@@ -357,6 +362,11 @@ function showAreaDropdown(){
 function hideAreaDropdown(){
   document.getElementById('areaDropdown').classList.remove('show');
 }
+// document级click关闭下拉
+document.addEventListener('click',function(e){
+  var wrap=e.target.closest('.area-search-wrap');
+  if(!wrap)hideAreaDropdown();
+});
 function filterAreaOptions(){
   var q=document.getElementById('fAreaInput').value.trim();
   renderAreaOptions(q);
@@ -388,12 +398,12 @@ function renderAreaOptions(query){
   var html='';
   // GPS定位选项
   var gpsActive=_selectedAreaType==='nearby';
-  html+='<div class="area-opt loc-gps'+(gpsActive?' active':'')+'" onmousedown="selectAreaNearby()">';
+  html+='<div class="area-opt loc-gps'+(gpsActive?' active':'')+'" onclick="selectAreaNearby()" ontouchstart="selectAreaNearby();event.preventDefault()">';
   html+='<span class="loc-ico">📍</span><span class="loc-name">附近优先（GPS定位）</span>';
   if(_userLat)html+='<span class="loc-dist">已定位</span>';
   html+='</div>';
   // 全部区域
-  html+='<div class="area-opt'+(_selectedAreaType==='area'&&_selectedArea===''?' active':'')+'" onmousedown="selectArea(\'\',\'全部区域\')">';
+  html+='<div class="area-opt'+(_selectedAreaType==='area'&&_selectedArea===''?' active':'')+'" onclick="selectArea(\'\',\'全部区域\')" ontouchstart="selectArea(\'\',\'全部区域\');event.preventDefault()">';
   html+='<span class="loc-ico">🌐</span><span class="loc-name">全部区域</span></div>';
   // 本地地点列表
   var locKeys=Object.keys(RL_LOCATIONS);
@@ -408,7 +418,7 @@ function renderAreaOptions(query){
       var d=calcDist(_userLat,_userLon,parseFloat(p[0]),parseFloat(p[1]));
       distHtml='<span class="loc-dist">'+fmtDist(d)+'</span>';
     }
-    html+='<div class="area-opt'+(active?' active':'')+'" onmousedown="selectArea(\''+key+'\',\''+key+'\')">';
+    html+='<div class="area-opt'+(active?' active':'')+'" onclick="selectArea(\''+key+'\',\''+key+'\')" ontouchstart="selectArea(\''+key+'\',\''+key+'\');event.preventDefault()">';
     html+='<span class="loc-ico">🏘️</span><span class="loc-name">'+key+'</span>'+distHtml+'</div>';
   });
   if(query&&!locKeys.length){
@@ -593,10 +603,28 @@ function toggleAdv(){
   if(f.classList.contains('show')){f.classList.remove('show');a.className='arrow';l.textContent='更多筛选'}
   else{f.classList.add('show');a.className='arrow up';l.textContent='收起筛选'}
 }
+function resetFilters(){
+  document.getElementById('fMinPrice').value='';
+  document.getElementById('fMaxPrice').value='';
+  _selectedArea='';_selectedAreaType='';
+  document.getElementById('fAreaInput').value='';
+  document.getElementById('fAreaValue').value='';
+  document.querySelectorAll('#typeTags .tag').forEach(function(t){t.classList.remove('on')});
+  document.querySelector('#typeTags .tag[data-val=""]').classList.add('on');
+  document.querySelectorAll('#amenTags .tag').forEach(function(t){t.classList.remove('on')});
+  document.getElementById('fPayMethod').value='';
+  document.getElementById('fFloor').value='';
+  document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">🏠</div><h3>共'+allRooms.length+'套房源待匹配</h3><p>设置筛选条件，点击「搜索匹配房源」查看</p></div>';
+}
 
 function doSearch(){
   var minP=parseInt(document.getElementById('fMinPrice').value)||0;
   var maxP=parseInt(document.getElementById('fMaxPrice').value)||99999;
+  // 预算验证
+  if(minP>0&&maxP<99999&&minP>maxP){
+    document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">⚠️</div><h3>最低预算不能大于最高预算</h3><p>请检查预算范围</p></div>';
+    return;
+  }
   var areaType=_selectedAreaType;
   var areaVal=_selectedArea;
   var isNearby=areaType==='nearby';
@@ -607,37 +635,42 @@ function doSearch(){
   var amenList=[];
   document.querySelectorAll('#amenTags .tag.on').forEach(function(t){amenList.push(t.dataset.val)});
 
-  // 至少需要设置一个筛选条件
+  // 至少需要设置一个筛选条件（"不限"房型不算）
   var hasFilter=minP>0||maxP<99999||areaVal||isNearby||type||payMethod||floor||amenList.length;
   if(!hasFilter){
     document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">🔍</div><h3>请设置筛选条件</h3><p>至少填写预算、区域或房型等一个条件</p></div>';
     return;
   }
 
-  var rooms=allRooms.filter(function(rm){
-    var price=rm.rent_amount||0;
-    if(price<minP||price>maxP)return false;
-    if(isNearby){
-      if(!_userLat||!_userLon)return false;
-      if(rm._dist===null)return false;
-      if(rm._dist>50)return false; // 50km距离上限
-    }else if(areaVal&&(!rm.address||!rm.address.includes(areaVal)))return false;
-    if(type&&rm.type!==type)return false;
-    if(payMethod&&rm.pay_method&&rm.pay_method!==payMethod)return false;
-    if(floor&&rm.floor){
-      var fl=parseInt(rm.floor)||0;
-      if(floor==='low'&&fl>3)return false;
-      if(floor==='mid'&&(fl<4||fl>6))return false;
-      if(floor==='high'&&fl<7)return false;
-    }
-    if(amenList.length){
-      var rmAmens=(rm.amenities||'').split(',').map(function(s){return s.trim()});
-      for(var i=0;i<amenList.length;i++){
-        if(rmAmens.indexOf(amenList[i])===-1)return false;
+  // 显示加载状态
+  document.getElementById('resultsArea').innerHTML='<div class="loading">正在匹配房源</div>';
+
+  // 用setTimeout让loading先渲染出来
+  setTimeout(function(){
+    var rooms=allRooms.filter(function(rm){
+      var price=rm.rent_amount||0;
+      if(price<minP||price>maxP)return false;
+      if(isNearby){
+        if(!_userLat||!_userLon)return false;
+        if(rm._dist===null)return false;
+        if(rm._dist>50)return false; // 50km距离上限
+      }else if(areaVal&&(!rm.address||!rm.address.includes(areaVal)))return false;
+      if(type&&rm.type!==type)return false;
+      if(payMethod&&rm.pay_method&&rm.pay_method!==payMethod)return false;
+      if(floor&&rm.floor){
+        var fl=parseInt(rm.floor)||0;
+        if(floor==='low'&&fl>3)return false;
+        if(floor==='mid'&&(fl<4||fl>6))return false;
+        if(floor==='high'&&fl<7)return false;
       }
-    }
-    return true;
-  });
+      if(amenList.length){
+        var rmAmens=(rm.amenities||'').split(',').map(function(s){return s.trim()});
+        for(var i=0;i<amenList.length;i++){
+          if(rmAmens.indexOf(amenList[i])===-1)return false;
+        }
+      }
+      return true;
+    });
 
   // 匹配度
   rooms.forEach(function(rm){
@@ -655,9 +688,10 @@ function doSearch(){
     rm._score=total>0?Math.round(score):60;
   });
 
-  if(isNearby&&_userLat){rooms.sort(function(a,b){return(a._dist||999)-(b._dist||999)})}
-  else{rooms.sort(function(a,b){return b._score-a._score})}
-  renderResults(rooms);
+    if(isNearby&&_userLat){rooms.sort(function(a,b){return(a._dist||999)-(b._dist||999)})}
+    else{rooms.sort(function(a,b){return b._score-a._score})}
+    renderResults(rooms);
+  },50);
 }
 
 function renderResults(rooms){
@@ -666,7 +700,7 @@ function renderResults(rooms){
     el.innerHTML='<div class="empty"><div class="ei">😔</div><h3>暂无匹配房源</h3><p>试试放宽条件，或稍后再来看看</p></div>';
     return;
   }
-  var html='<div class="results-hd"><span>找到 <strong>'+rooms.length+'</strong> 套匹配房源</span></div>';
+  var html='<div class="results-hd"><span>找到 <strong>'+rooms.length+'</strong> 套匹配房源</span><span style="font-size:11px;color:var(--ts)">'+(_selectedAreaType==='nearby'&&_userLat?'按距离排序':'按匹配度排序')+'</span></div><div style="text-align:center;margin-bottom:10px"><button onclick="resetFilters()" style="background:none;border:1px solid var(--bd);border-radius:6px;padding:4px 14px;font-size:12px;color:var(--ts);cursor:pointer">🔄 重置筛选</button></div>';
   rooms.forEach(function(rm){
     var price=rm.rent_amount||0;
     var matchClass=rm._score>=70?'s-high':rm._score>=40?'s-mid':'s-low';
@@ -685,7 +719,7 @@ function renderResults(rooms){
     var tagsHtml='<div class="rc-tags">';
     if(rm.type)tagsHtml+='<span class="rt rt-type">'+esc(rm.type)+'</span>';
     if(rm._dist!=null&&_userLat)tagsHtml+='<span class="rt rt-dist">📍 距你'+fmtDist(rm._dist)+'</span>';
-    if(rm.address)tagsHtml+='<span class="rt rt-loc">📍 '+esc(rm.address)+'</span>';
+    if(rm.address)tagsHtml+='<span class="rt rt-loc" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📍 '+esc(rm.address)+'</span>';
     if(rm.area)tagsHtml+='<span class="rt rt-area">'+esc(rm.area)+'m²</span>';
     if(rm.floor)tagsHtml+='<span class="rt rt-floor">🏢 '+esc(rm.floor)+'层</span>';
     tagsHtml+='</div>';
@@ -713,7 +747,7 @@ function renderResults(rooms){
     if(rm.notes)html+='<div class="rc-desc">💬 '+esc(rm.notes)+'</div>';
     html+='</div>';
     html+='<div class="rc-footer">';
-    html+='<div class="rc-contact"><div class="av">🏠</div><div><div class="cn">'+esc(contactName)+'</div><div class="cp">'+(contactPhone?esc(contactPhone):'请联系平台')+'</div></div></div>';
+    html+='<div class="rc-contact"><div class="av">🏠</div><div><div class="cn">'+esc(contactName)+'</div><div class="cp">'+(contactPhone?esc(contactPhone):'暂无电话')+'</div></div></div>';
     if(contactPhone)html+='<a class="btn-call" href="tel:'+contactPhone+'" onclick="event.stopPropagation()">📞 拨打</a>';
     html+='<button class="btn-detail" onclick="event.stopPropagation();showDetail(\''+rm.id+'\')">详情</button>';
     html+='</div></div>';
@@ -799,7 +833,7 @@ function showDetail(id){
   var contactName=contact,contactPhone='';
   var phoneMatch=contact.match(/1[3-9]\d{9}/);
   if(phoneMatch){contactPhone=phoneMatch[0];contactName=contact.replace(phoneMatch[0],'').replace(/[\s,，、:：]/g,'').trim()||'房东'}
-  var footerHtml='<div class="info"><div class="name">🏠 '+esc(contactName)+'</div><div class="phone">'+(contactPhone?esc(contactPhone):'请联系平台获取')+'</div></div>';
+  var footerHtml='<div class="info"><div class="name">🏠 '+esc(contactName)+'</div><div class="phone">'+(contactPhone?esc(contactPhone):(contactName!=='房东'?esc(contact):'暂无联系方式'))+'</div></div>';
   if(contactPhone)footerHtml+='<a class="dm-btn-call" href="tel:'+contactPhone+'">📞 立即拨打</a>';
   document.getElementById('dmFooter').innerHTML=footerHtml;
 
@@ -816,6 +850,8 @@ function closeDetail(e){
   if(e&&e.target!==document.getElementById('detailModal'))return;
   document.getElementById('detailModal').classList.remove('show');
   document.body.style.overflow='';
+  // 清理地图实例防止内存泄漏
+  if(_detailMap){_detailMap.remove();_detailMap=null}
 }
 
 function esc(s){if(!s)return '';var d=document.createElement('div');d.textContent=s;return d.innerHTML}
