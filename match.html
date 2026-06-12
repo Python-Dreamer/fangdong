@@ -700,7 +700,7 @@ function renderResults(rooms){
     el.innerHTML='<div class="empty"><div class="ei">😔</div><h3>暂无匹配房源</h3><p>试试放宽条件，或稍后再来看看</p></div>';
     return;
   }
-  var html='<div class="results-hd"><span>找到 <strong>'+rooms.length+'</strong> 套匹配房源</span><span style="font-size:11px;color:var(--ts)">'+(_selectedAreaType==='nearby'&&_userLat?'按距离排序':'按匹配度排序')+'</span></div><div style="text-align:center;margin-bottom:10px"><button onclick="resetFilters()" style="background:none;border:1px solid var(--bd);border-radius:6px;padding:4px 14px;font-size:12px;color:var(--ts);cursor:pointer">🔄 重置筛选</button></div>';
+  var html='<div class="results-hd"><span>找到 <strong>'+rooms.length+'</strong> 套匹配房源</span><span style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;color:var(--ts)">'+(_selectedAreaType==='nearby'&&_userLat?'按距离排序':'按匹配度排序')+'</span><button onclick="resetFilters()" style="background:var(--pbg);border:none;border-radius:6px;padding:3px 10px;font-size:12px;color:var(--p);cursor:pointer;font-weight:500">重置</button></span></div>';
   rooms.forEach(function(rm){
     var price=rm.rent_amount||0;
     var matchClass=rm._score>=70?'s-high':rm._score>=40?'s-mid':'s-low';
@@ -826,7 +826,7 @@ function showDetail(id){
     infoHtml+='<div class="dm-section"><div class="st">📝 补充说明</div><div style="font-size:13px;line-height:1.6">'+esc(rm.notes)+'</div></div>';
   }
 
-  document.getElementById('dmTitle').textContent=(rm.floor?rm.floor+'层 ':'')+(rm.type||'房源详情');
+  document.getElementById('dmTitle').textContent=rm.address||((rm.floor?rm.floor+'层 ':'')+(rm.type||'房源详情'));
   document.getElementById('dmBody').innerHTML=imgHtml+priceHtml+infoHtml;
 
   var contact=rm.landlord_contact||'房东';
