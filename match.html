@@ -145,6 +145,26 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
 
 .footer{text-align:center;padding:20px;font-size:11px;color:var(--ts)}
 .footer a{color:var(--p);text-decoration:none}
+.fb-fab{position:fixed;right:14px;bottom:24px;width:48px;height:48px;border-radius:50%;background:var(--p);color:#fff;border:none;font-size:20px;box-shadow:0 2px 12px rgba(79,110,247,.4);cursor:pointer;z-index:90;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.fb-fab:active{transform:scale(.92)}
+.fb-mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.fb-mask.show{display:flex}
+.fb-card{background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.fb-card .fb-hd{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--bd)}
+.fb-card .fb-hd h3{font-size:16px;font-weight:700}
+.fb-card .fb-x{background:none;border:none;font-size:22px;color:var(--ts);cursor:pointer;padding:4px}
+.fb-card .fb-bd{padding:16px}
+.fb-card .fg{margin-bottom:12px}
+.fb-card .fg label{display:block;font-size:12px;color:var(--ts);margin-bottom:5px;font-weight:500}
+.fb-card input,.fb-card textarea{width:100%;padding:9px 11px;border:1.5px solid var(--bd);border-radius:8px;font-size:13px;outline:none;transition:border-color .2s;background:#fff;font-family:inherit}
+.fb-card input:focus,.fb-card textarea:focus{border-color:var(--p)}
+.fb-card textarea{resize:vertical}
+.fb-card .fb-ft{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--bd)}
+.fb-card .fb-btn{flex:1;padding:10px;border-radius:8px;border:none;font-size:14px;font-weight:600;cursor:pointer}
+.fb-btn-cancel{background:#f3f4f6;color:var(--ts)}
+.fb-btn-submit{background:var(--p);color:#fff}
+.fb-btn-submit:disabled{opacity:.5;cursor:not-allowed}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -285,7 +305,24 @@ document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.tag
 </div>
 
 <div class="footer">
-  由 <a href="https://python-dreamer.github.io/fangdong" target="_blank">房东管家</a> 提供技术支持 · 瑞丽便民租房平台
+  由 <a href="https://python-dreamer.github.io/fangdong" target="_blank">房东管家</a> 提供技术支持 · 瑞丽便民租房平台 · <a href="javascript:void(0)" onclick="showFeedback()">意见反馈</a>
+</div>
+
+<button class="fb-fab" onclick="showFeedback()" title="意见反馈">💬</button>
+
+<div class="fb-mask" id="fbMask" onclick="closeFeedback(event)">
+  <div class="fb-card" onclick="event.stopPropagation()">
+    <div class="fb-hd"><h3>💬 意见反馈</h3><button class="fb-x" onclick="closeFeedback()">×</button></div>
+    <div class="fb-bd">
+      <div class="fg"><label>您的称呼</label><input id="fbName" placeholder="怎么称呼您？"></div>
+      <div class="fg"><label>联系方式</label><input id="fbContact" placeholder="微信/手机/邮箱，方便回复您"></div>
+      <div class="fg"><label>反馈内容 <span style="color:var(--d)">*</span></label><textarea id="fbContent" rows="4" placeholder="请描述您的问题或建议..."></textarea></div>
+    </div>
+    <div class="fb-ft">
+      <button class="fb-btn fb-btn-cancel" onclick="closeFeedback()">取消</button>
+      <button class="fb-btn fb-btn-submit" id="fbSubmitBtn" onclick="submitFeedback()">提交反馈</button>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -910,6 +947,26 @@ function showDetailMap(rm){
     var markerIcon2=L.divIcon({className:'',html:'<div style="font-size:28px;text-shadow:0 2px 6px rgba(0,0,0,.3)">📍</div>',iconSize:[28,28],iconAnchor:[14,28]});
     L.marker(center,{icon:markerIcon2}).addTo(_detailMap).bindPopup(rm.address||'').openPopup();
   }catch(e){}
+}
+
+function showFeedback(){document.getElementById('fbMask').classList.add('show')}
+function closeFeedback(e){if(e&&e.target!==e.currentTarget)return;document.getElementById('fbMask').classList.remove('show');document.getElementById('fbName').value='';document.getElementById('fbContact').value='';document.getElementById('fbContent').value=''}
+async function submitFeedback(){
+  var name=document.getElementById('fbName').value.trim();
+  var contact=document.getElementById('fbContact').value.trim();
+  var fbContent=document.getElementById('fbContent').value.trim();
+  if(!fbContent){alert('请填写反馈内容');return}
+  var btn=document.getElementById('fbSubmitBtn');
+  btn.textContent='提交中...';btn.disabled=true;
+  try{
+    var r=await sb.from('feedback').insert({name:name||'匿名租客',contact:contact||'',content:fbContent,status:'unread'});
+    if(r.error){alert('提交失败：'+r.error.message);btn.textContent='提交反馈';btn.disabled=false;return}
+    closeFeedback();
+    alert('感谢您的反馈，我们会尽快处理 ❤️');
+  }catch(e){
+    alert('提交失败，请稍后重试');
+    btn.textContent='提交反馈';btn.disabled=false;
+  }
 }
 </script>
 </body>
