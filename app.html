@@ -675,6 +675,7 @@ async function loadFeedback(){
 }
 function fmtDateTime(dt){
   if(!dt)return'-';
+  if(typeof dt==='string'&&dt.indexOf('Z')===-1&&dt.indexOf('+')===-1)dt+='Z';
   var d=new Date(dt);
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 }
