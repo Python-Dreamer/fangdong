@@ -181,7 +181,7 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
       <div style="display:flex;gap:8px">
         <div class="area-search-wrap" style="flex:1">
           <span class="search-ico">📍</span>
-          <input type="text" id="fAreaInput" placeholder="搜索区域/地点..." autocomplete="off" onfocus="showAreaDropdown()" oninput="filterAreaOptions()">
+          <input type="text" id="fAreaInput" placeholder="搜索区域/地点..." autocomplete="off" onfocus="showAreaDropdown()" oninput="filterAreaOptions()" oncompositionend="filterAreaOptions()" onkeydown="if(event.key==='Enter'){event.preventDefault();filterAreaOptions()}">
           <input type="hidden" id="fAreaValue" value="">
           <div class="area-dropdown" id="areaDropdown"></div>
         </div>
@@ -309,17 +309,17 @@ var AMEN_ICONS={'空调':'❄️','热水器':'🚿','WiFi':'📶','独卫':'�
 var RL_LOCATIONS={'滇弄':'24.015,97.845','勐卯':'24.010,97.855','瑞丽':'24.0127,97.849','姐告':'24.020,97.860','弄莫':'24.008,97.840','目脑':'24.005,97.850','团结':'24.018,97.842','建设路':'24.012,97.852','南拨河':'24.001,97.838','芒沙':'24.025,97.835','祥和':'24.013,97.847','禾峻':'24.018,97.840','华丰':'24.009,97.853','边贸街':'24.016,97.858','人民路':'24.011,97.850','目瑙路':'24.006,97.849','勐龙':'24.030,97.820','弄岛':'24.001,97.800','畹町':'24.086,97.970','滇弄二社':'24.014,97.846'};
 // ===== 高德地图API =====
 var AMAP_KEY='78e8b2ba0158936878e7e028174cb480'; // 填入高德Web服务API Key（免费申请：lbs.amap.com）
-function amapJsonp(url,cb){var cbN='_amap_'+Date.now()+'_'+Math.floor(Math.random()*1e4);window[cbN]=function(d){cb(d);delete window[cbN]};var s=document.createElement('script');s.src=url+'&callback='+cbN;s.onerror=function(){delete window[cbN];cb(null);s.remove()};document.head.appendChild(s)}
+function amapFetch(url,cb){fetch(url).then(function(r){return r.json()}).then(function(d){cb(d)}).catch(function(){cb(null)})}
 function amapGeocode(addr,cb){
   if(!AMAP_KEY){cb(null);return}
-  amapJsonp('https://restapi.amap.com/v3/geocode/geo?key='+AMAP_KEY+'&address='+encodeURIComponent(addr)+'&city=德宏',cb);
+  amapFetch('https://restapi.amap.com/v3/geocode/geo?key='+AMAP_KEY+'&address='+encodeURIComponent(addr)+'&city=德宏',cb);
 }
 function amapInputTips(q,cb){
   if(!AMAP_KEY){cb(null);return}
-  amapJsonp('https://restapi.amap.com/v3/assistant/inputtips?key='+AMAP_KEY+'&keywords='+encodeURIComponent(q)+'&city=德宏&citylimit=true&datatype=poi',cb);
+  amapFetch('https://restapi.amap.com/v3/assistant/inputtips?key='+AMAP_KEY+'&keywords='+encodeURIComponent(q)+'&city=德宏&citylimit=true&datatype=poi',cb);
 }
 
-function amapRegeo(lat,lng,cb){if(!AMAP_KEY){cb(null);return}amapJsonp('https://restapi.amap.com/v3/geocode/regeo?key='+AMAP_KEY+'&location='+lng+','+lat+'&extensions=base',cb)}
+function amapRegeo(lat,lng,cb){if(!AMAP_KEY){cb(null);return}amapFetch('https://restapi.amap.com/v3/geocode/regeo?key='+AMAP_KEY+'&location='+lng+','+lat+'&extensions=base',cb)}
 
 function geocodeLocal(address){
   // 按名称长度降序匹配，优先精确匹配

@@ -346,22 +346,21 @@ AMEN_LIST=["空调","热水器","WiFi","独卫","厨房","衣柜","洗衣机","�
 var _roomMap=null,_roomMarker=null;
 // ===== 高德地图API =====
 var AMAP_KEY='78e8b2ba0158936878e7e028174cb480'; // 填入高德Web服务API Key（免费申请：lbs.amap.com → 控制台 → 创建应用 → 添加Key → 选Web服务）
-function amapJsonp(url,cb){var cbN='_amap_'+Date.now()+'_'+Math.floor(Math.random()*1e4);window[cbN]=function(d){cb(d);delete window[cbN]};var s=document.createElement('script');s.src=url+'&callback='+cbN;s.onerror=function(){delete window[cbN];cb(null);s.remove()};document.head.appendChild(s)}
+function amapFetch(url,cb){fetch(url).then(function(r){return r.json()}).then(function(d){cb(d)}).catch(function(){cb(null)})}
 function amapSearchLoc(q,cb){
   if(!AMAP_KEY){cb(null);return}
-  amapJsonp('https://restapi.amap.com/v3/assistant/inputtips?key='+AMAP_KEY+'&keywords='+encodeURIComponent(q)+'&city=德宏&citylimit=true&datatype=poi',cb);
+  amapFetch('https://restapi.amap.com/v3/assistant/inputtips?key='+AMAP_KEY+'&keywords='+encodeURIComponent(q)+'&city=德宏&citylimit=true&datatype=poi',cb);
 }
 function amapGeocode(addr,cb){
   if(!AMAP_KEY){cb(null);return}
-  amapJsonp('https://restapi.amap.com/v3/geocode/geo?key='+AMAP_KEY+'&address='+encodeURIComponent(addr)+'&city=德宏',cb);
+  amapFetch('https://restapi.amap.com/v3/geocode/geo?key='+AMAP_KEY+'&address='+encodeURIComponent(addr)+'&city=德宏',cb);
 }
-// 本地地点降级
 var RL_LOCATIONS={'滇弄':'24.015,97.845','勐卯':'24.010,97.855','瑞丽':'24.0127,97.849','姐告':'24.020,97.860','弄莫':'24.008,97.840','目脑':'24.005,97.850','团结':'24.018,97.842','建设路':'24.012,97.852','南拨河':'24.001,97.838','芒沙':'24.025,97.835','祥和':'24.013,97.847','禾峻':'24.018,97.840','华丰':'24.009,97.853','边贸街':'24.016,97.858','人民路':'24.011,97.850','目瑙路':'24.006,97.849','勐龙':'24.030,97.820','弄岛':'24.001,97.800','畹町':'24.086,97.970','滇弄二社':'24.014,97.846'};
 var _locResults=[],_locSearchTimer=null,_locDDOpen=false;
 function addMapPicker(lat,lng){
   var mb=document.querySelector('.m-bd');if(!mb)return;
   var sec=document.createElement('div');sec.className='fg';sec.id='mapPickerSection';
-  sec.innerHTML='<label>📍 精确定位</label><div style="position:relative"><div style="display:flex;gap:6px"><input class="fc" id="fLocSearch" placeholder="搜索地址/地点..." autocomplete="off" oninput="filterLocOptions()" onfocus="this.select();showLocDropdown()" style="flex:1"><button type="button" onclick="useMyLocation()" style="padding:0 10px;border:1.5px solid var(--bd);border-radius:8px;background:#fff;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0">📍当前定位</button></div><div id="locDropdown" style="position:fixed;background:#fff;border:1.5px solid var(--bd);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:9999;max-height:220px;overflow-y:auto;display:none"></div></div><input type="hidden" id="fRLat" value=""><input type="hidden" id="fRLng" value=""><div id="locMapPreview" style="width:100%;height:150px;border-radius:8px;overflow:hidden;border:1.5px solid var(--bd);margin-top:8px;display:none"></div><div id="locSelectedInfo" style="font-size:12px;color:var(--g);margin-top:4px;display:none">✅ 已选择位置</div>';
+  sec.innerHTML='<label>📍 精确定位</label><div style="position:relative"><div style="display:flex;gap:6px"><input class="fc" id="fLocSearch" placeholder="搜索地址/地点..." autocomplete="off" oninput="filterLocOptions()" oncompositionend="filterLocOptions()" onfocus="this.select();showLocDropdown()" onkeydown="if(event.key===&#39;Enter&#39;){event.preventDefault();filterLocOptions()}" style="flex:1"><button type="button" onclick="useMyLocation()" style="padding:0 10px;border:1.5px solid var(--bd);border-radius:8px;background:#fff;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0">📍当前定位</button></div><div id="locDropdown" style="position:fixed;background:#fff;border:1.5px solid var(--bd);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:9999;max-height:220px;overflow-y:auto;display:none"></div></div><input type="hidden" id="fRLat" value=""><input type="hidden" id="fRLng" value=""><div id="locMapPreview" style="width:100%;height:150px;border-radius:8px;overflow:hidden;border:1.5px solid var(--bd);margin-top:8px;display:none"></div><div id="locSelectedInfo" style="font-size:12px;color:var(--g);margin-top:4px;display:none">✅ 已选择位置</div>';
   mb.appendChild(sec);
   if(lat)document.getElementById('fRLat').value=lat;
   if(lng)document.getElementById('fRLng').value=lng;
