@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.3, maximum-scale=5.0">
 <title>房东管家</title>
 <meta name="theme-color" content="#4F46E5">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,7 +15,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--p:#4F46E5;--g:#10B981;--w:#F59E0B;--d:#EF4444;--i:#3B82F6;--bg:#F1F5F9;--c:#fff;--t:#1E293B;--ts:#64748B;--bd:#E2E8F0;--sb:#1E293B}
-body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--t);min-height:100vh;-webkit-overflow-scrolling:touch}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--t);min-height:100vh;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 .auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%)}
 .auth-card{background:var(--c);border-radius:16px;padding:32px 28px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2)}
 .auth-card h1{font-size:22px;font-weight:700;margin-bottom:4px;text-align:center}
@@ -54,8 +54,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei
 .sbox{display:flex;align-items:center;background:var(--bg);border-radius:8px;padding:6px 10px;gap:6px;flex:1;max-width:260px}
 .sbox input{border:none;background:none;outline:none;font-size:13px;width:100%;color:var(--t)}
 .fsel{padding:7px 10px;border-radius:8px;border:1px solid var(--bd);font-size:13px;background:#fff;outline:none;cursor:pointer;color:var(--t);-webkit-appearance:none;appearance:none}
-.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.m-bd table{min-width:0}
-table{width:100%;border-collapse:collapse;min-width:600px}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}.m-bd table{min-width:0}
+table{width:100%;border-collapse:collapse;min-width:400px}
 thead th{padding:9px 11px;text-align:left;font-size:11px;font-weight:700;color:var(--ts);background:#F8FAFC;border-bottom:1px solid var(--bd);white-space:nowrap}
 tbody td{padding:8px 11px;font-size:13px;border-bottom:1px solid var(--bd);white-space:nowrap}
 tbody tr:hover{background:#FAFBFC}
@@ -148,6 +148,7 @@ select.fc{-webkit-appearance:none;appearance:none;background-image:url("data:ima
 .occ-add-btn:hover{border-color:var(--p);color:var(--p)}
 .occ-tag{display:inline-block;background:#EEF2FF;color:var(--p);font-size:10px;padding:1px 5px;border-radius:4px;margin-left:4px;font-weight:600}
 @media(max-width:768px){
+table{min-width:0;font-size:12px}thead th{padding:6px 4px;font-size:11px}tbody td{padding:6px 4px;font-size:12px}.page-hd .hd-actions{flex-wrap:wrap;gap:4px}.page-hd .hd-actions .btn{font-size:11px;padding:4px 8px}
 .sidebar{transform:translateX(-100%)}
 .sidebar.open{transform:translateX(0)}
 .sb-overlay.show{display:block}
