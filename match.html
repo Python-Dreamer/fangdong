@@ -510,7 +510,7 @@ function renderViewer(){
   var img=document.getElementById('viewerImg');
   img.src=origUrl(_viewerImgs[_viewerIdx]);
   img.style.transform='translate(0px,0px) scale(1)';
-  img.onclick=function(e){e.stopPropagation()};
+  img.onclick=function(e){};
   document.getElementById('viewerCounter').textContent=(_viewerIdx+1)+'/'+_viewerImgs.length;
   // 圆点
   var dotsHtml='';
