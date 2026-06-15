@@ -361,13 +361,13 @@ var _locResults=[],_locSearchTimer=null,_locDDOpen=false;
 function addMapPicker(lat,lng){
   var mb=document.querySelector('.m-bd');if(!mb)return;
   var sec=document.createElement('div');sec.className='fg';sec.id='mapPickerSection';
-  sec.innerHTML='<label>📍 精确定位</label><div style="position:relative"><div style="display:flex;gap:6px"><input class="fc" id="fLocSearch" placeholder="搜索地址/地点..." autocomplete="off" oninput="filterLocOptions()" onfocus="this.select();showLocDropdown()" style="flex:1"><button type="button" onclick="useMyLocation()" style="padding:0 10px;border:1.5px solid var(--bd);border-radius:8px;background:#fff;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0">📍当前定位</button></div><div id="locDropdown" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--bd);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:50;max-height:220px;overflow-y:auto;display:none;margin-top:4px"></div></div><input type="hidden" id="fRLat" value=""><input type="hidden" id="fRLng" value=""><div id="locMapPreview" style="width:100%;height:150px;border-radius:8px;overflow:hidden;border:1.5px solid var(--bd);margin-top:8px;display:none"></div><div id="locSelectedInfo" style="font-size:12px;color:var(--g);margin-top:4px;display:none">✅ 已选择位置</div>';
+  sec.innerHTML='<label>📍 精确定位</label><div style="position:relative"><div style="display:flex;gap:6px"><input class="fc" id="fLocSearch" placeholder="搜索地址/地点..." autocomplete="off" oninput="filterLocOptions()" onfocus="this.select();showLocDropdown()" style="flex:1"><button type="button" onclick="useMyLocation()" style="padding:0 10px;border:1.5px solid var(--bd);border-radius:8px;background:#fff;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0">📍当前定位</button></div><div id="locDropdown" style="position:fixed;background:#fff;border:1.5px solid var(--bd);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:9999;max-height:220px;overflow-y:auto;display:none"></div></div><input type="hidden" id="fRLat" value=""><input type="hidden" id="fRLng" value=""><div id="locMapPreview" style="width:100%;height:150px;border-radius:8px;overflow:hidden;border:1.5px solid var(--bd);margin-top:8px;display:none"></div><div id="locSelectedInfo" style="font-size:12px;color:var(--g);margin-top:4px;display:none">✅ 已选择位置</div>';
   mb.appendChild(sec);
   if(lat)document.getElementById('fRLat').value=lat;
   if(lng)document.getElementById('fRLng').value=lng;
   if(lat&&lng){document.getElementById('fLocSearch').value='已设置定位';showLocMapPreview(parseFloat(lat),parseFloat(lng))}
 }
-function showLocDropdown(){_locDDOpen=true;document.getElementById('locDropdown').style.display='block'}
+function showLocDropdown(){_locDDOpen=true;var inp=document.getElementById('fLocSearch');var dd=document.getElementById('locDropdown');if(!inp||!dd)return;var r=inp.getBoundingClientRect();dd.style.display='block';dd.style.left=r.left+'px';dd.style.top=(r.bottom+4)+'px';dd.style.width=r.width+'px'}
 function hideLocDropdown(){_locDDOpen=false;var dd=document.getElementById('locDropdown');if(dd)dd.style.display='none'}
 document.addEventListener('click',function(e){if(!_locDDOpen)return;var dd=document.getElementById('locDropdown'),inp=document.getElementById('fLocSearch');if(dd&&inp&&!dd.contains(e.target)&&e.target!==inp)hideLocDropdown()});
 function filterLocOptions(){
@@ -376,7 +376,7 @@ function filterLocOptions(){
   _locResults=[];
   var dd=document.getElementById('locDropdown');
   if(!sq){dd.style.display='none';return}
-  dd.style.display='block';
+  dd.style.display='block';var inp=document.getElementById('fLocSearch');if(inp){var r=inp.getBoundingClientRect();dd.style.left=r.left+'px';dd.style.top=(r.bottom+4)+'px';dd.style.width=r.width+'px'}
   clearTimeout(_locSearchTimer);
   if(AMAP_KEY){
     dd.innerHTML='<div style="padding:9px 12px;font-size:13px;color:var(--ts)">🔍 搜索中...</div>';
@@ -426,7 +426,7 @@ function selectLocOption(name,lat,lng){
   showLocMapPreview(lat,lng);
   var info=document.getElementById('locSelectedInfo');if(info)info.style.display='block';
 }
-function useMyLocation(){var btn=event.target;var old=btn.textContent;btn.textContent='定位中...';btn.disabled=true;if(!navigator.geolocation){btn.textContent='不支持';setTimeout(function(){btn.textContent='📍当前定位';btn.disabled=false},1500);return}navigator.geolocation.getCurrentPosition(function(pos){var lat=pos.coords.latitude,lng=pos.coords.longitude;document.getElementById('fRLat').value=lat;document.getElementById('fRLng').value=lng;document.getElementById('fLocSearch').value='📍 当前位置';showLocMapPreview(lat,lng);btn.textContent='📍当前定位';btn.disabled=false;document.getElementById('locSelectedInfo').style.display='block';document.getElementById('locSelectedInfo').textContent='✅ 已使用当前GPS定位'},function(err){btn.textContent='📍当前定位';btn.disabled=false;toast('定位失败: '+err.message,'e')},{enableHighAccuracy:true,timeout:10000})}
+function useMyLocation(){var btn=event.target;btn.textContent='定位中...';btn.disabled=true;if(!navigator.geolocation){btn.textContent='不支持';setTimeout(function(){btn.textContent='📍当前定位';btn.disabled=false},1500);return}navigator.geolocation.getCurrentPosition(function(pos){var lat=pos.coords.latitude,lng=pos.coords.longitude;document.getElementById('fRLat').value=lat;document.getElementById('fRLng').value=lng;document.getElementById('fLocSearch').value='📍 当前位置';showLocMapPreview(lat,lng);btn.textContent='📍当前定位';btn.disabled=false;document.getElementById('locSelectedInfo').style.display='block';document.getElementById('locSelectedInfo').textContent='✅ 已定位 (精度'+Math.round(pos.coords.accuracy)+'米)';if(pos.coords.accuracy>100){toast('定位精度较低，建议在空旷处重试或手动选择位置','w')}},function(err){btn.textContent='📍当前定位';btn.disabled=false;if(err.code===1){toast('请允许定位权限','e')}else{toast('定位失败，请尝试手动搜索地址','e')}},{enableHighAccuracy:true,timeout:15000,maximumAge:0})}
 function showLocMapPreview(lat,lng){
   var mapDiv=document.getElementById('locMapPreview');if(!mapDiv)return;
   mapDiv.style.display='block';
