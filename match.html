@@ -130,7 +130,7 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
 .img-viewer.show{display:flex}
 .img-viewer .viewer-close{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:20px;cursor:pointer;z-index:3;display:flex;align-items:center;justify-content:center}
 .img-viewer .viewer-img-wrap{width:100%;height:calc(100% - 80px);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:pan-y}
-.img-viewer .viewer-img-wrap img{max-width:100%;max-height:100%;object-fit:contain;transition:opacity .2s}
+.img-viewer .viewer-img-wrap img{max-width:100%;max-height:100%;object-fit:contain;transition:opacity .2s;transform-origin:0 0;will-change:transform}
 .img-viewer .viewer-counter{position:absolute;bottom:50px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.2);color:#fff;padding:4px 14px;border-radius:12px;font-size:13px;z-index:3}
 .img-viewer .viewer-prev,.img-viewer .viewer-next{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:22px;cursor:pointer;z-index:3;display:flex;align-items:center;justify-content:center}
 .img-viewer .viewer-prev{left:8px}
@@ -488,21 +488,26 @@ function calcRoomDist(rm){
 
 // ===== 全屏图片查看器 =====
 var _viewerImgs=[],_viewerIdx=0;
+// pinch zoom 状态
+var _pzScale=1,_pzX=0,_pzY=0,_pzStartDist=0,_pzStartScale=1,_pzDragging=false,_pzDragStartX=0,_pzDragStartY=0,_pzDragStartTX=0,_pzDragStartTY=0;
 function openViewer(imgs,idx){
   _viewerImgs=imgs;_viewerIdx=idx||0;
+  _pzScale=1;_pzX=0;_pzY=0;
   renderViewer();
   document.getElementById('imgViewer').classList.add('show');
   document.body.style.overflow='hidden';
-  // 触摸滑动
   initViewerSwipe();
+  initPinchZoom();
 }
 function closeViewer(){
   document.getElementById('imgViewer').classList.remove('show');
   if(!document.getElementById('detailModal').classList.contains('show'))document.body.style.overflow='';
 }
 function renderViewer(){
+  _pzScale=1;_pzX=0;_pzY=0;
   var img=document.getElementById('viewerImg');
   img.src=origUrl(_viewerImgs[_viewerIdx]);
+  img.style.transform='translate(0px,0px) scale(1)';
   img.onclick=function(e){e.stopPropagation()};
   document.getElementById('viewerCounter').textContent=(_viewerIdx+1)+'/'+_viewerImgs.length;
   // 圆点
@@ -524,6 +529,7 @@ function viewerGo(i){_viewerIdx=i;renderViewer()}
 
 // 触摸滑动支持
 var _viewerSwiped=false,_viewerSwipeBound=false,_swipeStartX=0,_swipeStartY=0,_swipeStartTime=0;
+var _lastTapTime=0;
 function initViewerSwipe(){
   var wrap=document.getElementById('viewerWrap');
   if(_viewerSwipeBound)return;_viewerSwipeBound=true;
@@ -542,9 +548,63 @@ function initViewerSwipe(){
       if(dx<0)viewerNext();else viewerPrev();
     }
   },{passive:true});
-  wrap.addEventListener('click',function(){
-    if(!_viewerSwiped)closeViewer();
+  wrap.addEventListener('click',function(e){
+    if(_viewerSwiped)return;
+    var now=Date.now();
+    if(now-_lastTapTime<300){
+      // 双击：切换缩放
+      if(_pzScale>1.01){_pzScale=1;_pzX=0;_pzY=0}else{_pzScale=2.5;_pzX=0;_pzY=0}
+      applyPZ();
+      _lastTapTime=0;
+    }else{
+      _lastTapTime=now;
+      setTimeout(function(){if(_lastTapTime!==0&&Date.now()-_lastTapTime>=280)closeViewer()},300);
+    }
   });
+}
+
+// ===== Pinch Zoom 缩放 =====
+var _pzBound=false;
+function initPinchZoom(){
+  if(_pzBound)return;_pzBound=true;
+  var wrap=document.getElementById('viewerWrap');
+  wrap.addEventListener('touchstart',function(e){
+    if(e.touches.length===2){
+      _pzStartDist=getTouchDist(e.touches);
+      _pzStartScale=_pzScale;
+      e.preventDefault();
+    }else if(e.touches.length===1&&_pzScale>1.01){
+      _pzDragging=true;
+      _pzDragStartX=e.touches[0].clientX;
+      _pzDragStartY=e.touches[0].clientY;
+      _pzDragStartTX=_pzX;
+      _pzDragStartTY=_pzY;
+    }
+  },{passive:false});
+  wrap.addEventListener('touchmove',function(e){
+    if(e.touches.length===2){
+      var d=getTouchDist(e.touches);
+      _pzScale=Math.min(Math.max(_pzStartScale*(d/_pzStartDist),1),5);
+      _pzX=0;_pzY=0;
+      applyPZ();
+      e.preventDefault();
+    }else if(e.touches.length===1&&_pzDragging&&_pzScale>1.01){
+      _pzX=_pzDragStartTX+(e.touches[0].clientX-_pzDragStartX);
+      _pzY=_pzDragStartTY+(e.touches[0].clientY-_pzDragStartY);
+      applyPZ();
+      e.preventDefault();
+    }
+  },{passive:false});
+  wrap.addEventListener('touchend',function(e){
+    if(e.touches.length<2)_pzDragging=false;
+    if(_pzScale<1.01){_pzScale=1;_pzX=0;_pzY=0;applyPZ()}
+  },{passive:true});
+}
+function getTouchDist(t){var dx=t[0].clientX-t[1].clientX,dy=t[0].clientY-t[1].clientY;return Math.sqrt(dx*dx+dy*dy)}
+function applyPZ(){
+  var img=document.getElementById('viewerImg');
+  if(!img)return;
+  img.style.transform='translate('+_pzX+'px,'+_pzY+'px) scale('+_pzScale+')';
 }
 
 // 获取房间的所有图片
@@ -877,6 +937,9 @@ function showDetailMap(rm){
   var mapDiv=document.getElementById('detailMap');
   if(!mapDiv)return;
   if(_detailMap){_detailMap.remove();_detailMap=null}
+  // 移除旧导航按钮
+  var oldNav=mapDiv.parentNode.querySelector('.map-nav-btn');
+  if(oldNav)oldNav.remove();
   try{
     var center=[24.0127,97.8490];
     // 优先使用数据库精确坐标
@@ -887,6 +950,7 @@ function showDetailMap(rm){
       L.control.zoom({position:'bottomright'}).addTo(_detailMap);
       var markerIcon=L.divIcon({className:'',html:'<div style="font-size:28px;text-shadow:0 2px 6px rgba(0,0,0,.3)">📍</div>',iconSize:[28,28],iconAnchor:[14,28]});
       L.marker(center,{icon:markerIcon}).addTo(_detailMap).bindPopup(rm.address||'').openPopup();
+      addMapNavBtn(mapDiv,center[0],center[1],rm.address);
       return;
     }
     // 尝试高德地理编码
@@ -904,6 +968,7 @@ function showDetailMap(rm){
         L.control.zoom({position:'bottomright'}).addTo(_detailMap);
         var markerIcon=L.divIcon({className:'',html:'<div style="font-size:28px;text-shadow:0 2px 6px rgba(0,0,0,.3)">📍</div>',iconSize:[28,28],iconAnchor:[14,28]});
         L.marker(center,{icon:markerIcon}).addTo(_detailMap).bindPopup(rm.address||'').openPopup();
+        addMapNavBtn(mapDiv,center[0],center[1],rm.address);
       });
       return;
     }
@@ -915,7 +980,21 @@ function showDetailMap(rm){
     L.control.zoom({position:'bottomright'}).addTo(_detailMap);
     var markerIcon2=L.divIcon({className:'',html:'<div style="font-size:28px;text-shadow:0 2px 6px rgba(0,0,0,.3)">📍</div>',iconSize:[28,28],iconAnchor:[14,28]});
     L.marker(center,{icon:markerIcon2}).addTo(_detailMap).bindPopup(rm.address||'').openPopup();
+    addMapNavBtn(mapDiv,center[0],center[1],rm.address);
   }catch(e){}
+}
+function addMapNavBtn(mapDiv,lat,lng,address){
+  var btn=document.createElement('a');
+  btn.className='map-nav-btn';
+  btn.innerHTML='🧭 导航到这里';
+  // 高德地图导航链接（安卓/iOS通用）
+  var amapUrl='https://uri.amap.com/navigation?to='+lng+','+lat+','+encodeURIComponent(address||'目的地')+'&mode=bus&callnative=1';
+  btn.href=amapUrl;
+  btn.target='_blank';
+  btn.rel='noopener';
+  btn.style.cssText='display:block;position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:1000;background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:#fff;padding:6px 18px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;box-shadow:0 2px 8px rgba(79,110,247,.4);white-space:nowrap';
+  mapDiv.style.position='relative';
+  mapDiv.appendChild(btn);
 }
 </script>
 <script>if('serviceWorker'in navigator){navigator.serviceWorker.register('match-sw.js').catch(function(){})}</script>
