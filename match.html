@@ -660,7 +660,9 @@ async function loadRooms(){
       amapRegeo(rm._lat,rm._lon,function(data){
         if(data&&data.status==='1'&&data.regeocode){
           var comp=data.regeocode.addressComponent||{};
-          var realName=(comp.building||'')||(comp.neighborhood&&comp.neighborhood.name?comp.neighborhood.name:'')||(comp.township||'')+(comp.streetNumber?(comp.streetNumber.street||'')+(comp.streetNumber.number||''):'');
+          var bName=comp.building&&(typeof comp.building==='string'?comp.building:comp.building.name);
+          var nName=comp.neighborhood&&(typeof comp.neighborhood.name==='string'?comp.neighborhood.name:'');
+          var realName=bName||nName||(comp.township||'')+(comp.streetNumber?(comp.streetNumber.street||'')+(comp.streetNumber.number||''):'');
           if(!realName&&data.regeocode.formatted_address)realName=data.regeocode.formatted_address.replace(/^(德宏傣族景颇族自治州|瑞丽市|勐卯镇)/g,'').trim();
           if(realName)rm._realName=realName;
         }
@@ -972,7 +974,9 @@ function showDetailMap(rm){
       amapRegeo(center[0],center[1],function(data){
         if(data&&data.status==='1'&&data.regeocode){
           var comp=data.regeocode.addressComponent||{};
-          var realName=(comp.building||'')+(comp.neighborhood&&comp.neighborhood.name?comp.neighborhood.name:'')||(comp.township||'')+(comp.streetNumber?(comp.streetNumber.street||'')+(comp.streetNumber.number||''):'');
+          var bName=comp.building&&(typeof comp.building==='string'?comp.building:comp.building.name);
+          var nName=comp.neighborhood&&(typeof comp.neighborhood.name==='string'?comp.neighborhood.name:'');
+          var realName=bName||nName||(comp.township||'')+(comp.streetNumber?(comp.streetNumber.street||'')+(comp.streetNumber.number||''):'');
           if(!realName&&data.regeocode.formatted_address)realName=data.regeocode.formatted_address.replace(/^(德宏傣族景颇族自治州|瑞丽市|勐卯镇)/g,'').trim();
           if(realName){
             var addrEl=document.getElementById('dmAddrText');
