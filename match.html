@@ -804,7 +804,7 @@ function renderResults(rooms){
     var tagsHtml='<div class="rc-tags">';
     if(rm.type)tagsHtml+='<span class="rt rt-type">'+esc(rm.type)+'</span>';
     if(rm._dist!=null&&_userLat)tagsHtml+='<span class="rt rt-dist">📍 距你'+fmtDist(rm._dist)+'</span>';
-    if(rm.address||rm._realName)tagsHtml+='<span class="rt rt-loc" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📍 '+esc(rm._realName||rm.address)+'</span>';
+    if(rm.address||rm._realName)tagsHtml+='<span class="rt rt-loc" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📍 '+esc(rm.address||rm._realName)+'</span>';
     if(rm.area)tagsHtml+='<span class="rt rt-area">'+esc(rm.area)+'m²</span>';
     if(rm.floor)tagsHtml+='<span class="rt rt-floor">🏢 '+esc(rm.floor)+'层</span>';
     tagsHtml+='</div>';
@@ -825,7 +825,7 @@ function renderResults(rooms){
     html+='<div class="room-card" data-imgs=\''+imgDataAttr+'\' onclick="showDetail(\''+rm.id+'\')">';
     html+=imgHtml;
     html+='<div class="rc-body">';
-    html+='<div class="rc-top"><div class="rc-name">'+esc(rm._realName||rm.address||((rm.floor?rm.floor+'层 ':'')+(rm.type||'房源')))+'</div>';
+    html+='<div class="rc-top"><div class="rc-name">'+esc(rm.address||rm._realName||((rm.floor?rm.floor+'层 ':'')+(rm.type||'房源')))+'</div>';
     html+='<span class="rc-score '+matchClass+'">🎯'+rm._score+'分</span></div>';
     html+=tagsHtml;
     html+=amenHtml;
@@ -913,7 +913,7 @@ function showDetail(id){
     infoHtml+='<div class="dm-section"><div class="st">📝 补充说明</div><div style="font-size:13px;line-height:1.6">'+esc(rm.notes)+'</div></div>';
   }
 
-  document.getElementById('dmTitle').textContent=rm._realName||rm.address||((rm.floor?rm.floor+'层 ':'')+(rm.type||'房源详情'));
+  document.getElementById('dmTitle').textContent=rm.address||rm._realName||((rm.floor?rm.floor+'层 ':'')+(rm.type||'房源详情'));
   document.getElementById('dmBody').innerHTML=imgHtml+priceHtml+infoHtml;
 
   var contact=rm.landlord_contact||'房东';
@@ -985,8 +985,6 @@ function showDetailMap(rm){
           if(realName){
             var addrEl=document.getElementById('dmAddrText');
             if(addrEl)addrEl.textContent=realName;
-            var titleEl=document.getElementById('dmTitle');
-            if(titleEl)titleEl.textContent=realName;
             _detailMap.eachLayer(function(l){if(l.getPopup)l.setPopupContent(realName)});
           }
         }
