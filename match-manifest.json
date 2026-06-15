@@ -1,0 +1,24 @@
+{
+  "name": "瑞丽找房 - 智能租房匹配",
+  "short_name": "瑞丽找房",
+  "description": "瑞丽本地租房神器，智能匹配房源，找房又快又准",
+  "start_url": "./match.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#4f6ef7",
+  "theme_color": "#4f6ef7",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "match-icons/icon-72x72.png", "sizes": "72x72", "type": "image/png" },
+    { "src": "match-icons/icon-96x96.png", "sizes": "96x96", "type": "image/png" },
+    { "src": "match-icons/icon-128x128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "match-icons/icon-144x144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "match-icons/icon-152x152.png", "sizes": "152x152", "type": "image/png" },
+    { "src": "match-icons/icon-180x180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "match-icons/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "match-icons/icon-384x384.png", "sizes": "384x384", "type": "image/png" },
+    { "src": "match-icons/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "categories": ["lifestyle", "utilities"]
+}

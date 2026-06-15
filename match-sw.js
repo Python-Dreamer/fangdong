@@ -1,17 +1,9 @@
-var CACHE_NAME='fangdong-v6';
+var CACHE_NAME='ruili-match-v1';
 var CACHE_URLS=[
-  './',
-  './index.html',
-  './app.html',
   './match.html',
-  './manifest.json',
   './match-manifest.json',
-  './icons/icon-192x192.png',
-  './icons/icon-512x512.png',
-  './icons-extra/icon-180x180.png',
   './match-icons/icon-192x192.png',
-  './match-icons/icon-512x512.png',
-  './match-icons/icon-180x180.png'
+  './match-icons/icon-512x512.png'
 ];
 self.addEventListener('install',function(e){
   e.waitUntil(caches.open(CACHE_NAME).then(function(c){return c.addAll(CACHE_URLS)}));
@@ -29,4 +21,11 @@ self.addEventListener('fetch',function(e){
     fetch(e.request).then(function(r){
       if(r&&r.status===200){
         var rc=r.clone();
-        caches.open(CACHE_NAME).then(functio
+        caches.open(CACHE_NAME).then(function(c){c.put(e.request,rc)});
+      }
+      return r;
+    }).catch(function(){
+      return caches.match(e.request);
+    })
+  );
+});
