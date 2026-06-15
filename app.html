@@ -366,7 +366,7 @@ function addMapPicker(lat,lng){
   if(lng)document.getElementById('fRLng').value=lng;
   if(lat&&lng){document.getElementById('fLocSearch').value='已设置定位';showLocMapPreview(parseFloat(lat),parseFloat(lng))}
 }
-function showLocDropdown(){_locDDOpen=true;var inp=document.getElementById('fLocSearch');var dd=document.getElementById('locDropdown');if(!inp||!dd)return;var r=inp.getBoundingClientRect();dd.style.display='block';dd.style.left=r.left+'px';dd.style.top=(r.bottom+4)+'px';dd.style.width=r.width+'px'}
+function showLocDropdown(){_locDDOpen=true;var inp=document.getElementById('fLocSearch');var dd=document.getElementById('locDropdown');if(!inp||!dd)return;if(dd.parentNode!==document.body)document.body.appendChild(dd);var r=inp.getBoundingClientRect();dd.style.display='block';dd.style.left=r.left+'px';dd.style.top=(r.bottom+4)+'px';dd.style.width=r.width+'px'}
 function hideLocDropdown(){_locDDOpen=false;var dd=document.getElementById('locDropdown');if(dd)dd.style.display='none'}
 document.addEventListener('click',function(e){if(!_locDDOpen)return;var dd=document.getElementById('locDropdown'),inp=document.getElementById('fLocSearch');if(dd&&inp&&!dd.contains(e.target)&&e.target!==inp)hideLocDropdown()});
 function filterLocOptions(){
@@ -375,7 +375,7 @@ function filterLocOptions(){
   _locResults=[];
   var dd=document.getElementById('locDropdown');
   if(!sq){dd.style.display='none';return}
-  dd.style.display='block';var inp=document.getElementById('fLocSearch');if(inp){var r=inp.getBoundingClientRect();dd.style.left=r.left+'px';dd.style.top=(r.bottom+4)+'px';dd.style.width=r.width+'px'}
+  dd.style.display='block';if(dd.parentNode!==document.body)document.body.appendChild(dd);var inp=document.getElementById('fLocSearch');if(inp){var r=inp.getBoundingClientRect();dd.style.left=r.left+'px';dd.style.top=(r.bottom+4)+'px';dd.style.width=r.width+'px'}
   clearTimeout(_locSearchTimer);
   if(AMAP_KEY){
     dd.innerHTML='<div style="padding:9px 12px;font-size:13px;color:var(--ts)">🔍 搜索中...</div>';
