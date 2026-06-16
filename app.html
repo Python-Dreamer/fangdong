@@ -251,7 +251,7 @@ function toast(msg,type){type=type||'s';var cls={s:'t-s',e:'t-e',w:'t-w',i:'t-i'
 
 // ========== 弹窗与确认 ==========
 function openModal(html){document.getElementById('modal').innerHTML=html;document.getElementById('overlay').classList.add('show')}
-function closeModal(){document.getElementById('overlay').classList.remove('show');if(_roomMap){_roomMap.remove();_roomMap=null;_roomMarker=null}_locResults=[];clearTimeout(_locSearchTimer)}
+function closeModal(){document.getElementById('overlay').classList.remove('show');if(_roomMap){_roomMap.remove();_roomMap=null;_roomMarker=null}var _ld=document.getElementById('locDropdown');if(_ld&&_ld.parentNode===document.body)document.body.removeChild(_ld);_locResults=[];clearTimeout(_locSearchTimer)}
 function confirmDialog(msg,sub,onOk){openModal('<div class="cf-wrap"><div class="cf-ico">⚠️</div><div class="cf-msg">'+esc(msg)+'</div><div class="cf-sub">'+esc(sub||'')+'</div><div class="cf-btns"><button class="btn btn-gh" onclick="closeModal()" style="padding:9px 18px">取消</button><button class="btn btn-d" id="cfOk" style="padding:9px 18px">确认</button></div></div>');document.getElementById('cfOk').onclick=function(){closeModal();onOk()}}
 
 // ========== 认证相关 ==========
