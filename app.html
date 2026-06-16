@@ -650,7 +650,9 @@ function rFeedback(){
       html+='<span style="font-size:11px;color:var(--ts)">'+fmtDateTime(fb.created_at)+'</span>';
       html+='</div></div>';
       html+='<p style="font-size:13px;line-height:1.6;margin:6px 0 10px 0;color:var(--tc)">'+esc(fb.content)+'</p>';
+      if(fb.reply){html+='\u003cdiv style="background:var(--bg);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:12px"\u003e\u003cspan style="color:var(--p);font-weight:600"\u003e房东回复：\u003c/span\u003e'+esc(fb.reply)+'\u003c/div\u003e'};
       html+='<div style="display:flex;gap:8px">';
+      html+='<button class="btn btn-sm btn-p" onclick="showReplyFeedback(\''+fb.id+'\')">'+(fb.reply?'修改回复':'💬 回复')+'</button>';
       if(isUnread)html+='<button class="btn btn-sm btn-g" onclick="markFeedbackRead(\''+fb.id+'\')">标记已读</button>';
       html+='<button class="btn btn-sm btn-gh" onclick="deleteFeedback(\''+fb.id+'\')" style="color:var(--d)">删除</button>';
       html+='</div></div>';
@@ -659,6 +661,8 @@ function rFeedback(){
   }
   document.getElementById('mainContent').innerHTML=html;
 }
+function showReplyFeedback(id){var fb=cache.feedback.find(function(x){return x.id===id});if(!fb)return;openModal('\u003cdiv class="m-hd"\u003e\u003ch3\u003e💬 回复留言\u003c/h3\u003e\u003cbutton class="m-x" onclick="closeModal()"\u003e×\u003c/button\u003e\u003c/div\u003e\u003cdiv class="m-bd"\u003e\u003cdiv style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:12px;font-size:13px"\u003e\u003cdiv style="font-weight:600;margin-bottom:4px"\u003e'+esc(fb.name||'匿名用户')+'\u003c/div\u003e\u003cdiv style="color:var(--tc);line-height:1.5"\u003e'+esc(fb.content)+'\u003c/div\u003e\u003c/div\u003e\u003cdiv class="fg"\u003e\u003clabel\u003e回复内容\u003cspan class="req"\u003e*\u003c/span\u003e\u003c/label\u003e\u003ctextarea class="fc" id="fbReply" rows="3" placeholder="输入回复内容..." style="resize:vertical"\u003e'+esc(fb.reply||'')+'\u003c/textarea\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv class="m-ft"\u003e\u003cbutton class="btn btn-gh" onclick="closeModal()"\u003e取消\u003c/button\u003e\u003cbutton class="btn btn-p" id="fbReplyBtn" onclick="doReplyFeedback(\''+id+'\')"\u003e发送回复\u003c/button\u003e\u003c/div\u003e')}
+async function doReplyFeedback(id){var reply=document.getElementById('fbReply').value.trim();if(!reply){toast('请输入回复内容','e');return}var btn=document.getElementById('fbReplyBtn');if(btn){btn.textContent='发送中...';btn.disabled=true}try{var r=await sb.from('feedback').update({reply:reply,status:'read'}).eq('id',id);if(r.error){toast(r.error.message,'e');return}var fb=cache.feedback.find(function(x){return x.id===id});if(fb){fb.reply=reply;fb.status='read'}closeModal();renderPage();updateBadges();toast('回复成功')}catch(e){toast('回复失败','e')}finally{if(btn){btn.textContent='发送回复';btn.disabled=false}}}
 async function markFeedbackRead(id){
   var r=await sb.from('feedback').update({status:'read'}).eq('id',id);
   if(r.error){toast(r.error.message,'e');return}
