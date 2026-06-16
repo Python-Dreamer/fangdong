@@ -266,7 +266,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.tag
 </div>
 
 <!-- 详情弹窗 -->
-<div class="modal-mask" id="detailModal" onclick="closeDetail(event)">
+<div class="modal-mask" id="detailModal" onclick="closeDetail(event)" ontouchstart="if(event.target.closest('.modal-box'))event.stopPropagation()">
   <div class="modal-box" onclick="event.stopPropagation()">
     <div class="modal-head">
       <h3 id="dmTitle">房源详情</h3>
@@ -439,6 +439,7 @@ function selectArea(val,label){
   _selectedAreaType=val?'area':'';
   document.getElementById('fAreaInput').value=val?'📍 '+label:'';
   document.getElementById('fAreaValue').value=val;
+  document.getElementById('fAreaInput').blur();
   hideAreaDropdown();
 }
 function selectAreaNearby(){
@@ -446,6 +447,7 @@ function selectAreaNearby(){
   _selectedArea='';
   document.getElementById('fAreaInput').value='📍 附近优先';
   document.getElementById('fAreaValue').value='nearby';
+  document.getElementById('fAreaInput').blur();
   hideAreaDropdown();
   if(!_userLat)doLocate();
 }
