@@ -2,19 +2,23 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=5.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=0.3,maximum-scale=5.0">
 <title>瑞丽找房 - 租客智能匹配</title>
 <meta name="theme-color" content="#4f6ef7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="瑞丽找房">
+<meta property="og:title" content="瑞丽找房 - 租客智能匹配">
+<meta property="og:description" content="瑞丽本地租房智能匹配平台，精准推荐最适合你的房源">
+<meta property="og:type" content="website">
+
 <link rel="manifest" href="match-manifest.json">
 <link rel="apple-touch-icon" href="match-icons/icon-180x180.png">
 <link rel="icon" href="match-icons/icon-192x192.png">
 <style>
 :root{--bg:#f5f7fa;--card:#fff;--p:#4f6ef7;--p2:#6b8aff;--pbg:rgba(79,110,247,.08);--t:#1a1a2e;--ts:#6b7280;--bd:#e5e7eb;--g:#10b981;--w:#f59e0b;--d:#ef4444;--r:12px;--sh:0 2px 12px rgba(0,0,0,.06)}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB',sans-serif;background:var(--bg);color:var(--t);min-height:100vh;-webkit-font-smoothing:antialiased;padding-bottom:20px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB',sans-serif;background:var(--bg);color:var(--t);min-height:100vh;-webkit-font-smoothing:antialiased;padding-bottom:20px;overflow-x:hidden}
 
 .hero{background:linear-gradient(135deg,#4f6ef7 0%,#7c3aed 100%);color:#fff;padding:36px 20px 28px;text-align:center;position:relative;overflow:hidden}
 .hero::before{content:'';position:absolute;top:-50%;right:-20%;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.06)}
@@ -156,6 +160,7 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
+<div id="appLoading" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:9999;transition:opacity .3s"><div style="width:32px;height:32px;border:3px solid var(--bd);border-top-color:var(--p);border-radius:50%;animation:spin .8s linear infinite"></div><div style="font-size:14px;color:var(--ts)">正在加载房源...</div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <div class="hero">
   <h1>🏠 瑞丽找房</h1>
@@ -951,6 +956,47 @@ function prevImg(){goImg(_galleryIdx-1)}
 function nextImg(){goImg(_galleryIdx+1)}
 var _gallerySwipeBound=false,_gallerySx=0,_gallerySy=0,_gallerySt=0;
 function initGallerySwipe(){var g=document.getElementById('imgGallery');if(!g)return;if(_gallerySwipeBound)return;_gallerySwipeBound=true;g.addEventListener('touchstart',function(e){_gallerySx=e.touches[0].clientX;_gallerySy=e.touches[0].clientY;_gallerySt=Date.now()},{passive:true});g.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-_gallerySx,dy=e.changedTouches[0].clientY-_gallerySy,dt=Date.now()-_gallerySt;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>30&&dt<500){if(dx<0)nextImg();else prevImg()}},{passive:true})}
+
+// ========== 租客端反馈 ==========
+function showTenantFeedback(){
+  document.getElementById('fbBody').innerHTML='\u003cdiv style="margin-bottom:14px"\u003e\u003clabel style="display:block;font-size:13px;font-weight:600;margin-bottom:6px"\u003e反馈内容\u003cspan style="color:var(--d)"\u003e*\u003c/span\u003e\u003c/label\u003e\u003ctextarea id="tFbContent" style="width:100%;padding:10px;border:1.5px solid var(--bd);border-radius:8px;font-size:13px;resize:vertical;min-height:80px;font-family:inherit" placeholder="请描述您的问题或建议..."\u003e\u003c/textarea\u003e\u003c/div\u003e\u003cdiv style="margin-bottom:14px"\u003e\u003clabel style="display:block;font-size:13px;font-weight:600;margin-bottom:6px"\u003e联系方式\u003c/label\u003e\u003cinput id="tFbContact" style="width:100%;padding:10px;border:1.5px solid var(--bd);border-radius:8px;font-size:13px" placeholder="微信/手机，方便回复您"\u003e\u003c/div\u003e\u003cbutton onclick="doTenantFeedback()" style="width:100%;padding:11px;background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer"\u003e提交反馈\u003c/button\u003e';
+  document.getElementById('fbModal').classList.add('show');
+  document.body.style.overflow='hidden';
+  loadMyFeedback();
+}
+function closeFbModal(){document.getElementById('fbModal').classList.remove('show');document.body.style.overflow=''}
+async function doTenantFeedback(){
+  var content=document.getElementById('tFbContent').value.trim();
+  if(!content){alert('请填写反馈内容');return}
+  var contact=document.getElementById('tFbContact').value.trim();
+  try{
+    var r=await fetch(SUPABASE_URL+'/rest/v1/feedback',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({name:'租客',contact:contact,content:content,status:'unread'})});
+    if(!r.ok){var e=await r.json();alert(e.message||'提交失败');return}
+    document.getElementById('tFbContent').value='';
+    document.getElementById('tFbContact').value='';
+    alert('感谢反馈，我们会尽快回复！');
+    loadMyFeedback();
+  }catch(e){alert('提交失败，请稍后再试')}
+}
+async function loadMyFeedback(){
+  try{
+    var r=await fetch(SUPABASE_URL+'/rest/v1/feedback?select=content,reply,created_at,status&order=created_at.desc&limit=10',{headers:{'apikey':SUPABASE_KEY}});
+    if(!r.ok)return;
+    var data=await r.json();
+    if(!data||!data.length)return;
+    var html='\u003cdiv style="margin-top:16px;border-top:1px solid var(--bd);padding-top:14px"\u003e\u003cdiv style="font-size:13px;font-weight:600;margin-bottom:10px"\u003e我的反馈记录\u003c/div\u003e';
+    data.forEach(function(fb){
+      html+='\u003cdiv style="padding:8px 0;border-bottom:1px solid var(--bd);font-size:12px"\u003e';
+      html+='\u003cdiv style="color:var(--ts);margin-bottom:4px"\u003e'+esc(fb.created_at?fb.created_at.slice(0,16).replace('T',' '):'')+'\u003c/div\u003e';
+      html+='\u003cdiv style="margin-bottom:4px"\u003e'+esc(fb.content)+'\u003c/div\u003e';
+      if(fb.reply){html+='\u003cdiv style="background:var(--pbg);border-radius:6px;padding:6px 8px;color:var(--p);font-weight:500"\u003e房东回复：'+esc(fb.reply)+'\u003c/div\u003e'}
+      else{html+='\u003cdiv style="color:var(--ts);font-size:11px"\u003e等待回复中...\u003c/div\u003e'}
+      html+='\u003c/div\u003e';
+    });
+    html+='\u003c/div\u003e';
+    document.getElementById('fbBody').innerHTML+=html;
+  }catch(e){}
+}
 
 init();
 
