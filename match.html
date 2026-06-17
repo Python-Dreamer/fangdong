@@ -203,35 +203,61 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
         <span class="tag" data-val="一室一厅" onclick="setType(this)">一室一厅</span>
         <span class="tag" data-val="两室一厅" onclick="setType(this)">两室一厅</span>
         <span class="tag" data-val="三室一厅" onclick="setType(this)">三室一厅</span>
-        <span class="tag" data-val="四室及以上" onclick="setType(this)">四室及以上</span>
-        <span class="tag" data-val="复式" onclick="setType(this)">复式</span>
-        <span class="tag" data-val="其他" onclick="setType(this)">其他</span>
+        <span class="tag type-extra" data-val="四室及以上" onclick="setType(this)" style="display:none">四室及以上</span>
+        <span class="tag type-extra" data-val="复式" onclick="setType(this)" style="display:none">复式</span>
+        <span class="tag type-extra" data-val="其他" onclick="setType(this)" style="display:none">其他</span>
+      </div>
+      <div class="adv-toggle" onclick="toggleTypeMore()" style="margin-top:4px;margin-bottom:0">
+        <span id="typeMoreLabel">更多房型</span>
+        <span class="arrow" id="typeMoreArrow">▼</span>
       </div>
     </div>
 
-    <!-- 高级筛选 -->
+    <!-- 房屋配置（可多选）-->
+    <div class="fg">
+      <label>房屋配置（可多选）</label>
+      <div class="tags" id="amenTags">
+        <span class="tag" data-val="空调" onclick="toggleAmen(this)">❄️ 空调</span>
+        <span class="tag" data-val="热水器" onclick="toggleAmen(this)">🚿 热水器</span>
+        <span class="tag" data-val="WiFi" onclick="toggleAmen(this)">📶 WiFi</span>
+        <span class="tag" data-val="独卫" onclick="toggleAmen(this)">🚽 独卫</span>
+        <span class="tag" data-val="厨房" onclick="toggleAmen(this)">🍳 厨房</span>
+        <span class="tag" data-val="燃气" onclick="toggleAmen(this)">🔥 燃气</span>
+        <span class="tag" data-val="洗衣机" onclick="toggleAmen(this)">🫧 洗衣机</span>
+        <span class="tag" data-val="冰箱" onclick="toggleAmen(this)">🧊 冰箱</span>
+        <span class="tag" data-val="阳台" onclick="toggleAmen(this)">🌅 阳台</span>
+        <span class="tag" data-val="停车位" onclick="toggleAmen(this)">🅿️ 停车位</span>
+        <span class="tag" data-val="智能锁" onclick="toggleAmen(this)">🔐 智能锁</span>
+        <span class="tag" data-val="桌椅" onclick="toggleAmen(this)">🪑 桌椅</span>
+      </div>
+    </div>
+
+    <!-- 楼栋设施 -->
+    <div class="fg">
+      <label>楼栋设施</label>
+      <div class="tags" id="buildingTags">
+        <span class="tag" data-val="电梯房" onclick="toggleBuilding(this)">🏢 电梯房</span>
+        <span class="tag" data-val="步梯房" onclick="toggleBuilding(this)">🚶 步梯房</span>
+      </div>
+    </div>
+
+    <!-- 租住要求 -->
+    <div class="fg">
+      <label>租住要求</label>
+      <div class="tags" id="rentalTags">
+        <span class="tag" data-val="可养宠物" onclick="toggleRental(this)">🐾 可养宠物</span>
+        <span class="tag" data-val="禁养宠物" onclick="toggleRental(this)">🚫 禁养宠物</span>
+        <span class="tag" data-val="支持短租" onclick="toggleRental(this)">📅 支持短租</span>
+        <span class="tag" data-val="只做长租" onclick="toggleRental(this)">🏠 只做长租</span>
+      </div>
+    </div>
+
+    <!-- 更多筛选 -->
     <div class="adv-toggle" onclick="toggleAdv()">
       <span id="advLabel">更多筛选</span>
       <span class="arrow" id="advArrow">▼</span>
     </div>
     <div class="adv-filters" id="advFilters">
-      <div class="fg">
-        <label>房屋配置（可多选）</label>
-        <div class="tags" id="amenTags">
-          <span class="tag" data-val="空调" onclick="toggleAmen(this)">❄️ 空调</span>
-          <span class="tag" data-val="热水器" onclick="toggleAmen(this)">🚿 热水器</span>
-          <span class="tag" data-val="WiFi" onclick="toggleAmen(this)">📶 WiFi</span>
-          <span class="tag" data-val="独卫" onclick="toggleAmen(this)">🚽 独卫</span>
-          <span class="tag" data-val="厨房" onclick="toggleAmen(this)">🍳 厨房</span>
-          <span class="tag" data-val="衣柜" onclick="toggleAmen(this)">🗄️ 衣柜</span>
-          <span class="tag" data-val="洗衣机" onclick="toggleAmen(this)">🫧 洗衣机</span>
-          <span class="tag" data-val="冰箱" onclick="toggleAmen(this)">🧊 冰箱</span>
-          <span class="tag" data-val="阳台" onclick="toggleAmen(this)">🌅 阳台</span>
-          <span class="tag" data-val="停车位" onclick="toggleAmen(this)">🅿️ 停车位</span>
-          <span class="tag" data-val="智能锁" onclick="toggleAmen(this)">🔐 智能锁</span>
-          <span class="tag" data-val="桌椅" onclick="toggleAmen(this)">🪑 桌椅</span>
-        </div>
-      </div>
       <div class="fg">
         <label>付款方式</label>
         <select id="fPayMethod">
@@ -308,7 +334,7 @@ var _userLat=null,_userLon=null;
 var _selectedArea=''; // 选中的区域值
 var _selectedAreaType=''; // 'nearby'|'area'|''
 
-var AMEN_ICONS={'空调':'❄️','热水器':'🚿','WiFi':'📶','独卫':'🚽','厨房':'🍳','衣柜':'🗄️','洗衣机':'🫧','冰箱':'🧊','阳台':'🌅','停车位':'🅿️','智能锁':'🔐','桌椅':'🪑','电视':'📺','窗帘':'🪟'};
+var AMEN_ICONS={'空调':'❄️','热水器':'🚿','WiFi':'📶','独卫':'🚽','厨房':'🍳','燃气':'🔥','衣柜':'🗄️','洗衣机':'🫧','冰箱':'🧊','阳台':'🌅','停车位':'🅿️','智能锁':'🔐','桌椅':'🪑','电视':'📺','窗帘':'🪟','电梯房':'🏢','步梯房':'🚶','可养宠物':'🐾','禁养宠物':'🚫','支持短租':'📅','只做长租':'🏠'};
 
 // 瑞丽本地地理编码
 var RL_LOCATIONS={'滇弄':'24.015,97.845','勐卯':'24.010,97.855','瑞丽':'24.0127,97.849','姐告':'24.020,97.860','弄莫':'24.008,97.840','目脑':'24.005,97.850','团结':'24.018,97.842','建设路':'24.012,97.852','南拨河':'24.001,97.838','芒沙':'24.025,97.835','祥和':'24.013,97.847','禾峻':'24.018,97.840','华丰':'24.009,97.853','边贸街':'24.016,97.858','人民路':'24.011,97.850','目瑙路':'24.006,97.849','勐龙':'24.030,97.820','弄岛':'24.001,97.800','畹町':'24.086,97.970','滇弄二社':'24.014,97.846'};
@@ -699,6 +725,17 @@ function toggleAdv(){
   if(f.classList.contains('show')){f.classList.remove('show');a.className='arrow';l.textContent='更多筛选'}
   else{f.classList.add('show');a.className='arrow up';l.textContent='收起筛选'}
 }
+function toggleTypeMore(){
+  var extras=document.querySelectorAll('.type-extra');
+  var l=document.getElementById('typeMoreLabel');
+  var a=document.getElementById('typeMoreArrow');
+  var hidden=extras.length>0&&extras[0].style.display==='none';
+  extras.forEach(function(el){el.style.display=hidden?'':'none'});
+  l.textContent=hidden?'收起筛选':'更多房型';
+  a.className=hidden?'arrow up':'arrow';
+}
+function toggleBuilding(el){el.classList.toggle('on')}
+function toggleRental(el){el.classList.toggle('on')}
 function resetFilters(){
   document.getElementById('fMinPrice').value='';
   document.getElementById('fMaxPrice').value='';
@@ -708,6 +745,8 @@ function resetFilters(){
   document.querySelectorAll('#typeTags .tag').forEach(function(t){t.classList.remove('on')});
   document.querySelector('#typeTags .tag[data-val=""]').classList.add('on');
   document.querySelectorAll('#amenTags .tag').forEach(function(t){t.classList.remove('on')});
+  document.querySelectorAll('#buildingTags .tag').forEach(function(t){t.classList.remove('on')});
+  document.querySelectorAll('#rentalTags .tag').forEach(function(t){t.classList.remove('on')});
   document.getElementById('fPayMethod').value='';
   document.getElementById('fFloor').value='';
   document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">🏠</div><h3>共'+allRooms.length+'套房源待匹配</h3><p>设置筛选条件，点击「搜索匹配房源」查看</p></div>';
@@ -730,9 +769,13 @@ function doSearch(){
   var floor=document.getElementById('fFloor').value;
   var amenList=[];
   document.querySelectorAll('#amenTags .tag.on').forEach(function(t){amenList.push(t.dataset.val)});
+  var buildingList=[];
+  document.querySelectorAll('#buildingTags .tag.on').forEach(function(t){buildingList.push(t.dataset.val)});
+  var rentalList=[];
+  document.querySelectorAll('#rentalTags .tag.on').forEach(function(t){rentalList.push(t.dataset.val)});
 
   // 至少需要设置一个筛选条件（"不限"房型不算）
-  var hasFilter=minP>0||maxP<99999||areaVal||isNearby||type||payMethod||floor||amenList.length;
+  var hasFilter=minP>0||maxP<99999||areaVal||isNearby||type||payMethod||floor||amenList.length||buildingList.length||rentalList.length;
   if(!hasFilter){
     document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">🔍</div><h3>请设置筛选条件</h3><p>至少填写预算、区域或房型等一个条件</p></div>';
     return;
@@ -765,6 +808,18 @@ function doSearch(){
           if(rmAmens.indexOf(amenList[i])===-1)return false;
         }
       }
+      if(buildingList.length){
+        var rmBld=(rm.building_type||'').split(',').map(function(s){return s.trim()});
+        var bldMatch=false;
+        for(var i=0;i<buildingList.length;i++){if(rmBld.indexOf(buildingList[i])!==-1){bldMatch=true;break}}
+        if(!bldMatch)return false;
+      }
+      if(rentalList.length){
+        var rmRules=(rm.rental_rules||'').split(',').map(function(s){return s.trim()});
+        var ruleMatch=false;
+        for(var i=0;i<rentalList.length;i++){if(rmRules.indexOf(rentalList[i])!==-1){ruleMatch=true;break}}
+        if(!ruleMatch)return false;
+      }
       return true;
     });
 
@@ -778,6 +833,8 @@ function doSearch(){
     if(amenList.length){total+=25;var rmAmens=(rm.amenities||'').split(',').map(function(s){return s.trim()});var matched=amenList.filter(function(a){return rmAmens.indexOf(a)!==-1}).length;score+=Math.round(25*matched/amenList.length)}
     if(payMethod){total+=10;if(rm.pay_method===payMethod)score+=10}
     if(floor&&rm.floor){total+=5;var fl=parseInt(rm.floor)||0;if((floor==='low'&&fl<=3)||(floor==='mid'&&fl>=4&&fl<=6)||(floor==='high'&&fl>=7))score+=5}
+    if(buildingList.length){total+=5;var rmBld=(rm.building_type||'').split(',').map(function(s){return s.trim()});var bldMatch=buildingList.filter(function(b){return rmBld.indexOf(b)!==-1}).length;score+=Math.round(5*bldMatch/buildingList.length)}
+    if(rentalList.length){total+=5;var rmRules=(rm.rental_rules||'').split(',').map(function(s){return s.trim()});var ruleMatch=rentalList.filter(function(r){return rmRules.indexOf(r)!==-1}).length;score+=Math.round(5*ruleMatch/rentalList.length)}
     var baseWeight=100-total;if(baseWeight>0)score+=Math.round(baseWeight*0.6);
     if(rm.notes&&rm.notes.length>5)score=Math.min(100,score+3);
     if(rm.image_url||rm.images)score=Math.min(100,score+2);
@@ -818,6 +875,8 @@ function renderResults(rooms){
     if(rm.address||rm._realName)tagsHtml+='<span class="rt rt-loc" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📍 '+esc(rm.address||rm._realName)+'</span>';
     if(rm.area)tagsHtml+='<span class="rt rt-area">'+esc(rm.area)+'m²</span>';
     if(rm.floor)tagsHtml+='<span class="rt rt-floor">🏢 '+esc(rm.floor)+'层</span>';
+    if(rm.building_type){var bldTypes=rm.building_type.split(',').map(function(s){return s.trim()}).filter(Boolean);bldTypes.forEach(function(bt){tagsHtml+='<span class="rt" style="background:#f0f9ff;color:#6366f1">'+(AMEN_ICONS[bt]||'🏢')+' '+esc(bt)+'</span>'})}
+    if(rm.rental_rules){var rules=rm.rental_rules.split(',').map(function(s){return s.trim()}).filter(Boolean);rules.forEach(function(r){tagsHtml+='<span class="rt" style="background:#fefce8;color:#a16207">'+(AMEN_ICONS[r]||'✓')+' '+esc(r)+'</span>'})}
     tagsHtml+='</div>';
 
     var amenHtml='<div class="rc-amenities">';
@@ -913,11 +972,27 @@ function showDetail(id){
   }
 
   var amenHtml='<div class="dm-section"><div class="st">🏠 房屋配置</div><div class="dm-amenities">';
-  var allAmens=['空调','热水器','WiFi','独卫','厨房','衣柜','洗衣机','冰箱','阳台','停车位','智能锁','桌椅','电视','窗帘'];
+  var allAmens=['空调','热水器','WiFi','独卫','厨房','燃气','衣柜','洗衣机','冰箱','阳台','停车位','智能锁','桌椅','电视','窗帘'];
   var rmAmens=(rm.amenities||'').split(',').map(function(s){return s.trim()});
   allAmens.forEach(function(a){if(rmAmens.indexOf(a)!==-1)amenHtml+='<span class="dm-amen">'+(AMEN_ICONS[a]||'✓')+' '+a+'</span>'});
   if(rmAmens.filter(Boolean).length===0)amenHtml+='<span style="font-size:12px;color:var(--ts)">暂无配置信息</span>';
   amenHtml+='</div></div>';
+  if(rm.building_type){
+    var bldTypes=rm.building_type.split(',').map(function(s){return s.trim()}).filter(Boolean);
+    if(bldTypes.length){
+      amenHtml+='<div class="dm-section"><div class="st">🏗️ 楼栋设施</div><div class="dm-amenities">';
+      bldTypes.forEach(function(bt){amenHtml+='<span class="dm-amen">'+(AMEN_ICONS[bt]||'🏢')+' '+bt+'</span>'});
+      amenHtml+='</div></div>';
+    }
+  }
+  if(rm.rental_rules){
+    var rules=rm.rental_rules.split(',').map(function(s){return s.trim()}).filter(Boolean);
+    if(rules.length){
+      amenHtml+='<div class="dm-section"><div class="st">📋 租住要求</div><div class="dm-amenities">';
+      rules.forEach(function(r){amenHtml+='<span class="dm-amen" style="background:#fefce8;color:#a16207">'+(AMEN_ICONS[r]||'✓')+' '+r+'</span>'});
+      amenHtml+='</div></div>';
+    }
+  }
   infoHtml+=amenHtml;
 
   if(rm.notes){
