@@ -631,8 +631,12 @@ async function init(){
   try{
     sb=window.supabase.createClient(SB_URL,SB_KEY);
     await loadRooms();
+    var ld=document.getElementById('appLoading');
+    if(ld){ld.style.opacity='0';setTimeout(function(){ld.remove()},300)}
   }catch(e){
     console.error('初始化失败:',e);
+    var ld=document.getElementById('appLoading');
+    if(ld)ld.remove();
     document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">⚠️</div><h3>加载失败</h3><p>请刷新页面重试</p></div>';
   }
 }
