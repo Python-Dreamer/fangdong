@@ -2,23 +2,19 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=0.3,maximum-scale=5.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=5.0">
 <title>瑞丽找房 - 租客智能匹配</title>
 <meta name="theme-color" content="#4f6ef7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="瑞丽找房">
-<meta property="og:title" content="瑞丽找房 - 租客智能匹配">
-<meta property="og:description" content="瑞丽本地租房智能匹配平台，精准推荐最适合你的房源">
-<meta property="og:type" content="website">
-
 <link rel="manifest" href="match-manifest.json">
 <link rel="apple-touch-icon" href="match-icons/icon-180x180.png">
 <link rel="icon" href="match-icons/icon-192x192.png">
 <style>
 :root{--bg:#f5f7fa;--card:#fff;--p:#4f6ef7;--p2:#6b8aff;--pbg:rgba(79,110,247,.08);--t:#1a1a2e;--ts:#6b7280;--bd:#e5e7eb;--g:#10b981;--w:#f59e0b;--d:#ef4444;--r:12px;--sh:0 2px 12px rgba(0,0,0,.06)}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB',sans-serif;background:var(--bg);color:var(--t);min-height:100vh;-webkit-font-smoothing:antialiased;padding-bottom:20px;overflow-x:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB',sans-serif;background:var(--bg);color:var(--t);min-height:100vh;-webkit-font-smoothing:antialiased;padding-bottom:20px}
 
 .hero{background:linear-gradient(135deg,#4f6ef7 0%,#7c3aed 100%);color:#fff;padding:36px 20px 28px;text-align:center;position:relative;overflow:hidden}
 .hero::before{content:'';position:absolute;top:-50%;right:-20%;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.06)}
@@ -160,7 +156,6 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
-<div id="appLoading" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:9999;transition:opacity .3s"><div style="width:32px;height:32px;border:3px solid var(--bd);border-top-color:var(--p);border-radius:50%;animation:spin .8s linear infinite"></div><div style="font-size:14px;color:var(--ts)">正在加载房源...</div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <div class="hero">
   <h1>🏠 瑞丽找房</h1>
@@ -186,7 +181,7 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
       <div style="display:flex;gap:8px">
         <div class="area-search-wrap" style="flex:1">
           <span class="search-ico">📍</span>
-          <input type="text" id="fAreaInput" placeholder="搜索区域/地点..." autocomplete="off" onfocus="showAreaDropdown()" oninput="filterAreaOptions()" oncompositionend="filterAreaOptions()" onkeydown="if(event.key==='Enter'){event.preventDefault();filterAreaOptions()}">
+          <input type="text" id="fAreaInput" placeholder="搜索区域/地点..." autocomplete="off" onfocus="showAreaDropdown()" oninput="filterAreaOptions()">
           <input type="hidden" id="fAreaValue" value="">
           <div class="area-dropdown" id="areaDropdown"></div>
         </div>
@@ -203,59 +198,35 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
         <span class="tag" data-val="一室一厅" onclick="setType(this)">一室一厅</span>
         <span class="tag" data-val="两室一厅" onclick="setType(this)">两室一厅</span>
         <span class="tag" data-val="三室一厅" onclick="setType(this)">三室一厅</span>
-        <span class="tag type-extra" data-val="四室及以上" onclick="setType(this)" style="display:none">四室及以上</span>
-        <span class="tag type-extra" data-val="复式" onclick="setType(this)" style="display:none">复式</span>
-        <span class="tag type-extra" data-val="其他" onclick="setType(this)" style="display:none">其他</span>
-      </div>
-      <div class="adv-toggle" onclick="toggleTypeMore()" style="margin-top:4px;margin-bottom:0">
-        <span id="typeMoreLabel">更多房型</span>
-        <span class="arrow" id="typeMoreArrow">▼</span>
+        <span class="tag" data-val="四室及以上" onclick="setType(this)">四室及以上</span>
+        <span class="tag" data-val="复式" onclick="setType(this)">复式</span>
+        <span class="tag" data-val="其他" onclick="setType(this)">其他</span>
       </div>
     </div>
 
-    <!-- 房屋配置（可多选）-->
-    <div class="fg">
-      <label>房屋配置（可多选）</label>
-      <div class="tags" id="amenTags">
-        <span class="tag" data-val="空调" onclick="toggleAmen(this)">❄️ 空调</span>
-        <span class="tag" data-val="热水器" onclick="toggleAmen(this)">🚿 热水器</span>
-        <span class="tag" data-val="WiFi" onclick="toggleAmen(this)">📶 WiFi</span>
-        <span class="tag" data-val="独卫" onclick="toggleAmen(this)">🚽 独卫</span>
-        <span class="tag" data-val="厨房" onclick="toggleAmen(this)">🍳 厨房</span>
-        <span class="tag" data-val="燃气" onclick="toggleAmen(this)">🔥 燃气</span>
-        <span class="tag" data-val="洗衣机" onclick="toggleAmen(this)">🫧 洗衣机</span>
-        <span class="tag" data-val="冰箱" onclick="toggleAmen(this)">🧊 冰箱</span>
-        <span class="tag" data-val="阳台" onclick="toggleAmen(this)">🌅 阳台</span>
-        <span class="tag" data-val="停车位" onclick="toggleAmen(this)">🅿️ 停车位</span>
-        <span class="tag" data-val="智能锁" onclick="toggleAmen(this)">🔐 智能锁</span>
-        <span class="tag" data-val="桌椅" onclick="toggleAmen(this)">🪑 桌椅</span>
-      </div>
-    </div>
-
-    <!-- 楼栋设施 -->
-    <div class="fg">
-      <label>楼栋设施</label>
-      <div class="tags" id="buildingTags">
-        <span class="tag" data-val="电梯房" onclick="toggleBuilding(this)">🏢 电梯房</span>
-        <span class="tag" data-val="步梯房" onclick="toggleBuilding(this)">🚶 步梯房</span>
-      </div>
-    </div>
-
-    <!-- 租住要求 -->
-    <div class="fg">
-      <label>租住要求</label>
-      <div class="tags" id="rentalTags">
-        <span class="tag" data-val="可养宠物" onclick="toggleRental(this)">🐾 可养宠物</span>
-        <span class="tag" data-val="支持短租" onclick="toggleRental(this)">📅 支持短租</span>
-      </div>
-    </div>
-
-    <!-- 更多筛选 -->
+    <!-- 高级筛选 -->
     <div class="adv-toggle" onclick="toggleAdv()">
       <span id="advLabel">更多筛选</span>
       <span class="arrow" id="advArrow">▼</span>
     </div>
     <div class="adv-filters" id="advFilters">
+      <div class="fg">
+        <label>房屋配置（可多选）</label>
+        <div class="tags" id="amenTags">
+          <span class="tag" data-val="空调" onclick="toggleAmen(this)">❄️ 空调</span>
+          <span class="tag" data-val="热水器" onclick="toggleAmen(this)">🚿 热水器</span>
+          <span class="tag" data-val="WiFi" onclick="toggleAmen(this)">📶 WiFi</span>
+          <span class="tag" data-val="独卫" onclick="toggleAmen(this)">🚽 独卫</span>
+          <span class="tag" data-val="厨房" onclick="toggleAmen(this)">🍳 厨房</span>
+          <span class="tag" data-val="衣柜" onclick="toggleAmen(this)">🗄️ 衣柜</span>
+          <span class="tag" data-val="洗衣机" onclick="toggleAmen(this)">🫧 洗衣机</span>
+          <span class="tag" data-val="冰箱" onclick="toggleAmen(this)">🧊 冰箱</span>
+          <span class="tag" data-val="阳台" onclick="toggleAmen(this)">🌅 阳台</span>
+          <span class="tag" data-val="停车位" onclick="toggleAmen(this)">🅿️ 停车位</span>
+          <span class="tag" data-val="智能锁" onclick="toggleAmen(this)">🔐 智能锁</span>
+          <span class="tag" data-val="桌椅" onclick="toggleAmen(this)">🪑 桌椅</span>
+        </div>
+      </div>
       <div class="fg">
         <label>付款方式</label>
         <select id="fPayMethod">
@@ -295,7 +266,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.tag
 </div>
 
 <!-- 详情弹窗 -->
-<div class="modal-mask" id="detailModal" onclick="closeDetail(event)" ontouchstart="if(event.target.closest('.modal-box'))event.stopPropagation()">
+<div class="modal-mask" id="detailModal" onclick="closeDetail(event)">
   <div class="modal-box" onclick="event.stopPropagation()">
     <div class="modal-head">
       <h3 id="dmTitle">房源详情</h3>
@@ -320,6 +291,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.tag
 </div>
 
 <div class="footer">
+  <a href="services.html" target="_blank" style="display:inline-block;margin-bottom:8px;padding:6px 18px;background:var(--p);color:#fff;border-radius:6px;text-decoration:none;font-size:13px">🛎️ 叫服务</a><br>
   由 <a href="https://python-dreamer.github.io/fangdong" target="_blank">房东管家</a> 提供技术支持 · 瑞丽便民租房平台
 </div>
 
@@ -332,23 +304,21 @@ var _userLat=null,_userLon=null;
 var _selectedArea=''; // 选中的区域值
 var _selectedAreaType=''; // 'nearby'|'area'|''
 
-var AMEN_ICONS={'空调':'❄️','热水器':'🚿','WiFi':'📶','独卫':'🚽','厨房':'🍳','燃气':'🔥','衣柜':'🗄️','洗衣机':'🫧','冰箱':'🧊','阳台':'🌅','停车位':'🅿️','智能锁':'🔐','桌椅':'🪑','电视':'📺','窗帘':'🪟','电梯房':'🏢','步梯房':'🚶','可养宠物':'🐾','支持短租':'📅'};
+var AMEN_ICONS={'空调':'❄️','热水器':'🚿','WiFi':'📶','独卫':'🚽','厨房':'🍳','衣柜':'🗄️','洗衣机':'🫧','冰箱':'🧊','阳台':'🌅','停车位':'🅿️','智能锁':'🔐','桌椅':'🪑','电视':'📺','窗帘':'🪟'};
 
 // 瑞丽本地地理编码
 var RL_LOCATIONS={'滇弄':'24.015,97.845','勐卯':'24.010,97.855','瑞丽':'24.0127,97.849','姐告':'24.020,97.860','弄莫':'24.008,97.840','目脑':'24.005,97.850','团结':'24.018,97.842','建设路':'24.012,97.852','南拨河':'24.001,97.838','芒沙':'24.025,97.835','祥和':'24.013,97.847','禾峻':'24.018,97.840','华丰':'24.009,97.853','边贸街':'24.016,97.858','人民路':'24.011,97.850','目瑙路':'24.006,97.849','勐龙':'24.030,97.820','弄岛':'24.001,97.800','畹町':'24.086,97.970','滇弄二社':'24.014,97.846'};
 // ===== 高德地图API =====
 var AMAP_KEY='78e8b2ba0158936878e7e028174cb480'; // 填入高德Web服务API Key（免费申请：lbs.amap.com）
-function amapFetch(url,cb){fetch(url).then(function(r){return r.json()}).then(function(d){cb(d)}).catch(function(){cb(null)})}
+function amapJsonp(url,cb){var cbN='_amap_'+Date.now()+'_'+Math.floor(Math.random()*1e4);window[cbN]=function(d){cb(d);delete window[cbN]};var s=document.createElement('script');s.src=url+'&callback='+cbN;s.onerror=function(){delete window[cbN];cb(null);s.remove()};document.head.appendChild(s)}
 function amapGeocode(addr,cb){
   if(!AMAP_KEY){cb(null);return}
-  amapFetch('https://restapi.amap.com/v3/geocode/geo?key='+AMAP_KEY+'&address='+encodeURIComponent(addr)+'&city=德宏',cb);
+  amapJsonp('https://restapi.amap.com/v3/geocode/geo?key='+AMAP_KEY+'&address='+encodeURIComponent(addr)+'&city=德宏',cb);
 }
 function amapInputTips(q,cb){
   if(!AMAP_KEY){cb(null);return}
-  amapFetch('https://restapi.amap.com/v3/assistant/inputtips?key='+AMAP_KEY+'&keywords='+encodeURIComponent(q)+'&city=德宏&citylimit=true&datatype=poi',cb);
+  amapJsonp('https://restapi.amap.com/v3/assistant/inputtips?key='+AMAP_KEY+'&keywords='+encodeURIComponent(q)+'&city=德宏&citylimit=true&datatype=poi',cb);
 }
-
-function amapRegeo(lat,lng,cb){if(!AMAP_KEY){cb(null);return}amapFetch('https://restapi.amap.com/v3/geocode/regeo?key='+AMAP_KEY+'&location='+lng+','+lat+'&extensions=base',cb)}
 
 function geocodeLocal(address){
   // 按名称长度降序匹配，优先精确匹配
@@ -468,7 +438,6 @@ function selectArea(val,label){
   _selectedAreaType=val?'area':'';
   document.getElementById('fAreaInput').value=val?'📍 '+label:'';
   document.getElementById('fAreaValue').value=val;
-  document.getElementById('fAreaInput').blur();
   hideAreaDropdown();
 }
 function selectAreaNearby(){
@@ -476,7 +445,6 @@ function selectAreaNearby(){
   _selectedArea='';
   document.getElementById('fAreaInput').value='📍 附近优先';
   document.getElementById('fAreaValue').value='nearby';
-  document.getElementById('fAreaInput').blur();
   hideAreaDropdown();
   if(!_userLat)doLocate();
 }
@@ -541,7 +509,7 @@ function renderViewer(){
   var img=document.getElementById('viewerImg');
   img.src=origUrl(_viewerImgs[_viewerIdx]);
   img.style.transform='translate(0px,0px) scale(1)';
-  img.onclick=function(e){};
+  img.onclick=function(e){e.stopPropagation()};
   document.getElementById('viewerCounter').textContent=(_viewerIdx+1)+'/'+_viewerImgs.length;
   // 圆点
   var dotsHtml='';
@@ -655,12 +623,8 @@ async function init(){
   try{
     sb=window.supabase.createClient(SB_URL,SB_KEY);
     await loadRooms();
-    var ld=document.getElementById('appLoading');
-    if(ld){ld.style.opacity='0';setTimeout(function(){ld.remove()},300)}
   }catch(e){
     console.error('初始化失败:',e);
-    var ld=document.getElementById('appLoading');
-    if(ld)ld.remove();
     document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">⚠️</div><h3>加载失败</h3><p>请刷新页面重试</p></div>';
   }
 }
@@ -689,23 +653,6 @@ async function loadRooms(){
     }else{rm._lat=null;rm._lon=null}
     rm._dist=calcRoomDist(rm);
   });
-  // 批量逆地理编码：有精确坐标的房源获取真实地名
-  allRooms.forEach(function(rm){
-    if(rm._lat!=null&&rm._lon!=null){
-      amapRegeo(rm._lat,rm._lon,function(data){
-        if(data&&data.status==='1'&&data.regeocode){
-          var comp=data.regeocode.addressComponent||{};
-          var bName=comp.building&&String(typeof comp.building==='string'?comp.building:comp.building.name||'').replace(/,/g,'');
-          var nName=comp.neighborhood&&String(comp.neighborhood.name||'').replace(/,/g,'');
-          if(bName==='[]')bName='';
-          if(nName==='[]')nName='';
-          var realName=bName||nName||(comp.township||'')+(comp.streetNumber?(comp.streetNumber.street||'')+(comp.streetNumber.number||''):'');
-          if(!realName&&data.regeocode.formatted_address)realName=data.regeocode.formatted_address.replace(/^(德宏傣族景颇族自治州|瑞丽市|勐卯镇)/g,'').trim();
-          if(realName)rm._realName=realName;
-        }
-      });
-    }
-  });
   if(allRooms.length){
     document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">🏠</div><h3>共'+allRooms.length+'套房源待匹配</h3><p>设置筛选条件，点击「搜索匹配房源」查看</p></div>';
   }else{
@@ -723,17 +670,6 @@ function toggleAdv(){
   if(f.classList.contains('show')){f.classList.remove('show');a.className='arrow';l.textContent='更多筛选'}
   else{f.classList.add('show');a.className='arrow up';l.textContent='收起筛选'}
 }
-function toggleTypeMore(){
-  var extras=document.querySelectorAll('.type-extra');
-  var l=document.getElementById('typeMoreLabel');
-  var a=document.getElementById('typeMoreArrow');
-  var hidden=extras.length>0&&extras[0].style.display==='none';
-  extras.forEach(function(el){el.style.display=hidden?'':'none'});
-  l.textContent=hidden?'收起筛选':'更多房型';
-  a.className=hidden?'arrow up':'arrow';
-}
-function toggleBuilding(el){el.classList.toggle('on')}
-function toggleRental(el){el.classList.toggle('on')}
 function resetFilters(){
   document.getElementById('fMinPrice').value='';
   document.getElementById('fMaxPrice').value='';
@@ -743,8 +679,6 @@ function resetFilters(){
   document.querySelectorAll('#typeTags .tag').forEach(function(t){t.classList.remove('on')});
   document.querySelector('#typeTags .tag[data-val=""]').classList.add('on');
   document.querySelectorAll('#amenTags .tag').forEach(function(t){t.classList.remove('on')});
-  document.querySelectorAll('#buildingTags .tag').forEach(function(t){t.classList.remove('on')});
-  document.querySelectorAll('#rentalTags .tag').forEach(function(t){t.classList.remove('on')});
   document.getElementById('fPayMethod').value='';
   document.getElementById('fFloor').value='';
   document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">🏠</div><h3>共'+allRooms.length+'套房源待匹配</h3><p>设置筛选条件，点击「搜索匹配房源」查看</p></div>';
@@ -767,13 +701,9 @@ function doSearch(){
   var floor=document.getElementById('fFloor').value;
   var amenList=[];
   document.querySelectorAll('#amenTags .tag.on').forEach(function(t){amenList.push(t.dataset.val)});
-  var buildingList=[];
-  document.querySelectorAll('#buildingTags .tag.on').forEach(function(t){buildingList.push(t.dataset.val)});
-  var rentalList=[];
-  document.querySelectorAll('#rentalTags .tag.on').forEach(function(t){rentalList.push(t.dataset.val)});
 
   // 至少需要设置一个筛选条件（"不限"房型不算）
-  var hasFilter=minP>0||maxP<99999||areaVal||isNearby||type||payMethod||floor||amenList.length||buildingList.length||rentalList.length;
+  var hasFilter=minP>0||maxP<99999||areaVal||isNearby||type||payMethod||floor||amenList.length;
   if(!hasFilter){
     document.getElementById('resultsArea').innerHTML='<div class="empty"><div class="ei">🔍</div><h3>请设置筛选条件</h3><p>至少填写预算、区域或房型等一个条件</p></div>';
     return;
@@ -806,18 +736,6 @@ function doSearch(){
           if(rmAmens.indexOf(amenList[i])===-1)return false;
         }
       }
-      if(buildingList.length){
-        var rmBld=(rm.building_type||'').split(',').map(function(s){return s.trim()});
-        var bldMatch=false;
-        for(var i=0;i<buildingList.length;i++){if(rmBld.indexOf(buildingList[i])!==-1){bldMatch=true;break}}
-        if(!bldMatch)return false;
-      }
-      if(rentalList.length){
-        var rmRules=(rm.rental_rules||'').split(',').map(function(s){return s.trim()});
-        var ruleMatch=false;
-        for(var i=0;i<rentalList.length;i++){if(rmRules.indexOf(rentalList[i])!==-1){ruleMatch=true;break}}
-        if(!ruleMatch)return false;
-      }
       return true;
     });
 
@@ -831,8 +749,6 @@ function doSearch(){
     if(amenList.length){total+=25;var rmAmens=(rm.amenities||'').split(',').map(function(s){return s.trim()});var matched=amenList.filter(function(a){return rmAmens.indexOf(a)!==-1}).length;score+=Math.round(25*matched/amenList.length)}
     if(payMethod){total+=10;if(rm.pay_method===payMethod)score+=10}
     if(floor&&rm.floor){total+=5;var fl=parseInt(rm.floor)||0;if((floor==='low'&&fl<=3)||(floor==='mid'&&fl>=4&&fl<=6)||(floor==='high'&&fl>=7))score+=5}
-    if(buildingList.length){total+=5;var rmBld=(rm.building_type||'').split(',').map(function(s){return s.trim()});var bldMatch=buildingList.filter(function(b){return rmBld.indexOf(b)!==-1}).length;score+=Math.round(5*bldMatch/buildingList.length)}
-    if(rentalList.length){total+=5;var rmRules=(rm.rental_rules||'').split(',').map(function(s){return s.trim()});var ruleMatch=rentalList.filter(function(r){return rmRules.indexOf(r)!==-1}).length;score+=Math.round(5*ruleMatch/rentalList.length)}
     var baseWeight=100-total;if(baseWeight>0)score+=Math.round(baseWeight*0.6);
     if(rm.notes&&rm.notes.length>5)score=Math.min(100,score+3);
     if(rm.image_url||rm.images)score=Math.min(100,score+2);
@@ -870,11 +786,9 @@ function renderResults(rooms){
     var tagsHtml='<div class="rc-tags">';
     if(rm.type)tagsHtml+='<span class="rt rt-type">'+esc(rm.type)+'</span>';
     if(rm._dist!=null&&_userLat)tagsHtml+='<span class="rt rt-dist">📍 距你'+fmtDist(rm._dist)+'</span>';
-    if(rm.address||rm._realName)tagsHtml+='<span class="rt rt-loc" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📍 '+esc(rm.address||rm._realName)+'</span>';
+    if(rm.address)tagsHtml+='<span class="rt rt-loc" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📍 '+esc(rm.address)+'</span>';
     if(rm.area)tagsHtml+='<span class="rt rt-area">'+esc(rm.area)+'m²</span>';
     if(rm.floor)tagsHtml+='<span class="rt rt-floor">🏢 '+esc(rm.floor)+'层</span>';
-    if(rm.building_type){var bldTypes=rm.building_type.split(',').map(function(s){return s.trim()}).filter(Boolean);bldTypes.forEach(function(bt){tagsHtml+='<span class="rt" style="background:#f0f9ff;color:#6366f1">'+(AMEN_ICONS[bt]||'🏢')+' '+esc(bt)+'</span>'})}
-    if(rm.rental_rules){var rules=rm.rental_rules.split(',').map(function(s){return s.trim()}).filter(Boolean);rules.forEach(function(r){tagsHtml+='<span class="rt" style="background:#fefce8;color:#a16207">'+(AMEN_ICONS[r]||'✓')+' '+esc(r)+'</span>'})}
     tagsHtml+='</div>';
 
     var amenHtml='<div class="rc-amenities">';
@@ -893,7 +807,7 @@ function renderResults(rooms){
     html+='<div class="room-card" data-imgs=\''+imgDataAttr+'\' onclick="showDetail(\''+rm.id+'\')">';
     html+=imgHtml;
     html+='<div class="rc-body">';
-    html+='<div class="rc-top"><div class="rc-name">'+esc(rm.address||rm._realName||((rm.floor?rm.floor+'层 ':'')+(rm.type||'房源')))+'</div>';
+    html+='<div class="rc-top"><div class="rc-name">'+esc(rm.address||((rm.floor?rm.floor+'层 ':'')+(rm.type||'房源')))+'</div>';
     html+='<span class="rc-score '+matchClass+'">🎯'+rm._score+'分</span></div>';
     html+=tagsHtml;
     html+=amenHtml;
@@ -962,42 +876,24 @@ function showDetail(id){
   infoHtml+='<div class="dm-item"><div class="dl">付款方式</div><div class="dv">'+esc(rm.pay_method||'月付')+'</div></div>';
   infoHtml+='</div></div>';
 
-  var hasPrecise=rm.lat&&rm.lng;
-  if(rm.address||hasPrecise){
-    var mapHint=hasPrecise?'📍 精确定位':'📍 大致位置';
-    var dispAddr=rm.address||'';
-    infoHtml+='<div class="dm-section"><div class="st">'+mapHint+'</div><div style="font-size:13px;margin-bottom:8px" id="dmAddrText">'+esc(dispAddr)+'</div><div id="detailMap" style="width:100%;height:180px;border-radius:8px;overflow:hidden;touch-action:none"></div></div>';
+  if(rm.address){
+    var mapHint=rm.lat&&rm.lng?'📍 精确定位':'📍 大致位置';
+    infoHtml+='<div class="dm-section"><div class="st">'+mapHint+'</div><div style="font-size:13px;margin-bottom:8px">'+esc(rm.address)+'</div><div id="detailMap" style="width:100%;height:180px;border-radius:8px;overflow:hidden"></div></div>';
   }
 
   var amenHtml='<div class="dm-section"><div class="st">🏠 房屋配置</div><div class="dm-amenities">';
-  var allAmens=['空调','热水器','WiFi','独卫','厨房','燃气','衣柜','洗衣机','冰箱','阳台','停车位','智能锁','桌椅','电视','窗帘'];
+  var allAmens=['空调','热水器','WiFi','独卫','厨房','衣柜','洗衣机','冰箱','阳台','停车位','智能锁','桌椅','电视','窗帘'];
   var rmAmens=(rm.amenities||'').split(',').map(function(s){return s.trim()});
   allAmens.forEach(function(a){if(rmAmens.indexOf(a)!==-1)amenHtml+='<span class="dm-amen">'+(AMEN_ICONS[a]||'✓')+' '+a+'</span>'});
   if(rmAmens.filter(Boolean).length===0)amenHtml+='<span style="font-size:12px;color:var(--ts)">暂无配置信息</span>';
   amenHtml+='</div></div>';
-  if(rm.building_type){
-    var bldTypes=rm.building_type.split(',').map(function(s){return s.trim()}).filter(Boolean);
-    if(bldTypes.length){
-      amenHtml+='<div class="dm-section"><div class="st">🏗️ 楼栋设施</div><div class="dm-amenities">';
-      bldTypes.forEach(function(bt){amenHtml+='<span class="dm-amen">'+(AMEN_ICONS[bt]||'🏢')+' '+bt+'</span>'});
-      amenHtml+='</div></div>';
-    }
-  }
-  if(rm.rental_rules){
-    var rules=rm.rental_rules.split(',').map(function(s){return s.trim()}).filter(Boolean);
-    if(rules.length){
-      amenHtml+='<div class="dm-section"><div class="st">📋 租住要求</div><div class="dm-amenities">';
-      rules.forEach(function(r){amenHtml+='<span class="dm-amen" style="background:#fefce8;color:#a16207">'+(AMEN_ICONS[r]||'✓')+' '+r+'</span>'});
-      amenHtml+='</div></div>';
-    }
-  }
   infoHtml+=amenHtml;
 
   if(rm.notes){
     infoHtml+='<div class="dm-section"><div class="st">📝 补充说明</div><div style="font-size:13px;line-height:1.6">'+esc(rm.notes)+'</div></div>';
   }
 
-  document.getElementById('dmTitle').textContent=rm.address||rm._realName||((rm.floor?rm.floor+'层 ':'')+(rm.type||'房源详情'));
+  document.getElementById('dmTitle').textContent=rm.address||((rm.floor?rm.floor+'层 ':'')+(rm.type||'房源详情'));
   document.getElementById('dmBody').innerHTML=imgHtml+priceHtml+infoHtml;
 
   var contact=rm.landlord_contact||'房东';
@@ -1034,47 +930,6 @@ function nextImg(){goImg(_galleryIdx+1)}
 var _gallerySwipeBound=false,_gallerySx=0,_gallerySy=0,_gallerySt=0;
 function initGallerySwipe(){var g=document.getElementById('imgGallery');if(!g)return;if(_gallerySwipeBound)return;_gallerySwipeBound=true;g.addEventListener('touchstart',function(e){_gallerySx=e.touches[0].clientX;_gallerySy=e.touches[0].clientY;_gallerySt=Date.now()},{passive:true});g.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-_gallerySx,dy=e.changedTouches[0].clientY-_gallerySy,dt=Date.now()-_gallerySt;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>30&&dt<500){if(dx<0)nextImg();else prevImg()}},{passive:true})}
 
-// ========== 租客端反馈 ==========
-function showTenantFeedback(){
-  document.getElementById('fbBody').innerHTML='\u003cdiv style="margin-bottom:14px"\u003e\u003clabel style="display:block;font-size:13px;font-weight:600;margin-bottom:6px"\u003e反馈内容\u003cspan style="color:var(--d)"\u003e*\u003c/span\u003e\u003c/label\u003e\u003ctextarea id="tFbContent" style="width:100%;padding:10px;border:1.5px solid var(--bd);border-radius:8px;font-size:13px;resize:vertical;min-height:80px;font-family:inherit" placeholder="请描述您的问题或建议..."\u003e\u003c/textarea\u003e\u003c/div\u003e\u003cdiv style="margin-bottom:14px"\u003e\u003clabel style="display:block;font-size:13px;font-weight:600;margin-bottom:6px"\u003e联系方式\u003c/label\u003e\u003cinput id="tFbContact" style="width:100%;padding:10px;border:1.5px solid var(--bd);border-radius:8px;font-size:13px" placeholder="微信/手机，方便回复您"\u003e\u003c/div\u003e\u003cbutton onclick="doTenantFeedback()" style="width:100%;padding:11px;background:linear-gradient(135deg,#4f6ef7,#7c3aed);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer"\u003e提交反馈\u003c/button\u003e';
-  document.getElementById('fbModal').classList.add('show');
-  document.body.style.overflow='hidden';
-  loadMyFeedback();
-}
-function closeFbModal(){document.getElementById('fbModal').classList.remove('show');document.body.style.overflow=''}
-async function doTenantFeedback(){
-  var content=document.getElementById('tFbContent').value.trim();
-  if(!content){alert('请填写反馈内容');return}
-  var contact=document.getElementById('tFbContact').value.trim();
-  try{
-    var r=await fetch(SUPABASE_URL+'/rest/v1/feedback',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({name:'租客',contact:contact,content:content,status:'unread'})});
-    if(!r.ok){var e=await r.json();alert(e.message||'提交失败');return}
-    document.getElementById('tFbContent').value='';
-    document.getElementById('tFbContact').value='';
-    alert('感谢反馈，我们会尽快回复！');
-    loadMyFeedback();
-  }catch(e){alert('提交失败，请稍后再试')}
-}
-async function loadMyFeedback(){
-  try{
-    var r=await fetch(SUPABASE_URL+'/rest/v1/feedback?select=content,reply,created_at,status&order=created_at.desc&limit=10',{headers:{'apikey':SUPABASE_KEY}});
-    if(!r.ok)return;
-    var data=await r.json();
-    if(!data||!data.length)return;
-    var html='\u003cdiv style="margin-top:16px;border-top:1px solid var(--bd);padding-top:14px"\u003e\u003cdiv style="font-size:13px;font-weight:600;margin-bottom:10px"\u003e我的反馈记录\u003c/div\u003e';
-    data.forEach(function(fb){
-      html+='\u003cdiv style="padding:8px 0;border-bottom:1px solid var(--bd);font-size:12px"\u003e';
-      html+='\u003cdiv style="color:var(--ts);margin-bottom:4px"\u003e'+esc(fb.created_at?fb.created_at.slice(0,16).replace('T',' '):'')+'\u003c/div\u003e';
-      html+='\u003cdiv style="margin-bottom:4px"\u003e'+esc(fb.content)+'\u003c/div\u003e';
-      if(fb.reply){html+='\u003cdiv style="background:var(--pbg);border-radius:6px;padding:6px 8px;color:var(--p);font-weight:500"\u003e房东回复：'+esc(fb.reply)+'\u003c/div\u003e'}
-      else{html+='\u003cdiv style="color:var(--ts);font-size:11px"\u003e等待回复中...\u003c/div\u003e'}
-      html+='\u003c/div\u003e';
-    });
-    html+='\u003c/div\u003e';
-    document.getElementById('fbBody').innerHTML+=html;
-  }catch(e){}
-}
-
 init();
 
 // 地图
@@ -1091,29 +946,12 @@ function showDetailMap(rm){
     // 优先使用数据库精确坐标
     if(rm._lat!=null&&rm._lon!=null){
       center=[rm._lat,rm._lon];
-      _detailMap=L.map('detailMap',{zoomControl:false,dragging:true,touchZoom:true}).setView(center,16);
+      _detailMap=L.map('detailMap',{zoomControl:false}).setView(center,16);
       L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:18}).addTo(_detailMap);
       L.control.zoom({position:'bottomright'}).addTo(_detailMap);
       var markerIcon=L.divIcon({className:'',html:'<div style="font-size:28px;text-shadow:0 2px 6px rgba(0,0,0,.3)">📍</div>',iconSize:[28,28],iconAnchor:[14,28]});
       L.marker(center,{icon:markerIcon}).addTo(_detailMap).bindPopup(rm.address||'').openPopup();
       addMapNavBtn(mapDiv,center[0],center[1],rm.address);
-      // 逆地理编码：以实际定位为准更新显示地址
-      amapRegeo(center[0],center[1],function(data){
-        if(data&&data.status==='1'&&data.regeocode){
-          var comp=data.regeocode.addressComponent||{};
-          var bName=comp.building&&String(typeof comp.building==='string'?comp.building:comp.building.name||'').replace(/,/g,'');
-          var nName=comp.neighborhood&&String(comp.neighborhood.name||'').replace(/,/g,'');
-          if(bName==='[]')bName='';
-          if(nName==='[]')nName='';
-          var realName=bName||nName||(comp.township||'')+(comp.streetNumber?(comp.streetNumber.street||'')+(comp.streetNumber.number||''):'');
-          if(!realName&&data.regeocode.formatted_address)realName=data.regeocode.formatted_address.replace(/^(德宏傣族景颇族自治州|瑞丽市|勐卯镇)/g,'').trim();
-          if(realName){
-            var addrEl=document.getElementById('dmAddrText');
-            if(addrEl)addrEl.textContent=realName;
-            _detailMap.eachLayer(function(l){if(l.getPopup)l.setPopupContent(realName)});
-          }
-        }
-      });
       return;
     }
     // 尝试高德地理编码
@@ -1126,7 +964,7 @@ function showDetailMap(rm){
           var local=geocodeLocal(rm.address);
           if(local)center=[local.lat,local.lon];
         }
-        _detailMap=L.map('detailMap',{zoomControl:false,dragging:true,touchZoom:true}).setView(center,16);
+        _detailMap=L.map('detailMap',{zoomControl:false}).setView(center,16);
         L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:18}).addTo(_detailMap);
         L.control.zoom({position:'bottomright'}).addTo(_detailMap);
         var markerIcon=L.divIcon({className:'',html:'<div style="font-size:28px;text-shadow:0 2px 6px rgba(0,0,0,.3)">📍</div>',iconSize:[28,28],iconAnchor:[14,28]});
@@ -1138,7 +976,7 @@ function showDetailMap(rm){
     // 降级：本地地理编码
     var local=rm.address?geocodeLocal(rm.address):null;
     if(local)center=[local.lat,local.lon];
-    _detailMap=L.map('detailMap',{zoomControl:false,dragging:true,touchZoom:true}).setView(center,15);
+    _detailMap=L.map('detailMap',{zoomControl:false}).setView(center,15);
     L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:18}).addTo(_detailMap);
     L.control.zoom({position:'bottomright'}).addTo(_detailMap);
     var markerIcon2=L.divIcon({className:'',html:'<div style="font-size:28px;text-shadow:0 2px 6px rgba(0,0,0,.3)">📍</div>',iconSize:[28,28],iconAnchor:[14,28]});
