@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>瑞丽找服务</title>
+<meta name="theme-color" content="#4F46E5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="瑞丽找服务">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ========== 全局样式（复用 app.html） ========== */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--p:#4F46E5;--g:#10B981;--w:#F59E0B;--d:#EF4444;--i:#3B82F6;--bg:#F1F5F9;--c:#fff;--t:#1E293B;--ts:#64748B;--bd:#E2E8F0;--sb:#1E293B}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--t);min-height:100vh;-webkit-overflow-scrolling:touch}
+
+/* ========== 认证页 ========== */
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%)}
+.auth-card{background:var(--c);border-radius:16px;padding:32px 28px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.auth-card h1{font-size:22px;font-weight:700;margin-bottom:4px;text-align:center}
+.auth-card .sub{font-size:13px;color:var(--ts);text-align:center;margin-bottom:24px}
+.auth-card .logo{text-align:center;font-size:44px;margin-bottom:10px}
+
+/* ========== 按钮样式 ========== */
+.btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:opacity .15s,background .15s;white-space:nowrap}
+.btn:hover{opacity:.88}
+.btn:active{opacity:.75}
+.btn-p{background:var(--p);color:#fff}.btn-g{background:var(--g);color:#fff}.btn-w{background:var(--w);color:#fff}.btn-d{background:var(--d);color:#fff}
+.btn-o{background:#fff;color:var(--p);border:1.5px solid var(--p)}.btn-o:hover{background:var(--p);color:#fff}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-gh{background:transparent;color:var(--ts);border:none;padding:5px 10px;font-size:12px}.btn-gh:hover{background:var(--bd);color:var(--t)}
+.btn-block{width:100%;justify-content:center;padding:12px}.btn-lg{padding:11px 22px;font-size:14px}
+
+/* ========== 表单样式 ========== */
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+.fg .req{color:var(--d);margin-left:2px}
+.fc{width:100%;padding:9px 11px;border:1.5px solid var(--bd);border-radius:8px;font-size:13px;outline:none;transition:border-color .2s;color:var(--t);background:#fff;font-family:inherit}
+.fc:focus{border-color:var(--p)}
+textarea.fc{resize:vertical;min-height:60px}
+.fg .hint{font-size:11px;color:var(--ts);margin-top:4px}
+select.fc{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748B' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+
+/* ========== 标签 ========== */
+.tag{display:inline-block;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:700}
+.t-green{background:#ECFDF5;color:#059669}.t-yellow{background:#FFFBEB;color:#D97706}.t-red{background:#FEF2F2;color:#DC2626}.t-blue{background:#EEF2FF;color:#4F46E5}.t-gray{background:#F1F5F9;color:#64748B}
+
+/* ========== 弹窗 ========== */
+.ov{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px}
+.ov.show{display:flex}
+.modal{background:var(--c);border-radius:14px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:mIn .2s}
+@keyframes mIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.m-hd{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--c);z-index:1}
+.m-hd h3{font-size:15px;font-weight:700}
+.m-x{background:none;border:none;font-size:22px;cursor:pointer;color:var(--ts);line-height:1;padding:0}.m-x:hover{color:var(--t)}
+.m-bd{padding:18px;padding-bottom:20px}
+.m-ft{padding:10px 18px;border-top:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;position:sticky;bottom:0;background:var(--c);padding-bottom:calc(10px + env(safe-area-inset-bottom, 16px))}
+
+/* ========== 空状态 ========== */
+.empty{text-align:center;padding:40px 20px;color:var(--ts)}
+.empty .ei{font-size:38px;margin-bottom:10px}
+.empty h3{font-size:14px;color:var(--t);margin-bottom:4px}
+.empty p{font-size:12px}
+
+/* ========== 加载状态 ========== */
+.loading{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--ts);font-size:14px;gap:8px}
+.spinner{width:18px;height:18px;border:2px solid var(--bd);border-top-color:var(--p);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ========== Toast ========== */
+.toast-box{position:fixed;top:14px;right:14px;z-index:2000;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:calc(100vw - 28px)}
+.toast{padding:10px 16px;border-radius:9px;color:#fff;font-size:13px;font-weight:500;box-shadow:0 4px 14px rgba(0,0,0,.15);animation:tIn .3s;pointer-events:auto;word-break:break-all}
+.t-s{background:var(--g)}.t-e{background:var(--d)}.t-w{background:var(--w)}.t-i{background:var(--i)}
+@keyframes tIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+
+/* ========== 服务市场样式 ========== */
+.header-bar{display:flex;align-items:center;padding:14px 16px;background:var(--c);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:50}
+.back-link{color:var(--p);text-decoration:none;font-size:14px;display:flex;align-items:center;gap:4px}
+.back-link:hover{opacity:.75}
+.header-title{flex:1;text-align:center;font-size:17px;font-weight:700}
+.header-actions{display:flex;gap:8px}
+
+.main-content{max-width:768px;margin:0 auto;padding:16px;padding-bottom:80px}
+
+/* 服务类型筛选 */
+.type-filter{position:sticky;top:57px;z-index:40;background:var(--bg);padding:12px 0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.type-filter::-webkit-scrollbar{display:none}
+.type-filter-inner{display:flex;gap:8px;padding:0 4px;min-width:max-content}
+.type-tag{padding:6px 14px;border-radius:20px;background:var(--c);border:1.5px solid var(--bd);font-size:13px;cursor:pointer;white-space:nowrap;transition:all .2s;display:flex;align-items:center;gap:4px}
+.type-tag:hover{border-color:var(--p)}
+.type-tag.active{background:var(--p);color:#fff;border-color:var(--p)}
+.type-tag .type-icon{font-size:15px}
+
+/* 服务方卡片 */
+.provider-list{display:flex;flex-direction:column;gap:14px}
+.provider-card{background:var(--c);border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--bd)}
+.provider-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.provider-name{font-size:15px;font-weight:700}
+.provider-rating{font-size:12px;color:var(--ts);display:flex;align-items:center;gap:3px}
+.stars{color:#F59E0B;letter-spacing:-1px}
+.provider-types{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
+.provider-type-tag{background:#EEF2FF;color:var(--p);font-size:11px;padding:2px 7px;border-radius:4px;font-weight:600}
+.provider-info{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ts)}
+.provider-info .info-row{display:flex;align-items:center;gap:5px}
+.provider-desc{font-size:13px;color:var(--ts);margin:8px 0;line-height:1.5}
+.provider-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)}
+.provider-price{font-size:14px;font-weight:700;color:var(--p)}
+
+/* 反馈入口 */
+.feedback-bar{position:fixed;bottom:0;left:0;right:0;background:var(--c);border-top:1px solid var(--bd);padding:12px 16px;text-align:center;z-index:50}
+.feedback-link{color:var(--ts);font-size:13px;text-decoration:none}
+.feedback-link:hover{color:var(--p)}
+
+/* 管理模式 */
+.manage-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.manage-header h2{font-size:18px;font-weight:700}
+.tab-bar{display:flex;gap:4px;background:var(--c);padding:4px;border-radius:10px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.tab-item{flex:1;padding:9px 12px;text-align:center;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;transition:all .2s;color:var(--ts);border:none;background:none}
+.tab-item.active{background:var(--p);color:#fff}
+.tab-item:not(.active):hover{background:var(--bg)}
+
+/* 服务方管理 */
+.provider-mgr-card{background:var(--c);border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--bd)}
+.provider-mgr-header{display:flex;justify-content:space-between;align-items:center}
+.provider-mgr-actions{display:flex;gap:6px}
+
+/* 订单列表 */
+.order-list{display:flex;flex-direction:column;gap:10px}
+.order-card{background:var(--c);border-radius:10px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--bd)}
+.order-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.order-provider{font-size:14px;font-weight:600}
+.order-status{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.order-status.pending{background:#FEF3C7;color:#D97706}
+.order-status.accepted{background:#DBEAFE;color:#2563EB}
+.order-status.ongoing{background:#EDE9FE;color:#7C3AED}
+.order-status.completed{background:#D1FAE5;color:#059669}
+.order-info{font-size:12px;color:var(--ts);display:flex;flex-wrap:wrap;gap:10px}
+.order-info span{display:flex;align-items:center;gap:3px}
+.order-footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)}
+.order-amount{font-size:15px;font-weight:700;color:var(--p)}
+.order-actions{display:flex;gap:6px}
+
+/* 状态筛选 */
+.status-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.status-filter .filter-btn{padding:5px 12px;border-radius:15px;border:1.5px solid var(--bd);font-size:12px;cursor:pointer;background:var(--c);transition:all .2s}
+.status-filter .filter-btn:hover{border-color:var(--p)}
+.status-filter .filter-btn.active{background:var(--p);color:#fff;border-color:var(--p)}
+
+/* 多选标签（复用 amen 选择） */
+.amem-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.amem-tag{padding:4px 10px;border-radius:14px;border:1.5px solid var(--bd);font-size:12px;cursor:pointer;transition:all .2s;background:#fff;color:var(--ts);user-select:none;display:flex;align-items:center;gap:3px}
+.amem-tag.on{border-color:var(--g);background:#f0fdf4;color:var(--g);font-weight:500}
+
+/* 移动端适配 */
+@media(max-width:768px){
+.main-content{padding:14px;padding-bottom:70px}
+.header-bar{padding:12px 14px}
+.header-title{font-size:16px}
+.type-filter{top:53px}
+}
+
+/* 用户信息栏 */
+.user-bar{background:var(--c);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bd);margin-bottom:12px}
+.user-info{display:flex;align-items:center;gap:8px;font-size:13px}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+</style>
+</head>
+<body>
+<!-- 主应用容器 -->
+<div id="app"><div class="loading"><div class="spinner"></div>加载中...</div></div>
+
+<!-- Toast 提示 -->
+<div class="toast-box" id="toastBox"></div>
+
+<!-- 弹窗遮罩 -->
+<div class="ov" id="overlay"><div class="modal" id="modal"></div></div>
+
+<script>
+// ========== 配置与初始化 ==========
+var sb = null;
+var currentUser = null;
+var currentTab = 'providers'; // providers | orders
+var cache = {
+  serviceTypes: [],
+  providers: [],
+  orders: []
+};
+var currentFilter = 'all'; // 服务类型筛选
+
+// Supabase 配置
+var SUPABASE_URL = 'https://eszdbwmazsdltngrjjkm.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzemRid21henNkbHRuZ3JqamttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4Mjc5MTMsImV4cCI6MjA5NTQwMzkxM30.VWZg_O4TheXudhdgUMEPoQRAjyEic95vber3FxnxTss';
+
+// ========== 工具函数 ==========
+function esc(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function fmtDate(d) {
+  if (!d) return '-';
+  var s = String(d).slice(0, 10).split('-');
+  return s[0] + '年' + parseInt(s[1], 10) + '月' + parseInt(s[2], 10) + '日';
+}
+
+function toast(msg, type) {
+  type = type || 'i';
+  var box = document.getElementById('toastBox');
+  var t = document.createElement('div');
+  t.className = 'toast t-' + type;
+  t.textContent = msg;
+  box.appendChild(t);
+  setTimeout(function() {
+    t.style.opacity = '0';
+    t.style.transition = 'opacity .3s';
+    setTimeout(function() { t.remove(); }, 300);
+  }, 2500);
+}
+
+// ========== 弹窗控制 ==========
+function openModal(html) {
+  document.getElementById('modal').innerHTML = html;
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// ========== 服务类型相关 ==========
+function initTypeCheck(containerId, selectedIds) {
+  var c = document.getElementById(containerId);
+  if (!c) return;
+  c.innerHTML = cache.serviceTypes.map(function(t) {
+    var isOn = selectedIds && selectedIds.indexOf(t.id) !== -1;
+    return '<span class="amem-tag' + (isOn ? ' on' : '') + '" data-id="' + t.id + '" onclick="this.classList.toggle(\'on\')">' + t.icon + ' ' + t.name + '</span>';
+  }).join('');
+}
+
+function getSelectedTypeIds(containerId) {
+  var tags = document.querySelectorAll('#' + containerId + ' .amem-tag.on');
+  return Array.from(tags).map(function(t) { return t.dataset.id; });
+}
+
+function getTypeNameById(typeId) {
+  var t = cache.serviceTypes.find(function(x) { return x.id === typeId; });
+  return t ? t.name : '';
+}
+
+function getTypeIconById(typeId) {
+  var t = cache.serviceTypes.find(function(x) { return x.id === typeId; });
+  return t ? t.icon : '';
+}
+
+function getTypeNamesByIds(typeIds) {
+  if (!typeIds || !typeIds.length) return [];
+  return typeIds.map(function(id) {
+    var t = cache.serviceTypes.find(function(x) { return x.id === id; });
+    return t ? { name: t.name, icon: t.icon } : null;
+  }).filter(Boolean);
+}
+
+function renderStars(rating) {
+  rating = parseFloat(rating) || 0;
+  var full = Math.floor(rating);
+  var half = rating - full >= 0.5 ? 1 : 0;
+  var empty = 5 - full - half;
+  return '<span class="stars">' + '★'.repeat(full) + (half ? '☆' : '') + '☆'.repeat(empty) + '</span> ' + rating.toFixed(1);
+}
+
+// ========== 认证相关 ==========
+async function checkAuth() {
+  try {
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    var r = await sb.auth.getSession();
+    if (r.data && r.data.session) {
+      currentUser = r.data.session.user;
+      await loadAllData();
+      renderApp();
+    } else {
+      renderBrowseMode();
+    }
+  } catch (e) {
+    console.error('Auth check failed:', e);
+    renderBrowseMode();
+  }
+}
+
+async function loadAllData() {
+  try {
+    // 加载服务类型
+    var rTypes = await sb.from('service_types').select('*').eq('active', true).order('sort_order', { ascending: true });
+    cache.serviceTypes = rTypes.data || [];
+    
+    // 加载服务方
+    var rProviders = await sb.from('service_providers').select('*').eq('active', true).order('created_at', { ascending: false });
+    cache.providers = rProviders.data || [];
+    
+    // 加载订单
+    if (currentUser) {
+      var rOrders = await sb.from('service_orders').select('*').eq('owner_id', currentUser.id).order('created_at', { ascending: false });
+      cache.orders = rOrders.data || [];
+    }
+  } catch (e) {
+    console.error('Load data failed:', e);
+  }
+}
+
+async function doSignIn() {
+  var email = document.getElementById('authEmail').value.trim();
+  var pass = document.getElementById('authPass').value;
+  if (!email || !pass) {
+    toast('请填写邮箱和密码', 'e');
+    return;
+  }
+  var btn = document.querySelector('.btn-p.btn-block');
+  if (btn) { btn.textContent = '登录中...'; btn.disabled = true; }
+  try {
+    var r = await sb.auth.signInWithPassword({ email: email, password: pass });
+    if (r.error) {
+      toast(r.error.message, 'e');
+      if (btn) { btn.textContent = '登录'; btn.disabled = false; }
+      return;
+    }
+    toast('登录成功');
+    await loadAllData();
+    renderApp();
+  } catch (e) {
+    toast('登录出错：' + e.message, 'e');
+    if (btn) { btn.textContent = '登录'; btn.disabled = false; }
+  }
+}
+
+async function doSignOut() {
+  await sb.auth.signOut();
+  currentUser = null;
+  currentTab = 'providers';
+  currentFilter = 'all';
+  cache.orders = [];
+  renderBrowseMode();
+}
+
+// ========== 渲染浏览模式（租客视角） ==========
+function renderBrowseMode() {
+  var typesHtml = '<div class="type-filter-inner">' +
+    '<div class="type-tag ' + (currentFilter === 'all' ? 'active' : '') + '" onclick="filterByType(\'all\')">全部</div>';
+  
+  cache.serviceTypes.forEach(function(t) {
+    typesHtml += '<div class="type-tag ' + (currentFilter === t.id ? 'active' : '') + '" onclick="filterByType(\'' + t.id + '\')">' +
+      '<span class="type-icon">' + t.icon + '</span> ' + t.name + '</div>';
+  });
+  typesHtml += '</div>';
+  
+  // 筛选服务方
+  var filtered = cache.providers;
+  if (currentFilter !== 'all') {
+    filtered = cache.providers.filter(function(p) {
+      return p.type_ids && p.type_ids.indexOf(currentFilter) !== -1;
+    });
+  }
+  
+  var listHtml = '';
+  if (filtered.length === 0) {
+    listHtml = '<div class="empty"><div class="ei">🔧</div><h3>暂无相关服务</h3><p>暂无' + (currentFilter === 'all' ? '' : getTypeNameById(currentFilter)) + '服务方</p></div>';
+  } else {
+    filtered.forEach(function(p) {
+      var typeNames = getTypeNamesByIds(p.type_ids);
+      var typesStr = typeNames.map(function(t) {
+        return '<span class="provider-type-tag">' + t.icon + ' ' + t.name + '</span>';
+      }).join('');
+      
+      listHtml += '<div class="provider-card">' +
+        '<div class="provider-header">' +
+          '<div class="provider-name">' + esc(p.name) + '</div>' +
+          (p.rating_avg ? '<div class="provider-rating">' + renderStars(p.rating_avg) + '(' + p.rating_count + ')</div>' : '') +
+        '</div>' +
+        (typesStr ? '<div class="provider-types">' + typesStr + '</div>' : '') +
+        '<div class="provider-info">' +
+          (p.service_area ? '<div class="info-row">📍 ' + esc(p.service_area) + '</div>' : '') +
+        '</div>' +
+        (p.description ? '<div class="provider-desc">' + esc(p.description) + '</div>' : '') +
+        '<div class="provider-footer">' +
+          '<div class="provider-price">' + (p.price_hint || '面议') + '</div>' +
+          '<a href="tel:' + esc(p.phone) + '" class="btn btn-p btn-sm">📞 拨打电话</a>' +
+        '</div>' +
+      '</div>';
+    });
+  }
+  
+  document.getElementById('app').innerHTML = 
+    '<div class="header-bar">' +
+      '<a href="index.html" class="back-link">← 返回</a>' +
+      '<div class="header-title">瑞丽找服务</div>' +
+      '<div class="header-actions"></div>' +
+    '</div>' +
+    '<div class="main-content">' +
+      '<div class="type-filter">' + typesHtml + '</div>' +
+      '<div class="provider-list" id="providerList">' + listHtml + '</div>' +
+    '</div>' +
+    '<div class="feedback-bar">' +
+      '<a href="mailto:feedback@example.com" class="feedback-link">遇到问题？反馈给我们</a>' +
+    '</div>';
+}
+
+function filterByType(typeId) {
+  currentFilter = typeId;
+  renderBrowseMode();
+}
+
+// ========== 渲染管理视图（房东视角） ==========
+function renderApp() {
+  var userName = currentUser.email ? currentUser.email.split('@')[0] : '用户';
+  var avatar = userName.charAt(0).toUpperCase();
+  
+  document.getElementById('app').innerHTML = 
+    '<div class="header-bar">' +
+      '<a href="app.html" class="back-link">← 返回首页</a>' +
+      '<div class="header-title">服务市场管理</div>' +
+      '<div class="header-actions"></div>' +
+    '</div>' +
+    '<div class="main-content">' +
+      '<div class="user-bar">' +
+        '<div class="user-info">' +
+          '<div class="user-avatar">' + avatar + '</div>' +
+          '<span>管理服务方</span>' +
+        '</div>' +
+        '<button class="btn btn-gh btn-sm" onclick="doSignOut()">退出</button>' +
+      '</div>' +
+      '<div class="tab-bar">' +
+        '<button class="tab-item ' + (currentTab === 'providers' ? 'active' : '') + '" onclick="switchTab(\'providers\')">服务方管理</button>' +
+        '<button class="tab-item ' + (currentTab === 'orders' ? 'active' : '') + '" onclick="switchTab(\'orders\')">订单记录</button>' +
+      '</div>' +
+      '<div id="tabContent"></div>' +
+    '</div>';
+  
+  renderTabContent();
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  renderApp();
+}
+
+function renderTabContent() {
+  if (currentTab === 'providers') {
+    renderProvidersTab();
+  } else {
+    renderOrdersTab();
+  }
+}
+
+// ========== 服务方管理 ==========
+function renderProvidersTab() {
+  var myProviders = cache.providers.filter(function(p) {
+    return p.owner_id === currentUser.id;
+  });
+  
+  var listHtml = '';
+  if (myProviders.length === 0) {
+    listHtml = '<div class="empty"><div class="ei">🛠️</div><h3>暂无服务方</h3><p>点击下方按钮添加第一个服务方</p></div>';
+  } else {
+    myProviders.forEach(function(p) {
+      var typeNames = getTypeNamesByIds(p.type_ids);
+      var typesStr = typeNames.map(function(t) { return t.icon + ' ' + t.name; }).join(' ');
+      
+      listHtml += '<div class="provider-mgr-card">' +
+        '<div class="provider-mgr-header">' +
+          '<div>' +
+            '<div style="font-weight:700;font-size:14px">' + esc(p.name) + '</div>' +
+            '<div style="font-size:12px;color:var(--ts);margin-top:2px">' + (p.phone ? '📞 ' + esc(p.phone) : '') + (p.service_area ? ' | 📍 ' + esc(p.service_area) : '') + '</div>' +
+            (typesStr ? '<div style="font-size:11px;color:var(--p);margin-top:3px">' + typesStr + '</div>' : '') +
+          '</div>' +
+          '<div class="provider-mgr-actions">' +
+            '<button class="btn btn-sm btn-gh" onclick="showEditProvider(\'' + p.id + '\')">编辑</button>' +
+            '<button class="btn btn-sm btn-gh" style="color:var(--d)" onclick="delProvider(\'' + p.id + '\')">删除</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    });
+  }
+  
+  document.getElementById('tabContent').innerHTML = 
+    '<div class="manage-header">' +
+      '<h2>我的服务方</h2>' +
+      '<button class="btn btn-p" onclick="showAddProvider()">+ 添加服务方</button>' +
+    '</div>' +
+    '<div>' + listHtml + '</div>';
+}
+
+function showAddProvider() {
+  openModal(
+    '<div class="m-hd"><h3>添加服务方</h3><button class="m-x" onclick="closeModal()">×</button></div>' +
+    '<div class="m-bd">' +
+      '<div class="fg"><label>姓名<span class="req">*</span></label><input class="fc" id="fPName" placeholder="服务方联系人姓名"></div>' +
+      '<div class="fg"><label>手机号<span class="req">*</span></label><input class="fc" id="fPPhone" type="tel" placeholder="11位手机号"></div>' +
+      '<div class="fg"><label>服务类型</label><div class="amem-tags" id="typeCheck"></div><div class="hint">可多选</div></div>' +
+      '<div class="fg"><label>服务区域</label><input class="fc" id="fPArea" placeholder="如：瑞丽市区、姐告"></div>' +
+      '<div class="fg"><label>参考价格</label><input class="fc" id="fPPrice" placeholder="如：100元/次 或 面议"></div>' +
+      '<div class="fg"><label>简介</label><textarea class="fc" id="fPDesc" placeholder="简单介绍一下服务内容和优势"></textarea></div>' +
+    '</div>' +
+    '<div class="m-ft">' +
+      '<button class="btn btn-gh" onclick="closeModal()">取消</button>' +
+      '<button class="btn btn-p" id="saveProviderBtn" onclick="doAddProvider()">保存</button>' +
+    '</div>'
+  );
+  initTypeCheck('typeCheck', []);
+}
+
+function showEditProvider(id) {
+  var p = cache.providers.find(function(x) { return x.id === id; });
+  if (!p) return;
+  
+  openModal(
+    '<div class="m-hd"><h3>编辑服务方</h3><button class="m-x" onclick="closeModal()">×</button></div>' +
+    '<div class="m-bd">' +
+      '<div class="fg"><label>姓名<span class="req">*</span></label><input class="fc" id="fPName" value="' + esc(p.name || '') + '"></div>' +
+      '<div class="fg"><label>手机号<span class="req">*</span></label><input class="fc" id="fPPhone" type="tel" value="' + esc(p.phone || '') + '"></div>' +
+      '<div class="fg"><label>服务类型</label><div class="amem-tags" id="typeCheck"></div><div class="hint">可多选</div></div>' +
+      '<div class="fg"><label>服务区域</label><input class="fc" id="fPArea" value="' + esc(p.service_area || '') + '"></div>' +
+      '<div class="fg"><label>参考价格</label><input class="fc" id="fPPrice" value="' + esc(p.price_hint || '') + '"></div>' +
+      '<div class="fg"><label>简介</label><textarea class="fc" id="fPDesc">' + esc(p.description || '') + '</textarea></div>' +
+    '</div>' +
+    '<div class="m-ft">' +
+      '<button class="btn btn-gh" onclick="closeModal()">取消</button>' +
+      '<button class="btn btn-p" id="saveProviderBtn" onclick="doEditProvider(\'' + id + '\')">保存</button>' +
+    '</div>'
+  );
+  initTypeCheck('typeCheck', p.type_ids || []);
+}
+
+async function doAddProvider() {
+  if (window._saving) return;
+  var btn = document.getElementById('saveProviderBtn');
+  if (btn) { btn.textContent = '保存中...'; btn.disabled = true; }
+  window._saving = true;
+  
+  try {
+    var name = document.getElementById('fPName').value.trim();
+    var phone = document.getElementById('fPPhone').value.trim();
+    
+    if (!name) { toast('请输入姓名', 'e'); return; }
+    if (!phone) { toast('请输入手机号', 'e'); return; }
+    if (!/^1\d{10}$/.test(phone)) { toast('手机号格式不正确', 'e'); return; }
+    
+    var typeIds = getSelectedTypeIds('typeCheck');
+    
+    var r = await sb.from('service_providers').insert({
+      owner_id: currentUser.id,
+      name: name,
+      phone: phone,
+      type_ids: typeIds,
+      service_area: document.getElementById('fPArea').value.trim(),
+      price_hint: document.getElementById('fPPrice').value.trim(),
+      description: document.getElementById('fPDesc').value.trim(),
+      active: true
+    });
+    
+    if (r.error) {
+      toast(r.error.message, 'e');
+      return;
+    }
+    
+    closeModal();
+    toast('添加成功');
+    await loadAllData();
+    renderApp();
+  } finally {
+    window._saving = false;
+    var b = document.getElementById('saveProviderBtn');
+    if (b) { b.textContent = '保存'; b.disabled = false; }
+  }
+}
+
+async function doEditProvider(id) {
+  if (window._saving) return;
+  var btn = document.getElementById('saveProviderBtn');
+  if (btn) { btn.textContent = '保存中...'; btn.disabled = true; }
+  window._saving = true;
+  
+  try {
+    var name = document.getElementById('fPName').value.trim();
+    var phone = document.getElementById('fPPhone').value.trim();
+    
+    if (!name) { toast('请输入姓名', 'e'); return; }
+    if (!phone) { toast('请输入手机号', 'e'); return; }
+    if (!/^1\d{10}$/.test(phone)) { toast('手机号格式不正确', 'e'); return; }
+    
+    var typeIds = getSelectedTypeIds('typeCheck');
+    
+    var r = await sb.from('service_providers').update({
+      name: name,
+      phone: phone,
+      type_ids: typeIds,
+      service_area: document.getElementById('fPArea').value.trim(),
+      price_hint: document.getElementById('fPPrice').value.trim(),
+      description: document.getElementById('fPDesc').value.trim()
+    }).eq('id', id);
+    
+    if (r.error) {
+      toast(r.error.message, 'e');
+      return;
+    }
+    
+    closeModal();
+    toast('更新成功');
+    await loadAllData();
+    renderApp();
+  } finally {
+    window._saving = false;
+    var b = document.getElementById('saveProviderBtn');
+    if (b) { b.textContent = '保存'; b.disabled = false; }
+  }
+}
+
+async function delProvider(id) {
+  if (!confirm('确定要删除该服务方吗？')) return;
+  
+  try {
+    var r = await sb.from('service_providers').update({ active: false }).eq('id', id);
+    if (r.error) {
+      toast(r.error.message, 'e');
+      return;
+    }
+    toast('已删除');
+    await loadAllData();
+    renderApp();
+  } catch (e) {
+    toast('删除失败', 'e');
+  }
+}
+
+// ========== 订单记录 ==========
+var orderFilter = 'all';
+
+function renderOrdersTab() {
+  var myOrders = cache.orders.filter(function(o) {
+    return o.owner_id === currentUser.id;
+  });
+  
+  var filtered = myOrders;
+  if (orderFilter !== 'all') {
+    filtered = myOrders.filter(function(o) { return o.status === orderFilter; });
+  }
+  
+  var statusOptions = [
+    { value: 'all', label: '全部' },
+    { value: 'pending', label: '待确认' },
+    { value: 'accepted', label: '已接受' },
+    { value: 'ongoing', label: '进行中' },
+    { value: 'completed', label: '已完成' }
+  ];
+  
+  var filterHtml = '<div class="status-filter">' +
+    statusOptions.map(function(s) {
+      return '<button class="filter-btn ' + (orderFilter === s.value ? 'active' : '') + '" onclick="filterOrders(\'' + s.value + '\')">' + s.label + '</button>';
+    }).join('') +
+  '</div>';
+  
+  var listHtml = '';
+  if (filtered.length === 0) {
+    listHtml = '<div class="empty"><div class="ei">📋</div><h3>暂无订单</h3><p>点击下方按钮手动添加订单记录</p></div>';
+  } else {
+    filtered.forEach(function(o) {
+      var provider = cache.providers.find(function(p) { return p.id === o.provider_id; });
+      var providerName = provider ? provider.name : '(已删除)';
+      var typeName = getTypeNameById(o.service_type) || o.service_type || '-';
+      
+      var statusClass = {
+        'pending': 'pending',
+        'accepted': 'accepted',
+        'ongoing': 'ongoing',
+        'completed': 'completed'
+      }[o.status] || 'pending';
+      
+      var statusText = {
+        'pending': '待确认',
+        'accepted': '已接受',
+        'ongoing': '进行中',
+        'completed': '已完成'
+      }[o.status] || o.status;
+      
+      listHtml += '<div class="order-card">' +
+        '<div class="order-header">' +
+          '<div class="order-provider">' + esc(providerName) + '</div>' +
+          '<span class="order-status ' + statusClass + '">' + statusText + '</span>' +
+        '</div>' +
+        '<div class="order-info">' +
+          '<span>🔧 ' + esc(typeName) + '</span>' +
+          '<span>📅 ' + fmtDate(o.service_date) + '</span>' +
+          (o.notes ? '<span>📝 ' + esc(o.notes) + '</span>' : '') +
+        '</div>' +
+        '<div class="order-footer">' +
+          '<div class="order-amount">' + (o.amount ? '¥' + parseFloat(o.amount).toFixed(0) : '') + '</div>' +
+          '<div class="order-actions">' +
+            '<button class="btn btn-sm btn-gh" onclick="showEditOrder(\'' + o.id + '\')">详情</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    });
+  }
+  
+  document.getElementById('tabContent').innerHTML = 
+    '<div class="manage-header">' +
+      '<h2>服务订单</h2>' +
+      '<button class="btn btn-p" onclick="showAddOrder()">+ 添加订单</button>' +
+    '</div>' +
+    filterHtml +
+    '<div class="order-list">' + listHtml + '</div>';
+}
+
+function filterOrders(status) {
+  orderFilter = status;
+  renderOrdersTab();
+}
+
+function showAddOrder() {
+  var myProviders = cache.providers.filter(function(p) {
+    return p.owner_id === currentUser.id && p.active;
+  });
+  
+  var providerOptions = myProviders.map(function(p) {
+    return '<option value="' + p.id + '">' + esc(p.name) + '</option>';
+  }).join('');
+  
+  var typeOptions = cache.serviceTypes.map(function(t) {
+    return '<option value="' + t.id + '">' + t.icon + ' ' + t.name + '</option>';
+  }).join('');
+  
+  var statusOptions = [
+    '<option value="pending">待确认</option>',
+    '<option value="accepted">已接受</option>',
+    '<option value="ongoing">进行中</option>',
+    '<option value="completed">已完成</option>'
+  ].join('');
+  
+  openModal(
+    '<div class="m-hd"><h3>添加订单</h3><button class="m-x" onclick="closeModal()">×</button></div>' +
+    '<div class="m-bd">' +
+      '<div class="fg"><label>服务方</label><select class="fc" id="fOProvider">' + (providerOptions || '<option value="">-- 暂无服务方 --</option>') + '</select></div>' +
+      '<div class="fg"><label>服务类型</label><select class="fc" id="fOType">' + (typeOptions || '<option value="">-- 暂无类型 --</option>') + '</select></div>' +
+      '<div class="fg"><label>服务日期</label><input class="fc" id="fODate" type="date" value="' + today() + '"></div>' +
+      '<div class="fg"><label>费用(元)</label><input class="fc" id="fOAmount" type="number" placeholder="实际费用"></div>' +
+      '<div class="fg"><label>状态</label><select class="fc" id="fOStatus">' + statusOptions + '</select></div>' +
+      '<div class="fg"><label>备注</label><textarea class="fc" id="fONotes" placeholder="其他说明"></textarea></div>' +
+    '</div>' +
+    '<div class="m-ft">' +
+      '<button class="btn btn-gh" onclick="closeModal()">取消</button>' +
+      '<button class="btn btn-p" id="saveOrderBtn" onclick="doAddOrder()">保存</button>' +
+    '</div>'
+  );
+}
+
+function showEditOrder(id) {
+  var o = cache.orders.find(function(x) { return x.id === id; });
+  if (!o) return;
+  
+  var myProviders = cache.providers.filter(function(p) {
+    return p.owner_id === currentUser.id && p.active;
+  });
+  
+  var providerOptions = myProviders.map(function(p) {
+    return '<option value="' + p.id + '"' + (p.id === o.provider_id ? ' selected' : '') + '>' + esc(p.name) + '</option>';
+  }).join('');
+  
+  var typeOptions = cache.serviceTypes.map(function(t) {
+    return '<option value="' + t.id + '"' + (t.id === o.service_type ? ' selected' : '') + '>' + t.icon + ' ' + t.name + '</option>';
+  }).join('');
+  
+  var statusOptions = [
+    { value: 'pending', label: '待确认' },
+    { value: 'accepted', label: '已接受' },
+    { value: 'ongoing', label: '进行中' },
+    { value: 'completed', label: '已完成' }
+  ].map(function(s) {
+    return '<option value="' + s.value + '"' + (s.value === o.status ? ' selected' : '') + '>' + s.label + '</option>';
+  }).join('');
+  
+  openModal(
+    '<div class="m-hd"><h3>编辑订单</h3><button class="m-x" onclick="closeModal()">×</button></div>' +
+    '<div class="m-bd">' +
+      '<div class="fg"><label>服务方</label><select class="fc" id="fOProvider">' + (providerOptions || '<option value="">-- 暂无服务方 --</option>') + '</select></div>' +
+      '<div class="fg"><label>服务类型</label><select class="fc" id="fOType">' + (typeOptions || '<option value="">-- 暂无类型 --</option>') + '</select></div>' +
+      '<div class="fg"><label>服务日期</label><input class="fc" id="fODate" type="date" value="' + (o.service_date || today()) + '"></div>' +
+      '<div class="fg"><label>费用(元)</label><input class="fc" id="fOAmount" type="number" value="' + (o.amount || '') + '"></div>' +
+      '<div class="fg"><label>状态</label><select class="fc" id="fOStatus">' + statusOptions + '</select></div>' +
+      '<div class="fg"><label>备注</label><textarea class="fc" id="fONotes">' + esc(o.notes || '') + '</textarea></div>' +
+    '</div>' +
+    '<div class="m-ft">' +
+      '<button class="btn btn-gh" style="color:var(--d)" onclick="delOrder(\'' + o.id + '\')">删除</button>' +
+      '<button class="btn btn-p" id="saveOrderBtn" onclick="doEditOrder(\'' + o.id + '\')">保存</button>' +
+    '</div>'
+  );
+}
+
+async function doAddOrder() {
+  if (window._saving) return;
+  var btn = document.getElementById('saveOrderBtn');
+  if (btn) { btn.textContent = '保存中...'; btn.disabled = true; }
+  window._saving = true;
+  
+  try {
+    var providerId = document.getElementById('fOProvider').value;
+    var serviceType = document.getElementById('fOType').value;
+    var serviceDate = document.getElementById('fODate').value;
+    var amount = document.getElementById('fOAmount').value;
+    var status = document.getElementById('fOStatus').value;
+    var notes = document.getElementById('fONotes').value.trim();
+    
+    var r = await sb.from('service_orders').insert({
+      owner_id: currentUser.id,
+      provider_id: providerId || null,
+      service_type: serviceType || null,
+      service_date: serviceDate || today(),
+      amount: parseFloat(amount) || null,
+      status: status,
+      notes: notes || null
+    });
+    
+    if (r.error) {
+      toast(r.error.message, 'e');
+      return;
+    }
+    
+    closeModal();
+    toast('添加成功');
+    await loadAllData();
+    renderApp();
+  } finally {
+    window._saving = false;
+    var b = document.getElementById('saveOrderBtn');
+    if (b) { b.textContent = '保存'; b.disabled = false; }
+  }
+}
+
+async function doEditOrder(id) {
+  if (window._saving) return;
+  var btn = document.getElementById('saveOrderBtn');
+  if (btn) { btn.textContent = '保存中...'; btn.disabled = true; }
+  window._saving = true;
+  
+  try {
+    var providerId = document.getElementById('fOProvider').value;
+    var serviceType = document.getElementById('fOType').value;
+    var serviceDate = document.getElementById('fODate').value;
+    var amount = document.getElementById('fOAmount').value;
+    var status = document.getElementById('fOStatus').value;
+    var notes = document.getElementById('fONotes').value.trim();
+    
+    var r = await sb.from('service_orders').update({
+      provider_id: providerId || null,
+      service_type: serviceType || null,
+      service_date: serviceDate || today(),
+      amount: parseFloat(amount) || null,
+      status: status,
+      notes: notes || null,
+      updated_at: new Date().toISOString()
+    }).eq('id', id);
+    
+    if (r.error) {
+      toast(r.error.message, 'e');
+      return;
+    }
+    
+    closeModal();
+    toast('更新成功');
+    await loadAllData();
+    renderApp();
+  } finally {
+    window._saving = false;
+    var b = document.getElementById('saveOrderBtn');
+    if (b) { b.textContent = '保存'; b.disabled = false; }
+  }
+}
+
+async function delOrder(id) {
+  if (!confirm('确定要删除该订单吗？')) return;
+  
+  try {
+    var r = await sb.from('service_orders').delete().eq('id', id);
+    if (r.error) {
+      toast(r.error.message, 'e');
+      return;
+    }
+    closeModal();
+    toast('已删除');
+    await loadAllData();
+    renderApp();
+  } catch (e) {
+    toast('删除失败', 'e');
+  }
+}
+
+// ========== 启动 ==========
+document.addEventListener('DOMContentLoaded', function() {
+  checkAuth();
+});
+</script>
+</body>
+</html>
