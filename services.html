@@ -278,6 +278,8 @@ async function checkAuth() {
   try {
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     var r = await sb.auth.getSession();
+    // 先加载公共数据（服务类型和服务方），无论是否登录都需要
+    await loadPublicData();
     if (r.data && r.data.session) {
       currentUser = r.data.session.user;
       await loadAllData();
@@ -287,7 +289,21 @@ async function checkAuth() {
     }
   } catch (e) {
     console.error('Auth check failed:', e);
+    await loadPublicData();
     renderBrowseMode();
+  }
+}
+
+// 加载公共数据（浏览模式也需要）
+async function loadPublicData() {
+  try {
+    var rTypes = await sb.from('service_types').select('*').eq('active', true).order('sort_order', { ascending: true });
+    cache.serviceTypes = rTypes.data || [];
+    
+    var rProviders = await sb.from('service_providers').select('*').eq('active', true).order('created_at', { ascending: false });
+    cache.providers = rProviders.data || [];
+  } catch (e) {
+    console.error('Load public data failed:', e);
   }
 }
 
