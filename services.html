@@ -273,6 +273,13 @@ function renderStars(rating) {
   return '<span class="stars">' + '★'.repeat(full) + (half ? '☆' : '') + '☆'.repeat(empty) + '</span> ' + rating.toFixed(1);
 }
 
+// ========== 管理员判断 ==========
+function isAdmin() {
+  if (!currentUser) return false;
+  var admins = ['332303155@qq.com', '18213501784@163.com'];
+  return admins.indexOf(currentUser.email) >= 0;
+}
+
 // ========== 认证相关 ==========
 async function checkAuth() {
   try {
@@ -317,9 +324,14 @@ async function loadAllData() {
     var rProviders = await sb.from('service_providers').select('*').eq('active', true).order('created_at', { ascending: false });
     cache.providers = rProviders.data || [];
     
-    // 加载订单
+    // 加载订单（管理员看全部，普通用户看自己的）
     if (currentUser) {
-      var rOrders = await sb.from('service_orders').select('*').eq('owner_id', currentUser.id).order('created_at', { ascending: false });
+      var rOrders;
+      if (isAdmin()) {
+        rOrders = await sb.from('service_orders').select('*').order('created_at', { ascending: false });
+      } else {
+        rOrders = await sb.from('service_orders').select('*').eq('owner_id', currentUser.id).order('created_at', { ascending: false });
+      }
       cache.orders = rOrders.data || [];
     }
   } catch (e) {
@@ -472,7 +484,8 @@ function renderTabContent() {
 
 // ========== 服务方管理 ==========
 function renderProvidersTab() {
-  var myProviders = cache.providers.filter(function(p) {
+  // 管理员看所有服务方，普通房东只看自己的
+  var myProviders = isAdmin() ? cache.providers : cache.providers.filter(function(p) {
     return p.owner_id === currentUser.id;
   });
   
@@ -483,6 +496,11 @@ function renderProvidersTab() {
     myProviders.forEach(function(p) {
       var typeNames = getTypeNamesByIds(p.type_ids);
       var typesStr = typeNames.map(function(t) { return t.icon + ' ' + t.name; }).join(' ');
+      // 管理员模式下显示发布者信息
+      var ownerInfo = '';
+      if (isAdmin() && p.owner_id !== currentUser.id) {
+        ownerInfo = '<div style="font-size:11px;color:var(--ts);margin-top:2px">发布者: ' + esc(p.owner_id ? p.owner_id.slice(0,8) + '...' : '未知') + '</div>';
+      }
       
       listHtml += '<div class="provider-mgr-card">' +
         '<div class="provider-mgr-header">' +
@@ -490,10 +508,11 @@ function renderProvidersTab() {
             '<div style="font-weight:700;font-size:14px">' + esc(p.name) + '</div>' +
             '<div style="font-size:12px;color:var(--ts);margin-top:2px">' + (p.phone ? '📞 ' + esc(p.phone) : '') + (p.service_area ? ' | 📍 ' + esc(p.service_area) : '') + '</div>' +
             (typesStr ? '<div style="font-size:11px;color:var(--p);margin-top:3px">' + typesStr + '</div>' : '') +
+            ownerInfo +
           '</div>' +
           '<div class="provider-mgr-actions">' +
-            '<button class="btn btn-sm btn-gh" onclick="showEditProvider(\'' + p.id + '\')">编辑</button>' +
-            '<button class="btn btn-sm btn-gh" style="color:var(--d)" onclick="delProvider(\'' + p.id + '\')">删除</button>' +
+            (isAdmin() || p.owner_id === currentUser.id ? '<button class="btn btn-sm btn-gh" onclick="showEditProvider(\'' + p.id + '\')">编辑</button>' +
+            '<button class="btn btn-sm btn-gh" style="color:var(--d)" onclick="delProvider(\'' + p.id + '\')">删除</button>' : '') +
           '</div>' +
         '</div>' +
       '</div>';
@@ -502,7 +521,7 @@ function renderProvidersTab() {
   
   document.getElementById('tabContent').innerHTML = 
     '<div class="manage-header">' +
-      '<h2>我的服务方</h2>' +
+      '<h2>' + (isAdmin() ? '全部服务方' : '我的服务方') + (isAdmin() ? ' <span style="font-size:12px;color:var(--ts);font-weight:normal">（管理员模式）</span>' : '') + '</h2>' +
       '<button class="btn btn-p" onclick="showAddProvider()">+ 添加服务方</button>' +
     '</div>' +
     '<div>' + listHtml + '</div>';
@@ -654,7 +673,8 @@ async function delProvider(id) {
 var orderFilter = 'all';
 
 function renderOrdersTab() {
-  var myOrders = cache.orders.filter(function(o) {
+  // 管理员看所有订单，普通用户只看自己的
+  var myOrders = isAdmin() ? cache.orders : cache.orders.filter(function(o) {
     return o.owner_id === currentUser.id;
   });
   
@@ -735,7 +755,8 @@ function filterOrders(status) {
 }
 
 function showAddOrder() {
-  var myProviders = cache.providers.filter(function(p) {
+  // 管理员看所有服务方，普通用户只看自己的
+  var myProviders = isAdmin() ? cache.providers.filter(function(p) { return p.active; }) : cache.providers.filter(function(p) {
     return p.owner_id === currentUser.id && p.active;
   });
   
