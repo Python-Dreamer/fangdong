@@ -1,4 +1,4 @@
-var CACHE_NAME='fangdong-v6';
+var CACHE_NAME='fangdong-v7';
 var CACHE_URLS=[
   './',
   './index.html',
@@ -29,4 +29,11 @@ self.addEventListener('fetch',function(e){
     fetch(e.request).then(function(r){
       if(r&&r.status===200){
         var rc=r.clone();
-        caches.open(CACHE_NAME).then(functio
+        caches.open(CACHE_NAME).then(function(c){c.put(e.request,rc)});
+      }
+      return r;
+    }).catch(function(){
+      return caches.match(e.request);
+    })
+  );
+});
