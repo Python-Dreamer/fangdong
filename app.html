@@ -719,7 +719,7 @@ function fmtDateTime(dt){
 }
 
 // ========== 启动 ==========
-async function boot(){try{await loadSDK();var su=localStorage.getItem('sb_url')||DEFAULT_SB_URL,sk=localStorage.getItem('sb_key')||DEFAULT_SB_KEY;if(su&&sk){try{sb=window.supabase.createClient(su,sk)}catch(e){console.error('Client creation failed:',e);renderConfig();return}}await checkAuth();await checkPasswordRecovery()}catch(e){console.error('Boot error:',e);document.getElementById('app').innerHTML='<div class="auth-page"><div class="auth-card"><div class="logo">❌</div><h1>加载失败</h1><p class="sub">'+esc(e.message||'未知错误')+'</p><button class="btn btn-p btn-block" onclick="boot()">重试</button></div></div>'}}
+async async function boot(){try{await loadSDK();var su=localStorage.getItem('sb_url')||DEFAULT_SB_URL,sk=localStorage.getItem('sb_key')||DEFAULT_SB_KEY;if(su&&sk){try{sb=window.supabase.createClient(su,sk)}catch(e){console.error('Client creation failed:',e);renderConfig();return}}await checkAuth();await checkPasswordRecovery()}catch(e){console.error('Boot error:',e);document.getElementById('app').innerHTML='<div class="auth-page"><div class="auth-card"><div class="logo">❌</div><h1>加载失败</h1><p class="sub">'+esc(e.message||'未知错误')+'</p><button class="btn btn-p btn-block" onclick="boot()">重试</button></div></div>'}}
 
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',boot)}else{boot()}
 </script>
