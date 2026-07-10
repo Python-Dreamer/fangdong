@@ -1,4 +1,4 @@
-var CACHE_NAME='fangdong-v19';
+var CACHE_NAME='fangdong-v20';
 var CACHE_URLS=[
   './',
   './index.html',
