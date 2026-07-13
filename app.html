@@ -595,9 +595,20 @@ var icon=ext==='pdf'?'📄':(ext==='doc'||ext==='docx')?'📝':'📎';
 var path=typeof f==='string'?f:f.path;
 html+='<div class="file-item"><span class="file-icon">'+icon+'</span><div class="file-info"><div class="file-name">'+esc(name)+'</div></div><div class="file-actions"><button class="file-btn" onclick="downloadFile(\''+esc(path)+'\',\''+esc(name)+'\',\''+tenantId+'\')">下载</button></div></div>'}
 html+='</div></div>';return html}
-async function downloadFile(path,name,tenantId){try{var r=await sb.storage.from('contract-files').createSignedUrl(path,60);
-if(r.error){toast('获取下载链接失败','e');return}
-window.open(r.data.signedUrl,'_blank')}catch(e){toast('下载失败','e')}}
+async function downloadFile(path,name,tenantId){
+  try{
+    // 先创建一个隐藏的 a 标签，在同步点击事件中触发，避免被弹窗拦截
+    var link=document.createElement('a');
+    link.style.display='none';
+    document.body.appendChild(link);
+    var r=await sb.storage.from('contract-files').createSignedUrl(path,300);
+    if(r.error){toast('获取下载链接失败：'+r.error.message,'e');link.remove();return}
+    link.href=r.data.signedUrl;
+    link.download=name||'contract_file';
+    link.click();
+    setTimeout(function(){link.remove()},100);
+  }catch(e){toast('下载失败：'+e.message,'e')}
+}
 
 async function handlePhotoUpload(input,tenantId){if(!input.files||!input.files.length)return;for(var i=0;i<input.files.length;i++){await uploadContractPhoto(input.files[i],tenantId)}input.value=''}
 
