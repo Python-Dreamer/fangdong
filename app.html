@@ -571,7 +571,7 @@ if(f.size>10*1024*1024){toast('文件 '+f.name+' 超过10MB','e');continue}
 var ext=f.name.split('.').pop().toLowerCase();
 if(['pdf','doc','docx'].indexOf(ext)===-1){toast('不支持的文件格式','w');continue}
 var ext2=f.name.split('.').pop();
-var path=getOwnerId()+'/'+tenantId+'/'+Date.now()+'_'+f.name;
+var safeName=f.name.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9._\u4e00-\u9fa5-]/g,'');var path=getOwnerId()+'/'+tenantId+'/'+Date.now()+'_'+safeName;
 try{var r=await sb.storage.from('contract-files').upload(path,f,{contentType:f.type,upsert:true});
 if(r.error){toast('上传失败：'+r.error.message,'e');continue}
 existing.push({path:path,name:f.name,size:f.size,type:ext2})}catch(e){toast('上传失败','e')}}
