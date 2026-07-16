@@ -881,7 +881,7 @@ function contractGen_showModal(){
     html+='<button class="btn btn-p" id="cgNextBtn" onclick="contractGen_goStep(2)" '+(contractGen_state.fileLoaded?'':'disabled style="opacity:.5"')+'>下一步：预览签名</button>';
   }
   if(contractGen_state.step===2){
-    html+='<button class="btn btn-g" onclick="contractGen_generatePdf()">📥 生成并下载 PDF</button>';
+    html+='<button class="btn btn-g" onclick="contractGen_generatePdf()">🔗 保存并生成分享链接</button>';
   }
   html+='</div></div>';
   openModal(html);
@@ -1059,31 +1059,74 @@ function contractGen_getSigDataUrl(canvasId){
 async function contractGen_generatePdf(){
   var sigA=contractGen_getSigDataUrl('cgSigA');
   var sigB=contractGen_getSigDataUrl('cgSigB');
-  if(!sigA&&!sigB){
-    toast('请至少完成一方签名','e');
-    return;
-  }
-  toast('正在生成 PDF，请稍候...','i');
+  if(!sigA){toast('请先完成甲方（出租方）签名','e');return}
+  toast('正在保存合同并生成分享链接...','i');
   try{
     var tenant=cache.tenants.find(function(x){return x.id===contractGen_state.tenantId});
     if(!tenant){toast('租户不存在','e');return}
     var replacedHtml=contractGen_replacePlaceholders(contractGen_state.templateHtml,tenant);
     var room=cache.rooms.find(function(r){return r.id===tenant.room_id});
-    var sigHtml='';
-    sigHtml+='<div style="margin-top:40px;padding-top:20px;border-top:2px solid #333">';
-    sigHtml+='<div style="display:flex;justify-content:space-between;margin-top:20px">';
-    if(sigA){
-      sigHtml+='<div style="text-align:center;flex:1"><p style="font-size:14px;font-weight:bold;margin-bottom:8px">甲方（出租方）签名：</p><img src="'+sigA+'" style="height:80px;max-width:250px;border-bottom:2px solid #333" /></div>';
-    }else{
-      sigHtml+='<div style="text-align:center;flex:1"><p style="font-size:14px;font-weight:bold;margin-bottom:8px">甲方（出租方）签名：</p><div style="height:80px;border-bottom:2px solid #333"></div></div>';
-    }
-    if(sigB){
-      sigHtml+='<div style="text-align:center;flex:1"><p style="font-size:14px;font-weight:bold;margin-bottom:8px">乙方（承租方）签名：</p><img src="'+sigB+'" style="height:80px;max-width:250px;border-bottom:2px solid #333" /></div>';
-    }else{
-      sigHtml+='<div style="text-align:center;flex:1"><p style="font-size:14px;font-weight:bold;margin-bottom:8px">乙方（承租方）签名：</p><div style="height:80px;border-bottom:2px solid #333"></div></div>';
-    }
-    sigHtml+='</div></div>';
-    var fullHtml='<div style="font-family:\'PingFang SC\',\'Microsoft YaHei\',sans-serif;font-size:14px;line-height:1.8;color:#1a1a1a;padding:20px">'+replacedHtml+sigHtml+'</div>';
+    var roomName=room?room.name:'';
+    var insertData={
+      owner_id:getOwnerId(),
+      tenant_id:tenant.id,
+      tenant_name:tenant.name||'',
+      room_name:roomName,
+      contract_html:replacedHtml,
+      landlord_signature:sigA,
+      tenant_signature:sigB||null
+    };
+    var r=await sb.from('contract_drafts').insert(insertData).select('id,share_token').single();
+    if(r.error){toast('保存失败：'+r.error.message,'e');return}
+    var shareToken=r.data.share_token;
+    var baseUrl=window.location.origin+window.location.pathname.replace('app.html','');
+    var shareUrl=baseUrl+'sign.html?token='+shareToken;
+    if(sigB){var ur=await sb.from('contract_drafts').update({status:'signed',signed_at:new Date().toISOString()}).eq('id',r.data.id)}
+    contractGen_showShareModal(shareUrl,tenant,replacedHtml,sigA,sigB);
+  }catch(e){
+    console.error('Contract save error:',e);
+    toast('保存失败：'+e.message,'e');
+  }
+}
+
+function contractGen_showShareModal(shareUrl,tenant,replacedHtml,sigA,sigB){
+  var html='<div class="m-hd"><h3>🔗 合同分享链接</h3><button class="m-x" onclick="closeModal()">&times;</button></div>';
+  html+='<div class="m-bd cg-wrap" style="text-align:center;padding:20px 16px">';
+  html+='<div style="font-size:48px;margin-bottom:12px">✅</div>';
+  html+='<p style="font-size:15px;font-weight:600;margin-bottom:8px">合同已保存，请将链接发送给租客签字</p>';
+  html+='<p style="font-size:12px;color:var(--ts);margin-bottom:16px">租客打开链接即可查看合同并完成签字</p>';
+  html+='<div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:16px;word-break:break-all;font-size:12px;text-align:left;line-height:1.6;user-select:all" id="cgShareUrl">'+esc(shareUrl)+'</div>';
+  html+='<button class="btn btn-p btn-block" onclick="contractGen_copyShareLink()" style="margin-bottom:10px">📋 复制链接</button>';
+  html+='<button class="btn btn-gh btn-block" onclick="contractGen_doLocalDownload()" style="margin-bottom:10px">📥 仍要本地下载 PDF</button>';
+  html+='<button class="btn btn-gh btn-block" onclick="closeModal()">关闭</button>';
+  html+='</div>';
+  window._cgShareUrl=shareUrl;
+  window._cgLocalDownloadData={tenant:tenant,replacedHtml:replacedHtml,sigA:sigA,sigB:sigB};
+  openModal(html);
+}
+
+function contractGen_copyShareLink(){
+  var url=window._cgShareUrl;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(function(){toast('链接已复制到剪贴板')}).catch(function(){contractGen_fallbackCopy(url)});
+  }else{contractGen_fallbackCopy(url)}
+}
+
+function contractGen_fallbackCopy(text){
+  var ta=document.createElement('textarea');
+  ta.value=text;ta.style.cssText='position:fixed;left:-9999px';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');toast('链接已复制')}catch(e){toast('复制失败，请手动复制','e')}
+  document.body.removeChild(ta);
+}
+
+async function contractGen_doLocalDownload(){
+  var d=window._cgLocalDownloadData;
+  if(!d){toast('数据丢失，请重新生成','e');return}
+  toast('正在生成 PDF...','i');
+  try{
+    var sigHtml=contractGen_buildSigHtml(d.sigA,d.sigB);
+    var fullHtml='<div style="font-family:\'PingFang SC\',\'Microsoft YaHei\',sans-serif;font-size:14px;line-height:1.8;color:#1a1a1a;padding:20px">'+d.replacedHtml+sigHtml+'</div>';
     var tempDiv=document.createElement('div');
     tempDiv.style.cssText='position:fixed;left:-9999px;top:0;width:794px;background:#fff;padding:40px;font-family:\'PingFang SC\',\'Microsoft YaHei\',sans-serif';
     tempDiv.innerHTML=fullHtml;
@@ -1107,13 +1150,21 @@ async function contractGen_generatePdf(){
       pdf.addImage(imgData,'JPEG',0,position,imgWidth,imgHeight);
       heightLeft-=pageHeight;
     }
-    var fileName='合同_'+(tenant.name||'租户')+'_'+new Date().toISOString().slice(0,10)+'.pdf';
+    var fileName='合同_'+(d.tenant.name||'租户')+'_'+new Date().toISOString().slice(0,10)+'.pdf';
     pdf.save(fileName);
-    toast('PDF 合同已生成并下载 🎉');
-  }catch(e){
-    console.error('PDF generation error:',e);
-    toast('PDF 生成失败：'+e.message,'e');
-  }
+    toast('PDF 已下载 🎉');
+  }catch(e){console.error('PDF error:',e);toast('PDF 生成失败：'+e.message,'e')}
+}
+
+function contractGen_buildSigHtml(sigA,sigB){
+  var h='<div style="margin-top:40px;padding-top:20px;border-top:2px solid #333">';
+  h+='<div style="display:flex;justify-content:space-between;margin-top:20px">';
+  if(sigA){h+='<div style="text-align:center;flex:1"><p style="font-size:14px;font-weight:bold;margin-bottom:8px">甲方（出租方）签名：</p><img src="'+sigA+'" style="height:80px;max-width:250px;border-bottom:2px solid #333" /></div>'}
+  else{h+='<div style="text-align:center;flex:1"><p style="font-size:14px;font-weight:bold;margin-bottom:8px">甲方（出租方）签名：</p><div style="height:80px;border-bottom:2px solid #333"></div></div>'}
+  if(sigB){h+='<div style="text-align:center;flex:1"><p style="font-size:14px;font-weight:bold;margin-bottom:8px">乙方（承租方）签名：</p><img src="'+sigB+'" style="height:80px;max-width:250px;border-bottom:2px solid #333" /></div>'}
+  else{h+='<div style="text-align:center;flex:1"><p style="font-size:14px;font-weight:bold;margin-bottom:8px">乙方（承租方）签名：</p><div style="height:80px;border-bottom:2px solid #333"></div></div>'}
+  h+='</div></div>';
+  return h;
 }
 
 // ========== 启动 ==========

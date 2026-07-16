@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=0.3">
+<title>电子合同签字</title>
+<meta name="theme-color" content="#4F46E5">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--p:#4F46E5;--g:#10B981;--w:#F59E0B;--d:#EF4444;--i:#3B82F6;--bg:#F1F5F9;--c:#fff;--t:#1E293B;--ts:#64748B;--bd:#E2E8F0;--sb:#1E293B}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei','WenQuanYi Micro Hei',sans-serif;background:var(--bg);color:var(--t);min-height:100vh;-webkit-overflow-scrolling:touch;overflow-x:hidden}
+.btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:opacity .15s,background .15s;white-space:nowrap}
+.btn:hover{opacity:.88}.btn:active{opacity:.75}
+.btn-p{background:var(--p);color:#fff}.btn-g{background:var(--g);color:#fff}.btn-d{background:var(--d);color:#fff}
+.btn-gh{background:transparent;color:var(--ts);border:none;padding:5px 10px;font-size:12px}.btn-gh:hover{background:var(--bd);color:var(--t)}
+.btn-block{width:100%;justify-content:center;padding:12px}.btn-lg{padding:11px 22px;font-size:14px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.page-wrap{max-width:640px;margin:0 auto;padding:16px;min-height:100vh}
+.header{text-align:center;padding:20px 0 16px}
+.header h1{font-size:20px;font-weight:700;margin-bottom:4px}
+.header p{font-size:13px;color:var(--ts)}
+
+.card{background:var(--c);border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.card h2{font-size:15px;font-weight:700;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--bd)}
+
+.contract-content{font-size:14px;line-height:1.8;color:#333;max-height:60vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 0}
+.contract-content h1,.contract-content h2,.contract-content h3{margin:12px 0 8px;color:#1a1a1a}
+.contract-content p{margin:6px 0}
+.contract-content table{border-collapse:collapse;width:100%}
+.contract-content table td,.contract-content table th{border:1px solid #ccc;padding:6px 10px;font-size:13px}
+
+.sig-section{margin-top:16px}
+.sig-box{background:var(--bg);border-radius:8px;padding:12px;margin-bottom:12px}
+.sig-box h4{font-size:13px;font-weight:600;margin-bottom:8px}
+.sig-img{max-width:250px;max-height:80px;border-bottom:2px solid #333}
+.sig-canvas{width:100%;height:120px;border:1.5px solid var(--bd);border-radius:6px;background:#fff;cursor:crosshair;touch-action:none}
+.sig-btns{display:flex;gap:6px;margin-top:6px}
+
+.status-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600}
+.status-pending{background:#FEF3C7;color:#92400E}
+.status-signed{background:#D1FAE5;color:#065F46}
+
+.loading{text-align:center;padding:60px 20px}
+.loading .spinner{width:40px;height:40px;border:3px solid var(--bd);border-top-color:var(--p);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.error-page{text-align:center;padding:60px 20px}
+.error-page .ico{font-size:48px;margin-bottom:12px}
+.error-page h2{font-size:18px;margin-bottom:8px}
+.error-page p{font-size:13px;color:var(--ts);margin-bottom:20px}
+
+.toast-box{position:fixed;top:14px;right:14px;z-index:2000;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:calc(100vw - 28px)}
+.toast{padding:10px 16px;border-radius:9px;color:#fff;font-size:13px;font-weight:500;box-shadow:0 4px 14px rgba(0,0,0,.15);animation:tIn .3s;pointer-events:auto;word-break:break-all}
+.t-s{background:var(--g)}.t-e{background:var(--d)}.t-w{background:var(--w)}.t-i{background:var(--i)}
+@keyframes tIn{from{transform:translateX(100%);opacity:0}to{transform:none;opacity:1}}
+
+.info-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--bg)}
+.info-row .label{color:var(--ts)}.info-row .value{font-weight:600}
+
+.footer-actions{position:sticky;bottom:0;background:var(--c);padding:12px 0;border-top:1px solid var(--bd);margin-top:16px;padding-bottom:calc(12px + env(safe-area-inset-bottom, 16px))}
+.footer-actions .btn{margin-bottom:8px}
+
+@media(max-width:768px){
+  .page-wrap{padding:12px}
+  .card{padding:14px}
+  .sig-canvas{height:100px}
+}
+</style>
+</head>
+<body>
+<div class="toast-box" id="toastBox"></div>
+<div class="page-wrap" id="app">
+  <div class="loading">
+    <div class="spinner"></div>
+    <p>正在加载合同...</p>
+  </div>
+</div>
+
+<script>
+var SB_URL='https://eszdbwmazsdltngrjjkm.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzemRid21henNkbHRuZ3JqamttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4Mjc5MTMsImV4cCI6MjA5NTQwMzkxM30.VWZg_O4TheXudhdgUMEPoQRAjyEic95vber3FxnxTss';
+var contractData=null;
+
+function toast(msg,type){type=type||'s';var cls={s:'t-s',e:'t-e',w:'t-w',i:'t-i'}[type]||'t-s';var box=document.getElementById('toastBox'),el=document.createElement('div');el.className='toast '+cls;el.textContent=msg;box.appendChild(el);setTimeout(function(){el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(function(){el.remove()},300)},2800)}
+
+function esc(s){if(s===null||s===undefined)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+
+function remoteSign_getToken(){
+  var params=new URLSearchParams(window.location.search);
+  return params.get('token')||'';
+}
+
+async function remoteSign_loadContract(){
+  var token=remoteSign_getToken();
+  if(!token){
+    remoteSign_showError('无效链接','该链接缺少签字凭证，请检查链接是否完整');
+    return;
+  }
+  try{
+    var sb=window.supabase.createClient(SB_URL,SB_KEY);
+    var r=await sb.from('contract_drafts').select('*').eq('share_token',token).single();
+    if(r.error){
+      remoteSign_showError('加载失败','合同数据获取失败：'+r.error.message);
+      return;
+    }
+    if(!r.data){
+      remoteSign_showError('合同不存在','未找到对应的合同，请确认链接是否正确');
+      return;
+    }
+    contractData=r.data;
+    remoteSign_renderPage();
+  }catch(e){
+    remoteSign_showError('网络错误','无法连接服务器，请检查网络后刷新页面');
+    console.error('Load error:',e);
+  }
+}
+
+function remoteSign_renderPage(){
+  var d=contractData;
+  var isSigned=d.status==='signed';
+  var html='';
+
+  // Header
+  html+='<div class="header">';
+  html+='<h1>📝 电子合同签字</h1>';
+  html+='<p>'+esc(d.tenant_name||'租户')+(d.room_name?' · '+esc(d.room_name):'')+'</p>';
+  html+='</div>';
+
+  // Status badge
+  html+='<div style="text-align:center;margin-bottom:16px">';
+  if(isSigned){
+    html+='<span class="status-badge status-signed">✅ 已完成签字</span>';
+  }else{
+    html+='<span class="status-badge status-pending">⏳ 待租客签字</span>';
+  }
+  html+='</div>';
+
+  // Contract info
+  html+='<div class="card">';
+  html+='<h2>📋 合同信息</h2>';
+  html+='<div class="info-row"><span class="label">租客</span><span class="value">'+esc(d.tenant_name||'-')+'</span></div>';
+  if(d.room_name) html+='<div class="info-row"><span class="label">房间</span><span class="value">'+esc(d.room_name)+'</span></div>';
+  html+='<div class="info-row"><span class="label">创建时间</span><span class="value">'+remoteSign_formatTime(d.created_at)+'</span></div>';
+  if(isSigned&&d.signed_at) html+='<div class="info-row"><span class="label">签字时间</span><span class="value">'+remoteSign_formatTime(d.signed_at)+'</span></div>';
+  html+='</div>';
+
+  // Contract content
+  html+='<div class="card">';
+  html+='<h2>📄 合同内容</h2>';
+  html+='<div class="contract-content" id="contractContent">'+d.contract_html+'</div>';
+  html+='</div>';
+
+  // Signatures
+  html+='<div class="card">';
+  html+='<h2>✍️ 签名</h2>';
+
+  // Landlord signature (always shown)
+  html+='<div class="sig-section">';
+  html+='<div class="sig-box">';
+  html+='<h4>甲方（出租方）签名</h4>';
+  if(d.landlord_signature){
+    html+='<img src="'+d.landlord_signature+'" class="sig-img" />';
+  }else{
+    html+='<p style="color:var(--ts);font-size:12px">房东尚未签名</p>';
+  }
+  html+='</div>';
+
+  // Tenant signature
+  if(isSigned&&d.tenant_signature){
+    html+='<div class="sig-box">';
+    html+='<h4>乙方（承租方）签名</h4>';
+    html+='<img src="'+d.tenant_signature+'" class="sig-img" />';
+    html+='</div>';
+  }else if(!isSigned){
+    html+='<div class="sig-box">';
+    html+='<h4>乙方（承租方）签名</h4>';
+    html+='<p style="font-size:12px;color:var(--ts);margin-bottom:8px">请在下方区域手写签名</p>';
+    html+='<canvas class="sig-canvas" id="tenantSigCanvas"></canvas>';
+    html+='<div class="sig-btns"><button class="btn btn-sm btn-gh" onclick="remoteSign_clearSig()">清除</button></div>';
+    html+='</div>';
+  }
+
+  html+='</div>';
+  html+='</div>';
+
+  // Footer actions
+  html+='<div class="footer-actions">';
+  if(isSigned){
+    html+='<button class="btn btn-p btn-block btn-lg" onclick="remoteSign_downloadPdf()">📥 下载已签合同 PDF</button>';
+  }else{
+    html+='<button class="btn btn-p btn-block btn-lg" id="signBtn" onclick="remoteSign_confirmSign()">✍️ 确认签字</button>';
+  }
+  html+='</div>';
+
+  document.getElementById('app').innerHTML=html;
+
+  // Initialize signature canvas
+  if(!isSigned){
+    setTimeout(function(){remoteSign_initSigCanvas()},100);
+  }
+}
+
+function remoteSign_formatTime(iso){
+  if(!iso)return'-';
+  var d=new Date(iso);
+  if(isNaN(d.getTime()))return iso;
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+function remoteSign_showError(title,msg){
+  var html='<div class="error-page">';
+  html+='<div class="ico">❌</div>';
+  html+='<h2>'+esc(title)+'</h2>';
+  html+='<p>'+esc(msg)+'</p>';
+  html+='<button class="btn btn-gh" onclick="location.reload()">刷新重试</button>';
+  html+='</div>';
+  document.getElementById('app').innerHTML=html;
+}
+
+// ========== Signature Canvas ==========
+function remoteSign_initSigCanvas(){
+  var canvas=document.getElementById('tenantSigCanvas');
+  if(!canvas)return;
+  var rect=canvas.getBoundingClientRect();
+  canvas.width=rect.width*2;
+  canvas.height=rect.height*2;
+  var ctx=canvas.getContext('2d');
+  ctx.scale(2,2);
+  ctx.strokeStyle='#1a1a1a';
+  ctx.lineWidth=2;
+  ctx.lineCap='round';
+  ctx.lineJoin='round';
+  var drawing=false;
+  var lastX=0,lastY=0;
+  function getPos(e){
+    var r=canvas.getBoundingClientRect();
+    var touch=e.touches?e.touches[0]:e;
+    return{x:touch.clientX-r.left,y:touch.clientY-r.top};
+  }
+  function startDraw(e){
+    e.preventDefault();drawing=true;
+    var p=getPos(e);lastX=p.x;lastY=p.y;
+    ctx.beginPath();ctx.moveTo(p.x,p.y);
+  }
+  function draw(e){
+    if(!drawing)return;e.preventDefault();
+    var p=getPos(e);
+    ctx.beginPath();ctx.moveTo(lastX,lastY);ctx.lineTo(p.x,p.y);ctx.stroke();
+    lastX=p.x;lastY=p.y;
+  }
+  function endDraw(e){if(e)e.preventDefault();drawing=false}
+  canvas.addEventListener('mousedown',startDraw);
+  canvas.addEventListener('mousemove',draw);
+  canvas.addEventListener('mouseup',endDraw);
+  canvas.addEventListener('mouseleave',endDraw);
+  canvas.addEventListener('touchstart',startDraw,{passive:false});
+  canvas.addEventListener('touchmove',draw,{passive:false});
+  canvas.addEventListener('touchend',endDraw,{passive:false});
+}
+
+function remoteSign_clearSig(){
+  var canvas=document.getElementById('tenantSigCanvas');
+  if(!canvas)return;
+  var ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+
+function remoteSign_isSigEmpty(){
+  var canvas=document.getElementById('tenantSigCanvas');
+  if(!canvas)return true;
+  var ctx=canvas.getContext('2d');
+  var data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+  for(var i=3;i<data.length;i+=4){if(data[i]>0)return false}
+  return true;
+}
+
+function remoteSign_getSigDataUrl(){
+  var canvas=document.getElementById('tenantSigCanvas');
+  if(!canvas||remoteSign_isSigEmpty())return'';
+  return canvas.toDataURL('image/png');
+}
+
+// ========== Confirm Sign ==========
+async function remoteSign_confirmSign(){
+  var sigData=remoteSign_getSigDataUrl();
+  if(!sigData){toast('请先手写签名','e');return}
+
+  var btn=document.getElementById('signBtn');
+  if(btn){btn.textContent='提交中...';btn.disabled=true}
+
+  try{
+    var sb=window.supabase.createClient(SB_URL,SB_KEY);
+    var r=await sb.from('contract_drafts').update({
+      tenant_signature:sigData,
+      status:'signed',
+      signed_at:new Date().toISOString()
+    }).eq('id',contractData.id).select('*').single();
+
+    if(r.error){
+      toast('签字失败：'+r.error.message,'e');
+      if(btn){btn.textContent='✍️ 确认签字';btn.disabled=false}
+      return;
+    }
+
+    contractData=r.data;
+    toast('签字成功！');
+    remoteSign_renderPage();
+
+    // Auto download PDF after signing
+    setTimeout(function(){remoteSign_downloadPdf()},800);
+  }catch(e){
+    console.error('Sign error:',e);
+    toast('签字失败：'+e.message,'e');
+    if(btn){btn.textContent='✍️ 确认签字';btn.disabled=false}
+  }
+}
+
+// ========== PDF Download ==========
+async function remoteSign_downloadPdf(){
+  var d=contractData;
+  if(!d){toast('数据丢失，请刷新页面','e');return}
+  toast('正在生成 PDF，请稍候...','i');
+  try{
+    var sigHtml=remoteSign_buildSigHtml(d.landlord_signature,d.tenant_signature);
+    var fullHtml='<div style="font-family:\'PingFang SC\',\'Microsoft YaHei\',sans-serif;font-size:14px;line-height:1.8;color:#1a1a1a;padding:20px">'+d.contract_html+sigHtml+'</div>';
+    var tempDiv=document.createElement('div');
+    tempDiv.style.cssText='position:fixed;left:-9999px;top:0;width:794px;background:#fff;padding:40px;font-family:\'PingFang SC\',\'Microsoft YaHei\',sans-serif';
+    tempDiv.innerHTML=fullHtml;
+    document.body.appendChild(tempDiv);
+    await new Promise(function(r){setTimeout(r,200)});
+    var canvas=await html2canvas(tempDiv,{scale:2,useCORS:true,backgroundColor:'#fff',width:794});
+    document.body.removeChild(tempDiv);
+    var imgData=canvas.toDataURL('image/jpeg',0.95);
+    var pdf=new window.jspdf.jsPDF('p','mm','a4');
+    var pageWidth=pdf.internal.pageSize.getWidth();
+    var pageHeight=pdf.internal.pageSize.getHeight();
+    var imgWidth=pageWidth;
+    var imgHeight=canvas.height*pageWidth/canvas.width;
+    var heightLeft=imgHeight;
+    var position=0;
+    pdf.addImage(imgData,'JPEG',0,position,imgWidth,imgHeight);
+    heightLeft-=pageHeight;
+    while(heightLeft>0){
+      position=-(imgHeight-heightLeft);
+      pdf.addPage();
+      pdf.addImage(imgData,'JPEG',0,position,imgWidth,imgHeight);
+      heightLeft-=pageHeight;
+    }
+    var fileName='合同_'+(d.tenant_name||'租户')+'_'+new Date().toISOString().slice(0,10)+'.pdf';
+    pdf.save(fileName);
+    toast('PDF 已下载 🎉');
+  }catch(e){
+    console.error('PDF error:',e);
+    toast('PDF 生成失败：'+e.message,'e');
+  }
+}
+
+function remoteSign_buildSigHtml(sigA,sigB){
+  var h='<div style="margin-top:40px;padding-top:20px;border-top:2px solid #333">';
+  h+='<div style="display:flex;justify-content:space-between;margin-top:20px">';
+  if(sigA){h+='<div style="text-align:center;flex:1"><p style="font-size:14px;font-weight:bold;margin-bottom:8px">甲方（出租方）签名：</p><img src="'+sigA+'" style="height:80px;max-width:250px;border-bottom:2px solid #333" /></div>'}
+  else{h+='<div style="text-align:center;flex:1"><p style="font-size:14px;font-weight:bold;margin-bottom:8px">甲方（出租方）签名：</p><div style="height:80px;border-bottom:2px solid #333"></div></div>'}
+  if(sigB){h+='<div style="text-align:center;flex:1"><p style="font-size:14px;font-weight:bold;margin-bottom:8px">乙方（承租方）签名：</p><img src="'+sigB+'" style="height:80px;max-width:250px;border-bottom:2px solid #333" /></div>'}
+  else{h+='<div style="text-align:center;flex:1"><p style="font-size:14px;font-weight:bold;margin-bottom:8px">乙方（承租方）签名：</p><div style="height:80px;border-bottom:2px solid #333"></div></div>'}
+  h+='</div></div>';
+  return h;
+}
+
+// ========== Boot ==========
+async function remoteSign_boot(){
+  // Load Supabase SDK
+  if(!window.supabase){
+    var script=document.createElement('script');
+    script.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+    script.onload=function(){remoteSign_loadContract()};
+    script.onerror=function(){remoteSign_showError('加载失败','无法加载 Supabase SDK，请检查网络')};
+    document.head.appendChild(script);
+  }else{
+    remoteSign_loadContract();
+  }
+}
+
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',remoteSign_boot)}else{remoteSign_boot()}
+</script>
+</body>
+</html>

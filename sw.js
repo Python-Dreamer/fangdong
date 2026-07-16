@@ -1,8 +1,9 @@
-var CACHE_NAME='fangdong-v33';
+var CACHE_NAME='fangdong-v34';
 var CACHE_URLS=[
   './',
   './index.html',
   './app.html',
+  './sign.html',
   './match.html',
   './manifest.json',
   './match-manifest.json',
