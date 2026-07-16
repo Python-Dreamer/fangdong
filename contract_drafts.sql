@@ -37,18 +37,10 @@ CREATE POLICY "landlord_select_own" ON contract_drafts
   FOR SELECT
   USING (auth.uid() = owner_id);
 
--- 6. 租客通过 share_token 更新签字（仅 pending 状态，仅限特定字段）
-CREATE POLICY "tenant_update_signature" ON contract_drafts
-  FOR UPDATE
-  USING (share_token::text = current_setting('request.jwt.claims', true)::json->>'share_token' OR status = 'pending')
-  WITH CHECK (status = 'pending' OR status = 'signed');
-
--- 7. 简化版：允许通过 anon key 更新 pending 状态的合同签字
--- 由于租客无 auth.uid()，使用更宽松的策略
-DROP POLICY IF EXISTS "tenant_update_signature" ON contract_drafts;
-
+-- 6. 租客更新签字：允许通过 anon key 更新 pending 状态的合同签字
+--    由于租客无 auth.uid()，使用 status = 'pending' 作为 USING 条件
+--    WITH CHECK 限制只能更新为 'pending' 或 'signed' 状态
 CREATE POLICY "tenant_update_signature" ON contract_drafts
   FOR UPDATE
   USING (status = 'pending')
   WITH CHECK (status IN ('pending', 'signed'));
-
