@@ -10,12 +10,12 @@
 <meta name="apple-mobile-web-app-title" content="房东管家">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons-extra/icon-180x180.png">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mammoth@1/dist/mammoth.browser.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/leaflet/1.9.4/leaflet.css" />
+<script src="https://cdn.bootcdn.net/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--p:#4F46E5;--g:#10B981;--w:#F59E0B;--d:#EF4444;--i:#3B82F6;--bg:#F1F5F9;--c:#fff;--t:#1E293B;--ts:#64748B;--bd:#E2E8F0;--sb:#1E293B}
@@ -288,10 +288,11 @@ function showUpgradeModal(feature){var tier=getSubscriptionTier();var isTrial=ti
 // ========== SDK 加载 ==========
 function loadSDK(){return new Promise(function(resolve,reject){
 if(window.supabase&&window.supabase.createClient){sdkReady=true;resolve();return}
-var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-s.onload=function(){if(window.supabase&&window.supabase.createClient){sdkReady=true;resolve()}else reject(new Error('SDK加载异常'))};
-s.onerror=function(){reject(new Error('SDK加载失败，请检查网络'))};
-document.head.appendChild(s)})}
+var urls=['https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js','https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js'];
+var idx=0,done=false;
+var timer=setTimeout(function(){if(!done){done=true;reject(new Error('网络加载超时，请检查网络后刷新页面重试'))}},15000);
+function tryNext(){if(done)return;if(idx>=urls.length){if(!done){done=true;clearTimeout(timer);reject(new Error('SDK加载失败，请检查网络后刷新页面重试'))}return}var s=document.createElement('script');s.src=urls[idx];s.onload=function(){if(!done&&window.supabase&&window.supabase.createClient){done=true;clearTimeout(timer);sdkReady=true;resolve()}else if(!done){idx++;tryNext()}};s.onerror=function(){if(!done){idx++;tryNext()}};document.head.appendChild(s)}
+tryNext()})}
 
 // ========== Toast 提示 ==========
 function toast(msg,type){type=type||'s';var cls={s:'t-s',e:'t-e',w:'t-w',i:'t-i'}[type]||'t-s';var box=document.getElementById('toastBox'),el=document.createElement('div');el.className='toast '+cls;el.textContent=msg;box.appendChild(el);setTimeout(function(){el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(function(){el.remove()},300)},2800)}
