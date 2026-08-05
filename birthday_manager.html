@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>生日台账管理</title>
+<link rel="icon" type="image/jpeg" href="birthday_icon.jpg">
+<link rel="apple-touch-icon" href="birthday_icon.jpg">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --p: #6366f1; --g: #10b981; --d: #ef4444; --w: #f59e0b;
+  --bg: #f1f5f9; --c: #fff; --t: #1e293b; --ts: #64748b; --bd: #e2e8f0;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+  background: var(--bg); color: var(--t); min-height: 100vh;
+  padding: 16px; padding-bottom: 80px;
+}
+h1 { font-size: 20px; text-align: center; margin-bottom: 16px; color: var(--p); }
+.card {
+  background: var(--c); border-radius: 12px; padding: 16px;
+  margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.btn {
+  padding: 10px 16px; border-radius: 8px; border: none;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-p { background: var(--p); color: #fff; }
+.btn-g { background: var(--g); color: #fff; }
+.btn-d { background: var(--d); color: #fff; }
+.btn-o { background: #fff; color: var(--p); border: 1.5px solid var(--p); }
+.btn-sm { padding: 6px 10px; font-size: 12px; }
+.btn-block { width: 100%; justify-content: center; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.form-group input, .form-group select {
+  width: 100%; padding: 10px 12px; border: 1.5px solid var(--bd);
+  border-radius: 8px; font-size: 14px; outline: none;
+}
+.form-group input:focus, .form-group select:focus { border-color: var(--p); }
+.birthday-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid var(--bd);
+}
+.birthday-item:last-child { border-bottom: none; }
+.birthday-info { flex: 1; }
+.birthday-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.birthday-detail { font-size: 12px; color: var(--ts); }
+.birthday-countdown {
+  font-size: 13px; font-weight: 700; padding: 6px 10px;
+  border-radius: 20px; white-space: nowrap;
+}
+.countdown-today { background: var(--w); color: #fff; }
+.countdown-soon { background: #fef3c7; color: #92400e; }
+.countdown-normal { background: #e0e7ff; color: #3730a3; }
+.countdown-past { background: #f1f5f9; color: #64748b; }
+.actions { display: flex; gap: 8px; margin-top: 8px; }
+.modal-mask {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,.5); z-index: 1000; display: none;
+  align-items: center; justify-content: center; padding: 16px;
+}
+.modal-mask.show { display: flex; }
+.modal {
+  background: var(--c); border-radius: 14px; width: 100%;
+  max-width: 400px; max-height: 90vh; overflow-y: auto;
+  padding: 20px; animation: slideUp .2s;
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.modal-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; text-align: center; }
+.empty { text-align: center; padding: 40px 20px; color: var(--ts); }
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+.tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.tab { flex: 1; padding: 10px; text-align: center; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; background: #f1f5f9; }
+.tab.active { background: var(--p); color: #fff; }
+.search-box { margin-bottom: 12px; }
+.search-box input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--bd); border-radius: 8px; font-size: 14px; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 6px; }
+.tag-lunar { background: #dbeafe; color: #1d4ed8; }
+.tag-solar { background: #dcfce7; color: #15803d; }
+.fab {
+  position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px;
+  border-radius: 50%; background: var(--p); color: #fff; border: none;
+  font-size: 28px; cursor: pointer; box-shadow: 0 4px 12px rgba(99,102,241,.4);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+}
+.loading-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(255,255,255,0.8); z-index: 2000;
+  display: none; align-items: center; justify-content: center;
+  flex-direction: column; gap: 12px;
+}
+.loading-overlay.show { display: flex; }
+.loading-spinner {
+  width: 40px; height: 40px; border: 4px solid var(--bd);
+  border-top-color: var(--p); border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 14px; color: var(--ts); }
+.toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--t); color: #fff; padding: 10px 20px;
+  border-radius: 8px; font-size: 14px; z-index: 3000;
+  opacity: 0; transition: opacity 0.3s;
+}
+.toast.show { opacity: 1; }
+@media (max-width: 768px) {
+  body { padding: 12px; padding-bottom: 80px; }
+  h1 { font-size: 18px; }
+}
+</style>
+</head>
+<body>
+<h1>🎂 生日台账管理 <span id="cloudStatus" style="font-size:12px;font-weight:400;color:#9ca3af;vertical-align:middle;margin-left:8px;">连接中...</span></h1>
+
+<div class="card">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('all')">全部</div>
+    <div class="tab" onclick="switchTab('lunar')">农历</div>
+    <div class="tab" onclick="switchTab('solar')">公历</div>
+    <div class="tab" onclick="switchTab('upcoming')">即将到来</div>
+  </div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="搜索姓名..." oninput="renderList()">
+  </div>
+  <div id="birthdayList"></div>
+</div>
+
+<button class="fab" onclick="showAddModal()">+</button>
+
+<!-- 添加/编辑弹窗 -->
+<div class="modal-mask" id="editModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">新增生日</div>
+    <div class="form-group">
+      <label>姓名</label>
+      <input type="text" id="inputName" placeholder="请输入姓名">
+    </div>
+    <div class="form-group">
+      <label>历法类型</label>
+      <select id="inputType" onchange="toggleDateInputs()">
+        <option value="lunar">农历</option>
+        <option value="solar">公历</option>
+      </select>
+    </div>
+    <div id="lunarInputs">
+      <div class="form-group">
+        <label>农历月份</label>
+        <select id="inputLunarMonth">
+          <option value="1">正月</option><option value="2">二月</option>
+          <option value="3">三月</option><option value="4">四月</option>
+          <option value="5">五月</option><option value="6">六月</option>
+          <option value="7">七月</option><option value="8">八月</option>
+          <option value="9">九月</option><option value="10">十月</option>
+          <option value="11">冬月</option><option value="12">腊月</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>农历日期</label>
+        <select id="inputLunarDay">
+          <option value="1">初一</option><option value="2">初二</option>
+          <option value="3">初三</option><option value="4">初四</option>
+          <option value="5">初五</option><option value="6">初六</option>
+          <option value="7">初七</option><option value="8">初八</option>
+          <option value="9">初九</option><option value="10">初十</option>
+          <option value="11">十一</option><option value="12">十二</option>
+          <option value="13">十三</option><option value="14">十四</option>
+          <option value="15">十五</option><option value="16">十六</option>
+          <option value="17">十七</option><option value="18">十八</option>
+          <option value="19">十九</option><option value="20">二十</option>
+          <option value="21">廿一</option><option value="22">廿二</option>
+          <option value="23">廿三</option><option value="24">廿四</option>
+          <option value="25">廿五</option><option value="26">廿六</option>
+          <option value="27">廿七</option><option value="28">廿八</option>
+          <option value="29">廿九</option><option value="30">三十</option>
+        </select>
+      </div>
+    </div>
+    <div id="solarInputs" style="display:none">
+      <div class="form-group">
+        <label>公历日期</label>
+        <input type="date" id="inputSolarDate">
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-o" style="flex:1" onclick="closeModal()">取消</button>
+      <button class="btn btn-p" style="flex:1" id="saveBtn" onclick="saveBirthday()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 详情弹窗 -->
+<div class="modal-mask" id="detailModal">
+  <div class="modal">
+    <div class="modal-title">生日详情</div>
+    <div id="detailContent"></div>
+    <div class="actions">
+      <button class="btn btn-d btn-sm" onclick="deleteCurrent()">删除</button>
+      <button class="btn btn-o btn-sm" onclick="editCurrent()">编辑</button>
+      <button class="btn btn-p btn-sm" onclick="closeDetail()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 加载遮罩 -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loadingText">加载中...</div>
+</div>
+
+<!-- Toast 提示 -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ========== Supabase 配置（纯REST API，零外部依赖） ==========
+const SUPABASE_URL = 'https://ruilifangfong.site';
+const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzemRid21henNkbHRuZ3JqamttIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTgyNzkxMywiZXhwIjoyMDk1NDAzOTEzfQ.mtHDeHDtdwWjXf3qf3SihHfhxk24I-c5qOFtt-RLGk0';
+const STORAGE_BUCKET = 'birthday-data';
+let cloudAvailable = true; // 默认云端可用，失败时降级
+
+// Supabase Storage REST API 封装（带8秒超时）
+var STORAGE_TIMEOUT = 8000;
+var StorageAPI = {
+  _headers: function() {
+    return {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_SERVICE_KEY
+    };
+  },
+  _fetchWithTimeout: function(url, options) {
+    var controller = new AbortController();
+    var timer = setTimeout(function() { controller.abort(); }, STORAGE_TIMEOUT);
+    options = Object.assign({}, options, { signal: controller.signal });
+    return fetch(url, options).then(function(r) {
+      clearTimeout(timer);
+      return r;
+    }).catch(function(e) {
+      clearTimeout(timer);
+      if (e.name === 'AbortError') throw new Error('请求超时');
+      throw e;
+    });
+  },
+  download: function(filePath) {
+    return this._fetchWithTimeout(SUPABASE_URL + '/storage/v1/object/' + STORAGE_BUCKET + '/' + filePath, {
+      method: 'GET',
+      headers: this._headers()
+    }).then(function(r) {
+      if (!r.ok) {
+        return r.text().then(function(t) {
+          var isNotFound = r.status === 404 || t.indexOf('not_found') >= 0 || t.indexOf('Object not found') >= 0;
+          return { data: null, notFound: isNotFound, error: isNotFound ? null : { message: t, statusCode: String(r.status) } };
+        });
+      }
+      return r.text().then(function(text) {
+        return { data: text, notFound: false, error: null };
+      });
+    });
+  },
+  upload: function(filePath, content) {
+    return this._fetchWithTimeout(SUPABASE_URL + '/storage/v1/object/' + STORAGE_BUCKET + '/' + filePath, {
+      method: 'POST',
+      headers: Object.assign(this._headers(), {
+        'Content-Type': 'application/json',
+        'x-upsert': 'true'
+      }),
+      body: content
+    }).then(function(r) {
+      if (!r.ok) return r.text().then(function(t) { return { error: { message: t, statusCode: String(r.status) } }; });
+      return r.json().then(function(j) { return { data: j, error: null }; }).catch(function() { return { data: {}, error: null }; });
+    });
+  }
+};
+
+// ========== 农历转换核心 ==========
+const lunarInfo = [
+  0x04bd8,0x04ae0,0x0a570,0x054d5,0x0d260,0x0d950,0x16554,0x056a0,0x09ad0,0x055d2,
+  0x04ae0,0x0a5b6,0x0a4d0,0x0d250,0x1d255,0x0b540,0x0d6a0,0x0ada2,0x095b0,0x14977,
+  0x04970,0x0a4b0,0x0b4b5,0x06a50,0x06d40,0x1ab54,0x02b60,0x09570,0x052f2,0x04970,
+  0x06566,0x0d4a0,0x0ea50,0x06e95,0x05ad0,0x02b60,0x186e3,0x092e0,0x1c8d7,0x0c950,
+  0x0d4a0,0x1d8a6,0x0b550,0x056a0,0x1a5b4,0x025d0,0x092d0,0x0d2b2,0x0a950,0x0b557,
+  0x06ca0,0x0b550,0x15355,0x04da0,0x0a5b0,0x14573,0x052b0,0x0a9a8,0x0e950,0x06aa0,
+  0x0aea6,0x0ab50,0x04b60,0x0aae4,0x0a570,0x05260,0x0f263,0x0d950,0x05b57,0x056a0,
+  0x096d0,0x04dd5,0x04ad0,0x0a4d0,0x0d4d4,0x0d250,0x0d558,0x0b540,0x0b6a0,0x195a6,
+  0x095b0,0x049b0,0x0a974,0x0a4b0,0x0b27a,0x06a50,0x06d40,0x0af46,0x0ab60,0x09570,
+  0x04af5,0x04970,0x064b0,0x074a3,0x0ea50,0x06b58,0x05ac0,0x0ab60,0x096d5,0x092e0,
+  0x0c960,0x0d954,0x0d4a0,0x0da50,0x07552,0x056a0,0x0abb7,0x025d0,0x092d0,0x0cab5,
+  0x0a950,0x0b4a0,0x0baa4,0x0ad50,0x055d9,0x04ba0,0x0a5b0,0x15176,0x052b0,0x0a930,
+  0x07954,0x06aa0,0x0ad50,0x05b52,0x04b60,0x0a6e6,0x0a4e0,0x0d260,0x0ea65,0x0d530,
+  0x05aa0,0x076a3,0x096d0,0x04afb,0x04ad0,0x0a4d0,0x1d0b6,0x0d250,0x0d520,0x0dd45,
+  0x0b5a0,0x056d0,0x055b2,0x049b0,0x0a577,0x0a4b0,0x0aa50,0x1b255,0x06d20,0x0ada0,
+  0x14b63,0x09370,0x049f8,0x04970,0x064b0,0x168a6,0x0ea50,0x06b20,0x1a6c4,0x0aae0,
+  0x092e0,0x0d2e3,0x0c960,0x0d557,0x0d4a0,0x0da50,0x05d55,0x056a0,0x0a6d0,0x055d4,
+  0x052d0,0x0a9b8,0x0a950,0x0b4a0,0x0b6a6,0x0ad50,0x055a0,0x0aba4,0x0a5b0,0x052b0,
+  0x0b273,0x06930,0x07337,0x06aa0,0x0ad50,0x14b55,0x04b60,0x0a570,0x054e4,0x0d160,
+  0x0e968,0x0d520,0x0daa0,0x16aa6,0x056d0,0x04ae0,0x0a9d4,0x0a4d0,0x0d150,0x0f252,
+  0x0d520
+];
+const lunarMonthNames = ['正','二','三','四','五','六','七','八','九','十','冬','腊'];
+const lunarDayNames = ['初一','初二','初三','初四','初五','初六','初七','初八','初九','初十',
+  '十一','十二','十三','十四','十五','十六','十七','十八','十九','二十',
+  '廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'];
+
+function leapMonth(y) { return lunarInfo[y-1900] & 0xf; }
+function leapDays(y) {
+  if(leapMonth(y)) return (lunarInfo[y-1900] & 0x10000) ? 30 : 29;
+  return 0;
+}
+function monthDays(y,m) { return (lunarInfo[y-1900] & (0x10000 >> m)) ? 30 : 29; }
+function lunarToSolar(y,m,d) {
+  let offset = 0;
+  for(let i=1900;i<y;i++) offset += yearDays(i);
+  let lm = leapMonth(y);
+  for(let i=1;i<m;i++) {
+    if(i===lm) offset += leapDays(y);
+    offset += monthDays(y,i);
+  }
+  if(m===lm && d>leapDays(y)) offset += leapDays(y);
+  offset += d - 1;
+  return new Date(Date.UTC(1900, 0, 31 + offset));
+}
+function yearDays(y) {
+  let sum = 348;
+  for(let i=0x8000;i>0x8;i>>=1) sum += (lunarInfo[y-1900] & i) ? 1 : 0;
+  return sum + leapDays(y);
+}
+
+// ========== 数据管理（Supabase Storage） ==========
+let birthdays = [];
+let currentFilter = 'all';
+let currentEditIndex = -1;
+let currentOwnerId = null;
+let dataLoaded = false;
+
+// 读取房东系统登录状态
+function getCurrentOwnerId() {
+  try {
+    var keys = Object.keys(localStorage);
+    for (var i = 0; i < keys.length; i++) {
+      var key = keys[i];
+      if (key.indexOf('auth-token') >= 0 || (key.indexOf('sb-') >= 0 && key.indexOf('auth') >= 0)) {
+        var raw = localStorage.getItem(key);
+        if (raw) {
+          var session = JSON.parse(raw);
+          if (session && session.user && session.user.id) {
+            return session.user.id;
+          }
+        }
+      }
+    }
+  } catch(e) {}
+  return null;
+}
+
+function getStoragePath() {
+  return currentOwnerId ? `birthdays_${currentOwnerId}.json` : 'birthdays_anon.json';
+}
+
+// 显示/隐藏加载遮罩
+function showLoading(text) {
+  document.getElementById('loadingText').textContent = text || '加载中...';
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
+
+// Toast 提示
+function showToast(message, duration) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), duration || 2000);
+}
+
+// 加载数据：localStorage秒开 + 云端后台静默合并
+function loadData() {
+  // 第一步：立刻从localStorage加载（毫秒级）
+  loadFromLocalStorage();
+  var localData = birthdays.slice();
+  var localCount = localData.length;
+  
+  // 第二步：后台尝试云端（完全异步，不阻塞）
+  var filePath = getStoragePath();
+  StorageAPI.download(filePath).then(function(result) {
+    if (result.error) return; // 云端不可用，保持本地数据
+    
+    if (result.notFound || result.data === null) {
+      // 云端无文件 → 有本地数据就上传
+      if (localCount > 0) {
+        cloudSyncInBackground(filePath, JSON.stringify(localData, null, 2));
+      }
+    } else {
+      var cloudData = JSON.parse(result.data);
+      cloudAvailable = true;
+      
+      if (localCount > 0 && cloudData.length > 0) {
+        // 合并：云端+本地取并集（按name去重）
+        var nameSet = {};
+        var merged = [];
+        cloudData.forEach(function(b) { if (!nameSet[b.name]) { nameSet[b.name] = true; merged.push(b); } });
+        localData.forEach(function(b) { if (!nameSet[b.name]) { nameSet[b.name] = true; merged.push(b); } });
+        birthdays = merged;
+        saveToLocalStorage();
+        cloudSyncInBackground(filePath, JSON.stringify(merged, null, 2));
+      } else if (cloudData.length > 0) {
+        // 云端有数据但本地没有 → 用云端数据
+        birthdays = cloudData;
+        saveToLocalStorage();
+      }
+      // 刷新列表（如果用户已经在看页面）
+      if (dataLoaded) renderList();
+    }
+    
+    // 更新状态提示
+    if (cloudAvailable && document.getElementById('cloudStatus')) {
+      document.getElementById('cloudStatus').textContent = '☁️ 云端已同步';
+      document.getElementById('cloudStatus').style.color = '#059669';
+    }
+  }).catch(function(e) {
+    console.warn('云端不可用:', e.message || e);
+    cloudAvailable = false;
+    var el = document.getElementById('cloudStatus');
+    if (el) { el.textContent = '📴 本地模式'; el.style.color = '#ef4444'; }
+  });
+  
+  dataLoaded = true; // 标记本地数据已就绪
+}
+
+function loadFromLocalStorage() {
+  try {
+    var storageKey = currentOwnerId ? 'birthdays_' + currentOwnerId : 'birthdays_anon';
+    var raw = localStorage.getItem(storageKey);
+    birthdays = raw ? JSON.parse(raw) : [];
+  } catch(e) {
+    birthdays = [];
+  }
+}
+
+function saveToLocalStorage() {
+  try {
+    var storageKey = currentOwnerId ? 'birthdays_' + currentOwnerId : 'birthdays_anon';
+    localStorage.setItem(storageKey, JSON.stringify(birthdays, null, 2));
+  } catch(e) {}
+}
+
+// 后台静默同步（不阻塞UI，不await）
+function cloudSyncInBackground(filePath, jsonData) {
+  if (!cloudAvailable) return;
+  StorageAPI.upload(filePath, jsonData).then(function(result) {
+    if (result.error) {
+      console.warn('后台同步失败:', result.error.message);
+      cloudAvailable = false;
+    }
+  }).catch(function(e) {
+    console.warn('后台同步异常:', e.message || e);
+    cloudAvailable = false;
+  });
+}
+
+// 保存数据：localStorage即时生效 + 云端后台同步
+async function saveData() {
+  // 1. 立刻保存到localStorage（同步，毫秒级完成）
+  saveToLocalStorage();
+  
+  // 2. 后台同步到云端（不await，不阻塞UI）
+  if (cloudAvailable) {
+    var filePath = getStoragePath();
+    var jsonData = JSON.stringify(birthdays, null, 2);
+    cloudSyncInBackground(filePath, jsonData);
+  }
+  
+  return true;
+}
+
+function getThisYearSolarDate(b) {
+  const year = new Date().getFullYear();
+  if(b.type === 'solar') {
+    return new Date(year, b.solarMonth - 1, b.solarDay);
+  } else {
+    return lunarToSolar(year, b.lunarMonth, b.lunarDay);
+  }
+}
+
+function getNextBirthdayDate(b) {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  let thisYear = getThisYearSolarDate(b);
+  thisYear.setHours(0,0,0,0);
+  
+  if(thisYear >= today) return thisYear;
+  
+  // 已过，算明年
+  const year = new Date().getFullYear() + 1;
+  if(b.type === 'solar') {
+    return new Date(year, b.solarMonth - 1, b.solarDay);
+  } else {
+    return lunarToSolar(year, b.lunarMonth, b.lunarDay);
+  }
+}
+
+function getDaysUntil(b) {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const next = getNextBirthdayDate(b);
+  return Math.round((next - today) / 86400000);
+}
+
+function formatDate(d) {
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+}
+
+function formatOriginal(b) {
+  if(b.type === 'lunar') {
+    return `农历${lunarMonthNames[b.lunarMonth-1]}月${lunarDayNames[b.lunarDay-1]}`;
+  } else {
+    return `公历${b.solarMonth}月${b.solarDay}日`;
+  }
+}
+
+// ========== UI 渲染 ==========
+function renderList() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  let list = birthdays.filter(b => {
+    if(search && !b.name.toLowerCase().includes(search)) return false;
+    if(currentFilter === 'lunar') return b.type === 'lunar';
+    if(currentFilter === 'solar') return b.type === 'solar';
+    if(currentFilter === 'upcoming') return getDaysUntil(b) <= 30;
+    return true;
+  });
+  
+  // 按倒计时排序
+  list.sort((a,b) => getDaysUntil(a) - getDaysUntil(b));
+  
+  const container = document.getElementById('birthdayList');
+  if(list.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>暂无生日记录</p></div>';
+    return;
+  }
+  
+  container.innerHTML = list.map((b, i) => {
+    const days = getDaysUntil(b);
+    const nextDate = getNextBirthdayDate(b);
+    let countdownClass = 'countdown-normal';
+    let countdownText = `${days}天后`;
+    if(days === 0) { countdownClass = 'countdown-today'; countdownText = '🎂 今天'; }
+    else if(days === 1) { countdownClass = 'countdown-today'; countdownText = '明天'; }
+    else if(days <= 30) { countdownClass = 'countdown-soon'; }
+    
+    const tagClass = b.type === 'lunar' ? 'tag-lunar' : 'tag-solar';
+    const tagText = b.type === 'lunar' ? '农历' : '公历';
+    
+    return `<div class="birthday-item" onclick="showDetail(${birthdays.indexOf(b)})">
+      <div class="birthday-info">
+        <div class="birthday-name">${b.name}<span class="tag ${tagClass}">${tagText}</span></div>
+        <div class="birthday-detail">${formatOriginal(b)} → ${formatDate(nextDate)}</div>
+      </div>
+      <div class="birthday-countdown ${countdownClass}">${countdownText}</div>
+    </div>`;
+  }).join('');
+}
+
+function switchTab(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  renderList();
+}
+
+// ========== 弹窗操作 ==========
+function toggleDateInputs() {
+  var type = document.getElementById('inputType').value;
+  if (type === 'lunar') {
+    document.getElementById('lunarInputs').style.display = 'block';
+    document.getElementById('solarInputs').style.display = 'none';
+  } else {
+    document.getElementById('lunarInputs').style.display = 'none';
+    document.getElementById('solarInputs').style.display = 'block';
+  }
+}
+
+function showAddModal() {
+  currentEditIndex = -1;
+  document.getElementById('modalTitle').textContent = '新增生日';
+  document.getElementById('inputName').value = '';
+  document.getElementById('inputType').value = 'lunar';
+  document.getElementById('inputLunarMonth').value = '1';
+  document.getElementById('inputLunarDay').value = '1';
+  document.getElementById('inputSolarDate').value = '';
+  toggleDateInputs();
+  document.getElementById('editModal').classList.add('show');
+}
+
+function showDetail(index) {
+  const b = birthdays[index];
+  const days = getDaysUntil(b);
+  const nextDate = getNextBirthdayDate(b);
+  const thisYearDate = getThisYearSolarDate(b);
+  
+  let countdownText = '';
+  if(days === 0) countdownText = '🎂 今天就是生日！';
+  else if(days === 1) countdownText = '明天过生日';
+  else countdownText = `还有 ${days} 天`;
+  
+  document.getElementById('detailContent').innerHTML = `
+    <div style="text-align:center;padding:16px 0">
+      <div style="font-size:20px;font-weight:700;margin-bottom:8px">${b.name}</div>
+      <div style="font-size:14px;color:var(--ts);margin-bottom:16px">${formatOriginal(b)}</div>
+      <div style="background:#fef3c7;border-radius:12px;padding:16px;margin-bottom:16px">
+        <div style="font-size:13px;color:#92400e;margin-bottom:4px">下次生日</div>
+        <div style="font-size:16px;font-weight:700;color:#92400e">${formatDate(nextDate)}</div>
+        <div style="font-size:14px;color:#92400e;margin-top:4px">${countdownText}</div>
+      </div>
+      <div style="font-size:12px;color:var(--ts)">今年公历：${formatDate(thisYearDate)}</div>
+    </div>
+  `;
+  document.getElementById('detailModal').dataset.index = index;
+  document.getElementById('detailModal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('editModal').classList.remove('show');
+}
+
+function closeDetail() {
+  document.getElementById('detailModal').classList.remove('show');
+}
+
+function editCurrent() {
+  const index = parseInt(document.getElementById('detailModal').dataset.index);
+  closeDetail();
+  editBirthday(index);
+}
+
+async function deleteCurrent() {
+  const index = parseInt(document.getElementById('detailModal').dataset.index);
+  if(confirm(`确定删除 ${birthdays[index].name} 的生日记录吗？`)) {
+    showLoading('删除中...');
+    birthdays.splice(index, 1);
+    const success = await saveData();
+    hideLoading();
+    if (success) {
+      closeDetail();
+      renderList();
+      showToast('已删除');
+    } else {
+      showToast('删除失败，请重试');
+    }
+  }
+}
+
+function editBirthday(index) {
+  currentEditIndex = index;
+  const b = birthdays[index];
+  document.getElementById('modalTitle').textContent = '编辑生日';
+  document.getElementById('inputName').value = b.name;
+  document.getElementById('inputType').value = b.type;
+  if(b.type === 'lunar') {
+    document.getElementById('inputLunarMonth').value = b.lunarMonth;
+    document.getElementById('inputLunarDay').value = b.lunarDay;
+  } else {
+    const mm = String(b.solarMonth).padStart(2, '0');
+    const dd = String(b.solarDay).padStart(2, '0');
+    document.getElementById('inputSolarDate').value = '2000-' + mm + '-' + dd;
+  }
+  toggleDateInputs();
+  document.getElementById('editModal').classList.add('show');
+}
+
+async function saveBirthday() {
+  const name = document.getElementById('inputName').value.trim();
+  const type = document.getElementById('inputType').value;
+  
+  if(!name) { alert('请输入姓名'); return; }
+  
+  let data = { name, type };
+  if(type === 'lunar') {
+    data.lunarMonth = parseInt(document.getElementById('inputLunarMonth').value);
+    data.lunarDay = parseInt(document.getElementById('inputLunarDay').value);
+  } else {
+    const dateStr = document.getElementById('inputSolarDate').value;
+    if(!dateStr) { alert('请选择日期'); return; }
+    data.solarMonth = parseInt(dateStr.split('-')[1]);
+    data.solarDay = parseInt(dateStr.split('-')[2]);
+  }
+  
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.disabled = true;
+  showLoading('保存中...');
+  
+  if(currentEditIndex >= 0) {
+    birthdays[currentEditIndex] = data;
+  } else {
+    birthdays.push(data);
+  }
+  
+  const success = await saveData();
+  hideLoading();
+  saveBtn.disabled = false;
+  
+  if (success) {
+    closeModal();
+    renderList();
+    showToast('已保存');
+  } else {
+    // 回滚
+    if(currentEditIndex >= 0) {
+      // 编辑失败，需要重新加载原始数据
+      await loadData();
+    } else {
+      // 新增失败，移除刚添加的
+      birthdays.pop();
+    }
+    showToast('保存失败，请重试');
+  }
+}
+
+// ========== 初始化 ==========
+function init() {
+  currentOwnerId = getCurrentOwnerId();
+  
+  // loadData 秒级完成（localStorage），云端在后台静默同步
+  loadData();
+  
+  renderList();
+  
+  // 初始状态提示（云端结果稍后回来会更新）
+  var statusEl = document.getElementById('cloudStatus');
+  setTimeout(function() {
+    if (cloudAvailable) {
+      if (statusEl) { statusEl.textContent = '☁️ 云端已同步'; statusEl.style.color = '#059669'; }
+    } else {
+      if (statusEl) { statusEl.textContent = '📴 本地模式'; statusEl.style.color = '#ef4444'; }
+    }
+  }, 3000);
+}
+
+init();
+</script>
+</body>
+</html>
