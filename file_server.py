@@ -45,11 +45,10 @@ def verify_jwt(token):
         if payload.get("exp") and payload["exp"] < time.time():
             return None
         return payload
-    except:
+    except Exception as e:
         return None
 
 def get_service_key():
-    """用JWT_SECRET生成service_role JWT"""
     global SERVICE_KEY
     if SERVICE_KEY:
         return SERVICE_KEY
@@ -65,12 +64,25 @@ def get_service_key():
     SERVICE_KEY = f"{header}.{payload}.{sig}"
     return SERVICE_KEY
 
+def get_user_email_from_token(payload):
+    """GoTrue签发的JWT中email在payload.email里，sub是user_id"""
+    if not payload:
+        return None, None
+    email = payload.get("email") or payload.get("user_metadata",{}).get("email")
+    uid = payload.get("sub") or payload.get("user_id") or payload.get("id")
+    return email, uid
+
 def auth_admin_request(handler):
     auth = handler.headers.get("Authorization", "")
-    if auth.startswith("Bearer "):
-        payload = verify_jwt(auth[7:])
-        if payload and payload.get("email") in ADMIN_EMAILS:
-            return payload
+    if not auth.startswith("Bearer "):
+        return None
+    token = auth[7:]
+    payload = verify_jwt(token)
+    if not payload:
+        return None
+    email, uid = get_user_email_from_token(payload)
+    if email in ADMIN_EMAILS:
+        return {"email": email, "uid": uid, "payload": payload}
     return None
 
 def http_request(method, url, headers=None, data=None):
@@ -92,7 +104,7 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
 
 class FileHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
-        pass  # 静默日志
+        pass
 
     def _cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -124,10 +136,9 @@ class FileHandler(BaseHTTPRequestHandler):
                 self._json(403, {"error": "无权限"})
                 return
             status, resp = http_request("GET", f"{AUTH_URL}/admin/users?page=1&per_page=200",
-                {"Authorization": f"Bearer {OPERATOR_TOKEN}"})
+                {"Authorization": f"Bearer {get_service_key()}", "apikey": get_service_key()})
             if status == 200:
                 users = resp.get("users", [])
-                # 同时查whitelist获取权限信息
                 sk = get_service_key()
                 ws, wresp = http_request("GET", f"{REST_URL}/whitelist?select=*",
                     {"apikey": sk, "Authorization": f"Bearer {sk}"})
@@ -196,9 +207,8 @@ class FileHandler(BaseHTTPRequestHandler):
                 self._json(400, {"error": "密码至少6位"})
                 return
 
-            # 调用GoTrue创建用户
             status, resp = http_request("POST", f"{AUTH_URL}/admin/users",
-                {"Authorization": f"Bearer {OPERATOR_TOKEN}",
+                {"Authorization": f"Bearer {get_service_key()}", "apikey": get_service_key(),
                  "Content-Type": "application/json"},
                 {"email": email, "password": password, "email_confirm": True})
 
@@ -209,7 +219,6 @@ class FileHandler(BaseHTTPRequestHandler):
 
             user_id = resp.get("id", "")
 
-            # 如果指定了权限级别，加入whitelist
             if tier in ("pro", "basic"):
                 expires_at = None
                 if duration != "forever":
@@ -218,7 +227,7 @@ class FileHandler(BaseHTTPRequestHandler):
                     expires_at = time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime(exp))
                 sk = get_service_key()
                 wdata = {"email": email, "tier": tier, "expires_at": expires_at}
-                ws, wresp = http_request("POST", f"{REST_URL}/whitelist",
+                http_request("POST", f"{REST_URL}/whitelist",
                     {"apikey": sk, "Authorization": f"Bearer {sk}",
                      "Content-Type": "application/json", "Prefer": "return=representation"},
                     wdata)
@@ -261,12 +270,17 @@ class FileHandler(BaseHTTPRequestHandler):
                 return
             user_id = path[len("/admin/users/"):]
             status, resp = http_request("DELETE", f"{AUTH_URL}/admin/users/{user_id}",
-                {"Authorization": f"Bearer {OPERATOR_TOKEN}"})
+                {"Authorization": f"Bearer {get_service_key()}", "apikey": get_service_key()})
             if status in (200, 204):
-                # 同时删除whitelist记录
                 sk = get_service_key()
-                http_request("DELETE", f"{REST_URL}/whitelist?id=eq.{user_id}",
-                    {"apikey": sk, "Authorization": f"Bearer {sk}"})
+                # 删除whitelist中该邮箱的记录
+                # 先获取用户邮箱
+                us, uresp = http_request("GET", f"{AUTH_URL}/admin/users/{user_id}",
+                    {"Authorization": f"Bearer {get_service_key()}", "apikey": get_service_key()})
+                if us == 200 and uresp.get("email"):
+                    uemail = uresp["email"]
+                    http_request("DELETE", f"{REST_URL}/whitelist?email=eq.{uemail}",
+                        {"apikey": sk, "Authorization": f"Bearer {sk}"})
                 self._json(200, {"ok": True})
             else:
                 self._json(status, resp)
