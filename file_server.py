@@ -1,0 +1,294 @@
+#!/usr/bin/env python3
+"""轻量文件存储服务 + 管理API - 替代Supabase Storage和Admin API"""
+import os, json, uuid, mimetypes, hmac, hashlib, base64, time
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from socketserver import ThreadingMixIn
+import urllib.parse, urllib.request
+
+UPLOAD_DIR = "/opt/fangdong/uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# 加载.env
+ENV = {}
+env_path = "/opt/fangdong/.env"
+if os.path.exists(env_path):
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if "=" in line and not line.startswith("#"):
+                k, v = line.split("=", 1)
+                ENV[k] = v
+
+JWT_SECRET = ENV.get("JWT_SECRET", "")
+OPERATOR_TOKEN = ENV.get("GOTRUE_OPERATOR_TOKEN", "")
+AUTH_URL = "http://127.0.0.1:9999"
+REST_URL = "http://127.0.0.1:3000"
+SERVICE_KEY = None
+
+ADMIN_EMAILS = ["332303155@qq.com", "18213501784@163.com"]
+
+def _b64dec(s):
+    s += "=" * (-len(s) % 4)
+    return base64.urlsafe_b64decode(s)
+
+def verify_jwt(token):
+    try:
+        parts = token.split(".")
+        if len(parts) != 3:
+            return None
+        signing_input = f"{parts[0]}.{parts[1]}".encode()
+        expected_sig = hmac.new(JWT_SECRET.encode(), signing_input, hashlib.sha256).digest()
+        actual_sig = _b64dec(parts[2])
+        if not hmac.compare_digest(expected_sig, actual_sig):
+            return None
+        payload = json.loads(_b64dec(parts[1]))
+        if payload.get("exp") and payload["exp"] < time.time():
+            return None
+        return payload
+    except:
+        return None
+
+def get_service_key():
+    """用JWT_SECRET生成service_role JWT"""
+    global SERVICE_KEY
+    if SERVICE_KEY:
+        return SERVICE_KEY
+    def b64(b):
+        return base64.urlsafe_b64encode(b).rstrip(b"=").decode()
+    header = b64(json.dumps({"alg":"HS256","typ":"JWT"}).encode())
+    now = int(time.time())
+    payload = b64(json.dumps({
+        "iss":"supabase","ref":"fangdong-local",
+        "role":"service_role","iat":now,"exp":now+315360000
+    }).encode())
+    sig = b64(hmac.new(JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest())
+    SERVICE_KEY = f"{header}.{payload}.{sig}"
+    return SERVICE_KEY
+
+def auth_admin_request(handler):
+    auth = handler.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        payload = verify_jwt(auth[7:])
+        if payload and payload.get("email") in ADMIN_EMAILS:
+            return payload
+    return None
+
+def http_request(method, url, headers=None, data=None):
+    req = urllib.request.Request(url, method=method, headers=headers or {})
+    if data is not None:
+        req.data = json.dumps(data).encode() if isinstance(data, dict) else data
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status, json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        body = e.read().decode()
+        try:
+            return e.code, json.loads(body)
+        except:
+            return e.code, {"error": body}
+
+class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
+    daemon_threads = True
+
+class FileHandler(BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        pass  # 静默日志
+
+    def _cors(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET,POST,DELETE,PUT,OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type,Authorization,apikey")
+
+    def _json(self, code, obj):
+        body = json.dumps(obj, ensure_ascii=False).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self._cors()
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self._cors()
+        self.end_headers()
+
+    def do_GET(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = urllib.parse.unquote(parsed.path)
+
+        # 管理API - 用户列表
+        if path == "/admin/users":
+            admin = auth_admin_request(self)
+            if not admin:
+                self._json(403, {"error": "无权限"})
+                return
+            status, resp = http_request("GET", f"{AUTH_URL}/admin/users?page=1&per_page=200",
+                {"Authorization": f"Bearer {OPERATOR_TOKEN}"})
+            if status == 200:
+                users = resp.get("users", [])
+                # 同时查whitelist获取权限信息
+                sk = get_service_key()
+                ws, wresp = http_request("GET", f"{REST_URL}/whitelist?select=*",
+                    {"apikey": sk, "Authorization": f"Bearer {sk}"})
+                wl_map = {}
+                if ws == 200:
+                    for w in wresp:
+                        wl_map[w["email"]] = w
+                result = []
+                for u in users:
+                    w = wl_map.get(u.get("email", ""))
+                    result.append({
+                        "id": u.get("id"),
+                        "email": u.get("email", ""),
+                        "created_at": u.get("created_at", ""),
+                        "last_sign_in": u.get("last_sign_in_at", ""),
+                        "confirmed": u.get("email_confirmed_at") is not None,
+                        "tier": w.get("tier", "free") if w else "free",
+                        "expires_at": w.get("expires_at") if w else None,
+                        "is_admin": u.get("email", "") in ADMIN_EMAILS
+                    })
+                self._json(200, {"users": result})
+            else:
+                self._json(status, resp)
+            return
+
+        # 文件读取
+        if path.startswith("/files/"):
+            rel = path[len("/files/"):]
+            fp = os.path.normpath(os.path.join(UPLOAD_DIR, rel))
+            if not fp.startswith(UPLOAD_DIR) or not os.path.isfile(fp):
+                self.send_response(404); self._cors(); self.end_headers()
+                return
+            mime, _ = mimetypes.guess_type(fp)
+            self.send_response(200)
+            self.send_header("Content-Type", mime or "application/octet-stream")
+            self.send_header("Cache-Control", "public, max-age=31536000")
+            self._cors()
+            self.end_headers()
+            with open(fp, "rb") as f:
+                self.wfile.write(f.read())
+            return
+
+        self._json(404, {"error": "not found"})
+
+    def do_POST(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = urllib.parse.unquote(parsed.path)
+
+        # 管理API - 创建用户
+        if path == "/admin/create-user":
+            admin = auth_admin_request(self)
+            if not admin:
+                self._json(403, {"error": "无权限"})
+                return
+            length = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(length))
+            email = body.get("email", "").strip().lower()
+            password = body.get("password", "").strip()
+            tier = body.get("tier", "free")
+            duration = body.get("duration", "1year")
+
+            if not email or "@" not in email:
+                self._json(400, {"error": "邮箱格式不正确"})
+                return
+            if len(password) < 6:
+                self._json(400, {"error": "密码至少6位"})
+                return
+
+            # 调用GoTrue创建用户
+            status, resp = http_request("POST", f"{AUTH_URL}/admin/users",
+                {"Authorization": f"Bearer {OPERATOR_TOKEN}",
+                 "Content-Type": "application/json"},
+                {"email": email, "password": password, "email_confirm": True})
+
+            if status not in (200, 201):
+                err_msg = resp.get("msg", resp.get("error", resp.get("message", "创建失败")))
+                self._json(status, {"error": err_msg})
+                return
+
+            user_id = resp.get("id", "")
+
+            # 如果指定了权限级别，加入whitelist
+            if tier in ("pro", "basic"):
+                expires_at = None
+                if duration != "forever":
+                    months = {"1month":1, "3months":3, "1year":12}.get(duration, 12)
+                    exp = time.time() + months * 30 * 86400
+                    expires_at = time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime(exp))
+                sk = get_service_key()
+                wdata = {"email": email, "tier": tier, "expires_at": expires_at}
+                ws, wresp = http_request("POST", f"{REST_URL}/whitelist",
+                    {"apikey": sk, "Authorization": f"Bearer {sk}",
+                     "Content-Type": "application/json", "Prefer": "return=representation"},
+                    wdata)
+
+            self._json(200, {"ok": True, "user_id": user_id, "email": email, "tier": tier})
+            return
+
+        # 文件上传
+        if path.startswith("/upload/"):
+            rel = path[len("/upload/"):]
+            parts = [p.replace("..","").replace("/","") for p in rel.split("/") if p]
+            if not parts:
+                self._json(400, {"error": "invalid path"}); return
+            target_dir = os.path.join(UPLOAD_DIR, *parts[:-1])
+            os.makedirs(target_dir, exist_ok=True)
+            target = os.path.normpath(os.path.join(target_dir, parts[-1]))
+            if not target.startswith(UPLOAD_DIR):
+                self._json(403, {"error": "forbidden"}); return
+            length = int(self.headers.get("Content-Length", 0))
+            if length > 20 * 1024 * 1024:
+                self._json(413, {"error": "too large"}); return
+            data = self.rfile.read(length)
+            with open(target, "wb") as f:
+                f.write(data)
+            rel_path = "/".join(parts)
+            self._json(200, {"path": rel_path, "Key": rel_path})
+            return
+
+        self._json(404, {"error": "not found"})
+
+    def do_DELETE(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = urllib.parse.unquote(parsed.path)
+
+        # 管理API - 删除用户
+        if path.startswith("/admin/users/"):
+            admin = auth_admin_request(self)
+            if not admin:
+                self._json(403, {"error": "无权限"})
+                return
+            user_id = path[len("/admin/users/"):]
+            status, resp = http_request("DELETE", f"{AUTH_URL}/admin/users/{user_id}",
+                {"Authorization": f"Bearer {OPERATOR_TOKEN}"})
+            if status in (200, 204):
+                # 同时删除whitelist记录
+                sk = get_service_key()
+                http_request("DELETE", f"{REST_URL}/whitelist?id=eq.{user_id}",
+                    {"apikey": sk, "Authorization": f"Bearer {sk}"})
+                self._json(200, {"ok": True})
+            else:
+                self._json(status, resp)
+            return
+
+        # 文件删除
+        if path.startswith("/files/"):
+            rel = path[len("/files/"):]
+            fp = os.path.normpath(os.path.join(UPLOAD_DIR, rel))
+            if not fp.startswith(UPLOAD_DIR):
+                self._json(403, {"error": "forbidden"}); return
+            try:
+                os.remove(fp)
+                self._json(200, {"deleted": True})
+            except FileNotFoundError:
+                self._json(404, {"error": "not found"})
+            return
+
+        self._json(404, {"error": "not found"})
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8888))
+    server = ThreadingHTTPServer(("127.0.0.1", port), FileHandler)
+    print(f"File+Admin server on http://127.0.0.1:{port}")
+    server.serve_forever()
