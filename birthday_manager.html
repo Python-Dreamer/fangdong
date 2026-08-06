@@ -216,64 +216,45 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 16px; color: var(--p); 
 <div class="toast" id="toast"></div>
 
 <script>
-// ========== Supabase 配置（纯REST API，零外部依赖） ==========
-const SUPABASE_URL = 'https://ruilifangfong.site';
-const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzemRid21henNkbHRuZ3JqamttIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTgyNzkxMywiZXhwIjoyMDk1NDAzOTEzfQ.mtHDeHDtdwWjXf3qf3SihHfhxk24I-c5qOFtt-RLGk0';
-const STORAGE_BUCKET = 'birthday-data';
-let cloudAvailable = true; // 默认云端可用，失败时降级
+// ========== 国内数据库配置 ==========
+const API_URL = 'https://ruilifangfong.site/rest/v1/birthday_book';
+let cloudAvailable = true;
 
-// Supabase Storage REST API 封装（带8秒超时）
-var STORAGE_TIMEOUT = 8000;
-var StorageAPI = {
-  _headers: function() {
-    return {
-      'apikey': SUPABASE_SERVICE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_SERVICE_KEY
-    };
-  },
-  _fetchWithTimeout: function(url, options) {
-    var controller = new AbortController();
-    var timer = setTimeout(function() { controller.abort(); }, STORAGE_TIMEOUT);
-    options = Object.assign({}, options, { signal: controller.signal });
-    return fetch(url, options).then(function(r) {
-      clearTimeout(timer);
-      return r;
-    }).catch(function(e) {
-      clearTimeout(timer);
-      if (e.name === 'AbortError') throw new Error('请求超时');
-      throw e;
-    });
-  },
-  download: function(filePath) {
-    return this._fetchWithTimeout(SUPABASE_URL + '/storage/v1/object/' + STORAGE_BUCKET + '/' + filePath, {
-      method: 'GET',
-      headers: this._headers()
-    }).then(function(r) {
-      if (!r.ok) {
-        return r.text().then(function(t) {
-          var isNotFound = r.status === 404 || t.indexOf('not_found') >= 0 || t.indexOf('Object not found') >= 0;
-          return { data: null, notFound: isNotFound, error: isNotFound ? null : { message: t, statusCode: String(r.status) } };
-        });
+function getAuthHeaders() {
+  // 优先用登录用户的token，降级用anon key
+  var token = null;
+  try {
+    var keys = Object.keys(localStorage);
+    for (var i = 0; i < keys.length; i++) {
+      if (keys[i].indexOf('auth-token') >= 0 || (keys[i].indexOf('sb-') >= 0 && keys[i].indexOf('auth') >= 0)) {
+        var session = JSON.parse(localStorage.getItem(keys[i]));
+        if (session && session.access_token) { token = session.access_token; break; }
       }
-      return r.text().then(function(text) {
-        return { data: text, notFound: false, error: null };
-      });
-    });
-  },
-  upload: function(filePath, content) {
-    return this._fetchWithTimeout(SUPABASE_URL + '/storage/v1/object/' + STORAGE_BUCKET + '/' + filePath, {
-      method: 'POST',
-      headers: Object.assign(this._headers(), {
-        'Content-Type': 'application/json',
-        'x-upsert': 'true'
-      }),
-      body: content
-    }).then(function(r) {
-      if (!r.ok) return r.text().then(function(t) { return { error: { message: t, statusCode: String(r.status) } }; });
-      return r.json().then(function(j) { return { data: j, error: null }; }).catch(function() { return { data: {}, error: null }; });
-    });
+    }
+  } catch(e) {}
+  if (token) {
+    return { 'apikey': token, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
   }
-};
+  return {
+    'apikey': 'eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogInRlc3QiLCAicm9sZSI6ImFub24iLCAiaWF0IjogMTc3OTkyOTY1NiwgImV4cCI6IDIwOTU1MDk2NTZ9.placeholder',
+    'Authorization': 'Bearer placeholder',
+    'Content-Type': 'application/json'
+  };
+}
+
+function rowToBirthday(r) {
+  var b = { id: r.id, name: r.name, type: r.type };
+  if (r.type === 'solar') { b.solarMonth = r.solar_month; b.solarDay = r.solar_day; }
+  else { b.lunarMonth = r.lunar_month; b.lunarDay = r.lunar_day; }
+  return b;
+}
+
+function birthdayToRow(b) {
+  var row = { name: b.name, type: b.type };
+  if (b.type === 'solar') { row.solar_month = b.solarMonth; row.solar_day = b.solarDay; row.lunar_month = null; row.lunar_day = null; }
+  else { row.lunar_month = b.lunarMonth; row.lunar_day = b.lunarDay; row.solar_month = null; row.solar_day = null; }
+  return row;
+}
 
 // ========== 农历转换核心 ==========
 const lunarInfo = [
@@ -355,8 +336,57 @@ function getCurrentOwnerId() {
   return null;
 }
 
-function getStoragePath() {
-  return currentOwnerId ? `birthdays_${currentOwnerId}.json` : 'birthdays_anon.json';
+// ========== 数据加载：国内数据库 + localStorage缓存 ==========
+function loadFromCloud() {
+  if (!currentOwnerId) return Promise.resolve([]);
+  return fetch(API_URL + '?owner_id=eq.' + currentOwnerId + '&select=id,name,type,solar_month,solar_day,lunar_month,lunar_day&order=name', {
+    headers: getAuthHeaders()
+  }).then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(function(rows) {
+    return rows.map(rowToBirthday);
+  });
+}
+
+function saveToCloud(birthdaysArr) {
+  if (!currentOwnerId || !cloudAvailable) return Promise.resolve(false);
+  // 将完整列表同步到云端：对比已有数据，增删改
+  return fetch(API_URL + '?owner_id=eq.' + currentOwnerId + '&select=id,name', {
+    headers: getAuthHeaders()
+  }).then(function(r) { return r.json(); }).then(function(existing) {
+    var existingMap = {};
+    existing.forEach(function(e) { existingMap[e.name] = e.id; });
+    var promises = [];
+    // 新增或更新
+    birthdaysArr.forEach(function(b) {
+      var row = birthdayToRow(b);
+      row.owner_id = currentOwnerId;
+      if (existingMap[b.name]) {
+        // 更新
+        promises.push(fetch(API_URL + '?id=eq.' + existingMap[b.name], {
+          method: 'PATCH', headers: getAuthHeaders(), body: JSON.stringify(row)
+        }));
+        delete existingMap[b.name];
+      } else {
+        // 新增
+        promises.push(fetch(API_URL, {
+          method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(row)
+        }));
+      }
+    });
+    // 删除云端有但本地没有的
+    Object.keys(existingMap).forEach(function(name) {
+      promises.push(fetch(API_URL + '?id=eq.' + existingMap[name], {
+        method: 'DELETE', headers: getAuthHeaders()
+      }));
+    });
+    return Promise.all(promises);
+  }).then(function() { return true; }).catch(function(e) {
+    console.warn('云端同步失败:', e.message);
+    cloudAvailable = false;
+    return false;
+  });
 }
 
 // 显示/隐藏加载遮罩
@@ -377,58 +407,39 @@ function showToast(message, duration) {
   setTimeout(() => toast.classList.remove('show'), duration || 2000);
 }
 
-// 加载数据：localStorage秒开 + 云端后台静默合并
+// 加载数据：localStorage秒开 + 国内数据库后台静默同步
 function loadData() {
-  // 第一步：立刻从localStorage加载（毫秒级）
   loadFromLocalStorage();
-  var localData = birthdays.slice();
-  var localCount = localData.length;
-  
-  // 第二步：后台尝试云端（完全异步，不阻塞）
-  var filePath = getStoragePath();
-  StorageAPI.download(filePath).then(function(result) {
-    if (result.error) return; // 云端不可用，保持本地数据
-    
-    if (result.notFound || result.data === null) {
-      // 云端无文件 → 有本地数据就上传
-      if (localCount > 0) {
-        cloudSyncInBackground(filePath, JSON.stringify(localData, null, 2));
-      }
-    } else {
-      var cloudData = JSON.parse(result.data);
-      cloudAvailable = true;
-      
-      if (localCount > 0 && cloudData.length > 0) {
-        // 合并：云端+本地取并集（按name去重）
-        var nameSet = {};
-        var merged = [];
-        cloudData.forEach(function(b) { if (!nameSet[b.name]) { nameSet[b.name] = true; merged.push(b); } });
-        localData.forEach(function(b) { if (!nameSet[b.name]) { nameSet[b.name] = true; merged.push(b); } });
-        birthdays = merged;
-        saveToLocalStorage();
-        cloudSyncInBackground(filePath, JSON.stringify(merged, null, 2));
-      } else if (cloudData.length > 0) {
-        // 云端有数据但本地没有 → 用云端数据
-        birthdays = cloudData;
-        saveToLocalStorage();
-      }
-      // 刷新列表（如果用户已经在看页面）
-      if (dataLoaded) renderList();
+  dataLoaded = true;
+
+  if (!currentOwnerId) return;
+
+  loadFromCloud().then(function(cloudData) {
+    cloudAvailable = true;
+    if (cloudData && cloudData.length > 0) {
+      // 合并云端和本地数据（按name去重，云端优先）
+      var nameSet = {};
+      var merged = [];
+      cloudData.forEach(function(b) { if (!nameSet[b.name]) { nameSet[b.name] = true; merged.push(b); } });
+      birthdays.forEach(function(b) { if (!nameSet[b.name]) { nameSet[b.name] = true; merged.push(b); } });
+      birthdays = merged;
+      saveToLocalStorage();
+      // 如果有本地新增的数据需要同步到云端
+      var localOnly = merged.filter(function(b) { return !b.id; });
+      if (localOnly.length > 0) saveToCloud(birthdays);
+    } else if (birthdays.length > 0) {
+      // 云端无数据但本地有，上传本地数据
+      saveToCloud(birthdays);
     }
-    
-    // 更新状态提示
-    if (cloudAvailable && document.getElementById('cloudStatus')) {
-      document.getElementById('cloudStatus').textContent = '☁️ 云端已同步';
-      document.getElementById('cloudStatus').style.color = '#059669';
-    }
+    if (dataLoaded) renderList();
+    var el = document.getElementById('cloudStatus');
+    if (el) { el.textContent = '☁️ 云端已同步'; el.style.color = '#059669'; }
   }).catch(function(e) {
-    console.warn('云端不可用:', e.message || e);
+    console.warn('云端加载失败:', e.message);
     cloudAvailable = false;
     var el = document.getElementById('cloudStatus');
     if (el) { el.textContent = '📴 本地模式'; el.style.color = '#ef4444'; }
   });
-  
-  dataLoaded = true; // 标记本地数据已就绪
 }
 
 function loadFromLocalStorage() {
@@ -448,32 +459,12 @@ function saveToLocalStorage() {
   } catch(e) {}
 }
 
-// 后台静默同步（不阻塞UI，不await）
-function cloudSyncInBackground(filePath, jsonData) {
-  if (!cloudAvailable) return;
-  StorageAPI.upload(filePath, jsonData).then(function(result) {
-    if (result.error) {
-      console.warn('后台同步失败:', result.error.message);
-      cloudAvailable = false;
-    }
-  }).catch(function(e) {
-    console.warn('后台同步异常:', e.message || e);
-    cloudAvailable = false;
-  });
-}
-
-// 保存数据：localStorage即时生效 + 云端后台同步
+// 保存数据：localStorage即时生效 + 国内数据库同步
 async function saveData() {
-  // 1. 立刻保存到localStorage（同步，毫秒级完成）
   saveToLocalStorage();
-  
-  // 2. 后台同步到云端（不await，不阻塞UI）
-  if (cloudAvailable) {
-    var filePath = getStoragePath();
-    var jsonData = JSON.stringify(birthdays, null, 2);
-    cloudSyncInBackground(filePath, jsonData);
+  if (cloudAvailable && currentOwnerId) {
+    return await saveToCloud(birthdays);
   }
-  
   return true;
 }
 
