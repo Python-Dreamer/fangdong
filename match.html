@@ -339,8 +339,8 @@ function geocodeLocal(address){
 // 图片缩略图
 function thumbUrl(url){
   if(!url)return url;
-  if(url.indexOf('/storage/v1/object/public/')!==-1){
-    return url.replace('/storage/v1/object/public/','/storage/v1/render/image/public/')+'?width=400&quality=60';
+  if(url.indexOf('eszdbwmazsdltngrjjkm.supabase.co')>=0){
+    return url.replace(/https:\/\/eszdbwmazsdltngrjjkm\.supabase\.co\/storage\/v1\/object\/public\//,'https://ruilifangfong.site/files/');
   }
   return url;
 }
@@ -348,8 +348,10 @@ function thumbUrl(url){
 // 原图URL（全屏查看用）
 function origUrl(url){
   if(!url)return url;
-  // 去掉缩略图参数，用原图
-  return url.replace('/storage/v1/render/image/public/','/storage/v1/object/public/').split('?')[0];
+  if(url.indexOf('eszdbwmazsdltngrjjkm.supabase.co')>=0){
+    return url.replace(/https:\/\/eszdbwmazsdltngrjjkm\.supabase\.co\/storage\/v1\/object\/public\//,'https://ruilifangfong.site/files/').split('?')[0];
+  }
+  return url.split('?')[0];
 }
 
 function calcDist(lat1,lon1,lat2,lon2){
