@@ -44,6 +44,9 @@ def verify_jwt(token):
         payload = json.loads(_b64dec(parts[1]))
         if payload.get("exp") and payload["exp"] < time.time():
             return None
+        # 拒绝 anon 角色调用写操作（anon key 不应能上传/删除）
+        if payload.get("role") == "anon":
+            return None
         return payload
     except Exception as e:
         return None
@@ -72,17 +75,31 @@ def get_user_email_from_token(payload):
     uid = payload.get("sub") or payload.get("user_id") or payload.get("id")
     return email, uid
 
-def auth_admin_request(handler):
+def auth_request(handler):
+    """普通登录用户校验：任何有效JWT（非anon）即可"""
     auth = handler.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
+        # 兼容 apikey header
+        ak = handler.headers.get("apikey", "")
+        if ak and ak.count(".") == 2:
+            payload = verify_jwt(ak)
+            if payload and payload.get("role") != "anon":
+                email, uid = get_user_email_from_token(payload)
+                return {"email": email, "uid": uid, "payload": payload}
         return None
     token = auth[7:]
     payload = verify_jwt(token)
     if not payload:
         return None
     email, uid = get_user_email_from_token(payload)
-    if email in ADMIN_EMAILS:
-        return {"email": email, "uid": uid, "payload": payload}
+    return {"email": email, "uid": uid, "payload": payload}
+
+def auth_admin_request(handler):
+    user = auth_request(handler)
+    if not user:
+        return None
+    if user["email"] in ADMIN_EMAILS:
+        return user
     return None
 
 def http_request(method, url, headers=None, data=None):
@@ -164,7 +181,7 @@ class FileHandler(BaseHTTPRequestHandler):
                 self._json(status, resp)
             return
 
-        # 文件读取
+        # 文件读取（保持公开：图片要在<img>标签里加载）
         if path.startswith("/files/"):
             rel = path[len("/files/"):]
             fp = os.path.normpath(os.path.join(UPLOAD_DIR, rel))
@@ -235,8 +252,12 @@ class FileHandler(BaseHTTPRequestHandler):
             self._json(200, {"ok": True, "user_id": user_id, "email": email, "tier": tier})
             return
 
-        # 文件上传
+        # 文件上传（需登录）
         if path.startswith("/upload/"):
+            user = auth_request(self)
+            if not user:
+                self._json(401, {"error": "请先登录"})
+                return
             rel = path[len("/upload/"):]
             parts = [p.replace("..","").replace("/","") for p in rel.split("/") if p]
             if not parts:
@@ -273,8 +294,6 @@ class FileHandler(BaseHTTPRequestHandler):
                 {"Authorization": f"Bearer {get_service_key()}", "apikey": get_service_key()})
             if status in (200, 204):
                 sk = get_service_key()
-                # 删除whitelist中该邮箱的记录
-                # 先获取用户邮箱
                 us, uresp = http_request("GET", f"{AUTH_URL}/admin/users/{user_id}",
                     {"Authorization": f"Bearer {get_service_key()}", "apikey": get_service_key()})
                 if us == 200 and uresp.get("email"):
@@ -286,8 +305,12 @@ class FileHandler(BaseHTTPRequestHandler):
                 self._json(status, resp)
             return
 
-        # 文件删除
+        # 文件删除（需登录）
         if path.startswith("/files/"):
+            user = auth_request(self)
+            if not user:
+                self._json(401, {"error": "请先登录"})
+                return
             rel = path[len("/files/"):]
             fp = os.path.normpath(os.path.join(UPLOAD_DIR, rel))
             if not fp.startswith(UPLOAD_DIR):
