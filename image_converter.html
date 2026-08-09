@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-<title>拍照转文档 - 瑞丽房东管家</title>
+<title>拍照转文字 - 瑞丽房东管家</title>
 <link rel="icon" type="image/jpeg" href="birthday_icon.jpg">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -15,7 +15,7 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
   background: var(--bg); color: var(--t); min-height: 100vh;
-  padding-bottom: 100px;
+  padding-bottom: 40px;
 }
 .topbar {
   position: sticky; top: 0; z-index: 100;
@@ -32,34 +32,33 @@ body {
 }
 .upload-zone {
   border: 2px dashed var(--p-light); border-radius: 12px;
-  padding: 32px 20px; text-align: center; cursor: pointer;
+  padding: 28px 20px; text-align: center; cursor: pointer;
   background: #fafaff; transition: .2s;
 }
-.upload-zone:active, .upload-zone:hover { background: #f0f0ff; border-color: var(--p); }
-.upload-zone .icon { font-size: 40px; margin-bottom: 8px; }
+.upload-zone:active { background: #f0f0ff; border-color: var(--p); }
+.upload-zone .icon { font-size: 36px; margin-bottom: 8px; }
 .upload-zone .text { font-size: 14px; color: var(--p); font-weight: 600; }
 .upload-zone .hint { font-size: 12px; color: var(--ts); margin-top: 4px; }
-.btn-row { display: flex; gap: 10px; margin-top: 12px; }
 .btn {
   padding: 12px 16px; border-radius: 10px; border: none;
   font-size: 14px; font-weight: 700; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  transition: .2s; flex: 1;
+  transition: .2s;
 }
-.btn-p { background: var(--p); color: #fff; box-shadow: 0 2px 8px rgba(99,102,241,.3); }
+.btn-p { background: var(--p); color: #fff; box-shadow: 0 2px 8px rgba(99,102,241,.3); width: 100%; }
 .btn-p:active { background: var(--p-dark); }
-.btn-o { background: var(--o); color: #fff; box-shadow: 0 2px 8px rgba(249,115,22,.3); }
-.btn-o:active { background: #ea580c; }
+.btn-p:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.btn-o { background: var(--o); color: #fff; }
 .btn-g { background: var(--g); color: #fff; }
-.btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.btn-sm { padding: 8px 14px; font-size: 13px; flex: 1; }
+.btn-row { display: flex; gap: 10px; margin-top: 12px; }
 .image-list { display: flex; flex-direction: column; gap: 10px; }
 .image-item {
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: 10px;
   background: #f8fafc; border-radius: 10px; padding: 10px;
-  position: relative;
 }
 .image-item img {
-  width: 64px; height: 64px; object-fit: cover;
+  width: 52px; height: 52px; object-fit: cover;
   border-radius: 8px; border: 1px solid var(--bd);
 }
 .image-info { flex: 1; min-width: 0; }
@@ -67,23 +66,17 @@ body {
   font-size: 13px; font-weight: 600; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
 }
-.image-meta { font-size: 11px; color: var(--ts); margin-top: 2px; }
-.image-actions { display: flex; gap: 4px; }
+.image-status { font-size: 11px; margin-top: 2px; }
+.status-wait { color: var(--ts); }
+.status-ok { color: var(--g); }
+.status-err { color: var(--d); }
+.status-proc { color: var(--p); }
 .icon-btn {
-  width: 32px; height: 32px; border-radius: 8px; border: none;
-  background: #fff; cursor: pointer; font-size: 16px;
+  width: 30px; height: 30px; border-radius: 8px; border: none;
+  background: #fff; cursor: pointer; font-size: 14px; color: var(--d);
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,.1); transition: .15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
 }
-.icon-btn:active { transform: scale(.92); }
-.icon-btn.del { color: var(--d); }
-.drag-handle { color: var(--ts); font-size: 18px; cursor: grab; user-select: none; padding: 4px; }
-.drag-handle:active { cursor: grabbing; }
-.empty-state {
-  text-align: center; padding: 40px 20px; color: var(--ts);
-}
-.empty-state .icon { font-size: 48px; margin-bottom: 12px; opacity: .5; }
-.empty-state p { font-size: 14px; }
 .opt-row {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 0; border-bottom: 1px solid var(--bd);
@@ -91,27 +84,29 @@ body {
 .opt-row:last-child { border-bottom: none; }
 .opt-label { font-size: 13px; font-weight: 600; }
 .opt-hint { font-size: 11px; color: var(--ts); margin-top: 2px; }
-.opt-control select, .opt-control input[type="text"] {
+.opt-control select {
   padding: 6px 10px; border: 1.5px solid var(--bd); border-radius: 8px;
   font-size: 13px; outline: none; background: #fff;
 }
 .opt-control select:focus { border-color: var(--p); }
-.switch { position: relative; width: 44px; height: 24px; }
-.switch input { opacity: 0; width: 0; height: 0; }
-.slider {
-  position: absolute; inset: 0; background: #cbd5e1;
-  border-radius: 24px; cursor: pointer; transition: .2s;
+.result-area {
+  width: 100%; min-height: 200px; padding: 12px;
+  border: 1.5px solid var(--bd); border-radius: 10px;
+  font-size: 14px; line-height: 1.7; outline: none;
+  font-family: inherit; resize: vertical; background: #fff;
 }
-.slider::before {
-  content: ''; position: absolute; width: 18px; height: 18px;
-  left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s;
+.result-area:focus { border-color: var(--p); }
+.result-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
 }
-.switch input:checked + .slider { background: var(--p); }
-.switch input:checked + .slider::before { transform: translateX(20px); }
-.progress-bar {
-  display: none; margin-top: 12px;
+.result-toolbar span { font-size: 13px; font-weight: 700; }
+.result-toolbar button {
+  background: none; border: none; color: var(--p);
+  font-size: 12px; cursor: pointer; font-weight: 600;
 }
-.progress-bar.show { display: block; }
+.progress-box { display: none; margin-top: 12px; }
+.progress-box.show { display: block; }
 .progress-track {
   height: 6px; background: var(--bd); border-radius: 3px; overflow: hidden;
 }
@@ -120,33 +115,36 @@ body {
   transition: width .3s; width: 0%;
 }
 .progress-text { font-size: 12px; color: var(--ts); text-align: center; margin-top: 6px; }
-.toast {
-  position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
-  background: rgba(30,41,59,.9); color: #fff; padding: 10px 20px;
-  border-radius: 10px; font-size: 13px; z-index: 9999;
-  opacity: 0; transition: .3s; pointer-events: none;
-}
-.toast.show { opacity: 1; }
+.empty { text-align: center; padding: 30px 20px; color: var(--ts); }
+.empty .icon { font-size: 40px; margin-bottom: 8px; opacity: .5; }
 .privacy-note {
   text-align: center; font-size: 11px; color: var(--ts);
   padding: 12px; line-height: 1.6;
 }
-.privacy-note .lock { font-size: 14px; }
 .footer {
   text-align: center; padding: 16px; font-size: 12px; color: var(--ts);
 }
 .footer a { color: var(--ts); text-decoration: none; }
-.sort-hint {
-  font-size: 11px; color: var(--ts); text-align: center;
-  padding: 8px; background: #f0f0ff; border-radius: 8px; margin-bottom: 10px;
+.toast {
+  position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+  background: rgba(30,41,59,.9); color: #fff; padding: 10px 20px;
+  border-radius: 10px; font-size: 13px; z-index: 9999;
+  opacity: 0; transition: .3s; pointer-events: none; max-width: 80%; text-align: center;
 }
+.toast.show { opacity: 1; }
+.spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+  border-radius: 50%; animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
 <div class="topbar">
   <a href="tools.html">‹ 返回</a>
-  <h1>📄 拍照转文档</h1>
+  <h1>📷 拍照转文字</h1>
 </div>
 
 <div class="container">
@@ -155,87 +153,66 @@ body {
     <div class="upload-zone" id="uploadZone">
       <div class="icon">📷</div>
       <div class="text">点击拍照或选择图片</div>
-      <div class="hint">支持JPG/PNG，可多选，文件不会上传服务器</div>
+      <div class="hint">支持JPG/PNG，可多选 · 识别中文+英文+数字</div>
     </div>
     <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
   </div>
 
   <!-- 图片列表 -->
   <div class="card" id="listCard" style="display:none">
-    <div class="sort-hint">⬆️⬇️ 拖动调整顺序，或用箭头按钮排序</div>
+    <div style="font-size:14px;font-weight:700;margin-bottom:10px;">已选图片 <span id="imgCount" style="font-weight:400;color:var(--ts)"></span></div>
     <div class="image-list" id="imageList"></div>
   </div>
 
-  <!-- 输出选项 -->
+  <!-- 识别设置 -->
   <div class="card" id="optCard" style="display:none">
-    <div style="font-size:15px;font-weight:700;margin-bottom:8px;">输出设置</div>
     <div class="opt-row">
       <div>
-        <div class="opt-label">页面尺寸</div>
-        <div class="opt-hint">PDF/Word页面大小</div>
+        <div class="opt-label">识别语言</div>
+        <div class="opt-hint">中文+英文识别效果最好</div>
       </div>
       <div class="opt-control">
-        <select id="pageSize">
-          <option value="a4">A4</option>
-          <option value="letter">Letter</option>
-          <option value="fit">自适应图片</option>
+        <select id="lang">
+          <option value="chi_sim+eng" selected>中文+英文</option>
+          <option value="chi_sim">仅中文</option>
+          <option value="eng">仅英文/数字</option>
         </select>
-      </div>
-    </div>
-    <div class="opt-row">
-      <div>
-        <div class="opt-label">图片方向</div>
-        <div class="opt-hint">竖向或横向排列</div>
-      </div>
-      <div class="opt-control">
-        <select id="orientation">
-          <option value="portrait">竖向</option>
-          <option value="landscape">横向</option>
-        </select>
-      </div>
-    </div>
-    <div class="opt-row">
-      <div>
-        <div class="opt-label">图片压缩</div>
-        <div class="opt-hint">压缩后文件更小</div>
-      </div>
-      <div class="opt-control">
-        <select id="quality">
-          <option value="0.92">高质量</option>
-          <option value="0.75" selected>标准</option>
-          <option value="0.5">小文件</option>
-        </select>
-      </div>
-    </div>
-    <div class="opt-row">
-      <div>
-        <div class="opt-label">文件名</div>
-      </div>
-      <div class="opt-control">
-        <input type="text" id="fileName" value="拍照文档" style="width:120px">
       </div>
     </div>
   </div>
 
-  <!-- 导出按钮 -->
-  <div class="card" id="exportCard" style="display:none">
-    <div class="btn-row">
-      <button class="btn btn-p" id="btnPdf" onclick="exportPDF()">
-        📕 导出PDF
-      </button>
-      <button class="btn btn-o" id="btnWord" onclick="exportWord()">
-        📘 导出Word
-      </button>
-    </div>
-    <div class="progress-bar" id="progressBar">
+  <!-- 识别按钮 -->
+  <div class="card" id="actionCard" style="display:none">
+    <button class="btn btn-p" id="btnRecognize" onclick="startRecognize()">
+      <span id="btnIcon">🔍</span>
+      <span id="btnText">开始识别文字</span>
+    </button>
+    <div class="progress-box" id="progressBox">
       <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-      <div class="progress-text" id="progressText">处理中...</div>
+      <div class="progress-text" id="progressText">准备中...</div>
+    </div>
+    <div style="font-size:11px;color:var(--ts);text-align:center;margin-top:8px">
+      首次使用需下载识别引擎（约10MB），请耐心等待
     </div>
   </div>
 
-  <div class="privacy-note" id="privacyNote">
-    <span class="lock">🔒</span> 所有图片在您的手机/电脑本地处理，不会上传到任何服务器<br>
-    关闭页面后图片自动清除
+  <!-- 识别结果 -->
+  <div class="card" id="resultCard" style="display:none">
+    <div class="result-toolbar">
+      <span>📝 识别结果 <span id="resultCount" style="font-weight:400;color:var(--ts);font-size:12px"></span></span>
+      <button onclick="copyResult()">📋 复制</button>
+    </div>
+    <textarea class="result-area" id="resultText" placeholder="识别结果将显示在这里，可以直接编辑..."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-g btn-sm" onclick="exportTxt()">📄 导出TXT</button>
+      <button class="btn btn-o btn-sm" onclick="exportWord()">📘 导出Word</button>
+      <button class="btn btn-p btn-sm" onclick="exportPdf()">📕 导出PDF</button>
+    </div>
+  </div>
+
+  <div class="privacy-note">
+    🔒 所有识别在浏览器本地完成，图片和文字不会上传到任何服务器<br>
+    关闭页面后自动清除
   </div>
 </div>
 
@@ -245,33 +222,41 @@ body {
 
 <div class="toast" id="toast"></div>
 
-<!-- jsPDF for PDF generation -->
+<!-- Tesseract.js OCR引擎 (国内CDN) -->
+<script src="https://cdn.bootcdn.net/ajax/libs/tesseract.js/5.1.1/tesseract.min.js"></script>
+<!-- jsPDF for PDF export -->
 <script src="https://cdn.bootcdn.net/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<!-- docx for Word generation (npmmirror国内镜像) -->
+<!-- docx for Word export (npmmirror国内镜像) -->
 <script src="https://registry.npmmirror.com/docx/8.5.0/files/build/index.umd.js"></script>
 <!-- FileSaver for download -->
 <script src="https://cdn.bootcdn.net/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
 <script>
+// ===== CDN路径配置（全部国内镜像） =====
+var CDN_BASE = 'https://registry.npmmirror.com';
+var WORKER_PATH = CDN_BASE + '/tesseract.js/5.1.1/files/dist/worker.min.js';
+var CORE_PATH = CDN_BASE + '/tesseract.js-core/5.1.1/files/tesseract-core-simd-lstm.wasm.js';
+var LANG_PATH = 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/';
+
 // ===== 状态 =====
-var images = []; // {id, file, dataUrl, width, height}
+var images = [];
 var idCounter = 0;
+var recognizing = false;
 
 var uploadZone = document.getElementById('uploadZone');
 var fileInput = document.getElementById('fileInput');
-var imageList = document.getElementById('imageList');
-var listCard = document.getElementById('listCard');
-var optCard = document.getElementById('optCard');
-var exportCard = document.getElementById('exportCard');
 
 // ===== 上传 =====
-uploadZone.addEventListener('click', function() { fileInput.click(); });
+uploadZone.addEventListener('click', function() {
+  if (recognizing) return;
+  fileInput.click();
+});
 fileInput.addEventListener('change', function(e) {
   handleFiles(e.target.files);
   fileInput.value = '';
 });
 
-// 拖拽上传
+// 拖拽
 uploadZone.addEventListener('dragover', function(e) { e.preventDefault(); this.style.background = '#f0f0ff'; });
 uploadZone.addEventListener('dragleave', function(e) { this.style.background = '#fafaff'; });
 uploadZone.addEventListener('drop', function(e) {
@@ -283,27 +268,18 @@ function handleFiles(files) {
   var imgFiles = Array.from(files).filter(function(f) { return f.type.startsWith('image/'); });
   if (imgFiles.length === 0) { showToast('请选择图片文件'); return; }
 
-  var loaded = 0;
   imgFiles.forEach(function(file) {
     var reader = new FileReader();
     reader.onload = function(e) {
-      var img = new Image();
-      img.onload = function() {
-        images.push({
-          id: ++idCounter,
-          file: file,
-          dataUrl: e.target.result,
-          width: img.naturalWidth,
-          height: img.naturalHeight,
-          displayUrl: e.target.result
-        });
-        loaded++;
-        if (loaded === imgFiles.length) {
-          renderList();
-          showToast('已添加 ' + imgFiles.length + ' 张图片');
-        }
-      };
-      img.src = e.target.result;
+      images.push({
+        id: ++idCounter,
+        file: file,
+        dataUrl: e.target.result,
+        name: file.name,
+        status: 'wait',
+        text: ''
+      });
+      renderList();
     };
     reader.readAsDataURL(file);
   });
@@ -311,290 +287,255 @@ function handleFiles(files) {
 
 // ===== 渲染列表 =====
 function renderList() {
+  var listCard = document.getElementById('listCard');
+  var optCard = document.getElementById('optCard');
+  var actionCard = document.getElementById('actionCard');
+
   if (images.length === 0) {
     listCard.style.display = 'none';
     optCard.style.display = 'none';
-    exportCard.style.display = 'none';
+    actionCard.style.display = 'none';
     return;
   }
   listCard.style.display = '';
   optCard.style.display = '';
-  exportCard.style.display = '';
+  actionCard.style.display = '';
+  document.getElementById('imgCount').textContent = '(' + images.length + '张)';
 
-  imageList.innerHTML = '';
+  var list = document.getElementById('imageList');
+  list.innerHTML = '';
   images.forEach(function(img, idx) {
     var item = document.createElement('div');
     item.className = 'image-item';
-    item.draggable = true;
-    item.dataset.idx = idx;
 
-    var sizeKB = (img.file.size / 1024).toFixed(0);
-    var sizeText = sizeKB > 1024 ? (sizeKB / 1024).toFixed(1) + 'MB' : sizeKB + 'KB';
+    var statusClass = 'status-wait', statusText = '等待识别';
+    if (img.status === 'ok') { statusClass = 'status-ok'; statusText = '✓ 已识别'; }
+    else if (img.status === 'proc') { statusClass = 'status-proc'; statusText = '识别中...'; }
+    else if (img.status === 'err') { statusClass = 'status-err'; statusText = '✕ 识别失败'; }
 
     item.innerHTML =
-      '<span class="drag-handle">☰</span>' +
-      '<img src="' + img.displayUrl + '" alt="">' +
+      '<img src="' + img.dataUrl + '" alt="">' +
       '<div class="image-info">' +
-        '<div class="image-name">' + escapeHtml(img.file.name) + '</div>' +
-        '<div class="image-meta">' + img.width + '×' + img.height + ' · ' + sizeText + '</div>' +
-      '</div>' +
-      '<div class="image-actions">' +
-        '<button class="icon-btn" onclick="moveImg(' + idx + ',-1)" title="上移">↑</button>' +
-        '<button class="icon-btn" onclick="moveImg(' + idx + ',1)" title="下移">↓</button>' +
-        '<button class="icon-btn del" onclick="removeImg(' + idx + ')" title="删除">✕</button>' +
+        '<div class="image-name">' + escHtml(img.name) + '</div>' +
+        '<div class="image-status ' + statusClass + '">' + statusText + '</div>' +
       '</div>';
-
-    // 拖拽排序
-    item.addEventListener('dragstart', handleDragStart);
-    item.addEventListener('dragover', handleDragOver);
-    item.addEventListener('drop', handleDrop);
-    item.addEventListener('dragend', handleDragEnd);
-
-    imageList.appendChild(item);
+    if (!recognizing) {
+      item.innerHTML += '<button class="icon-btn" onclick="removeImg(' + idx + ')">✕</button>';
+    }
+    list.appendChild(item);
   });
-}
-
-// 拖拽排序
-var dragSrcIdx = null;
-function handleDragStart(e) {
-  dragSrcIdx = parseInt(this.dataset.idx);
-  this.style.opacity = '0.4';
-  e.dataTransfer.effectAllowed = 'move';
-}
-function handleDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-}
-function handleDrop(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  var targetIdx = parseInt(this.dataset.idx);
-  if (dragSrcIdx !== null && dragSrcIdx !== targetIdx) {
-    var item = images.splice(dragSrcIdx, 1)[0];
-    images.splice(targetIdx, 0, item);
-    renderList();
-  }
-}
-function handleDragEnd() {
-  this.style.opacity = '';
-  dragSrcIdx = null;
-}
-
-function moveImg(idx, dir) {
-  var newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= images.length) return;
-  var item = images.splice(idx, 1)[0];
-  images.splice(newIdx, 0, item);
-  renderList();
 }
 
 function removeImg(idx) {
+  if (recognizing) return;
   images.splice(idx, 1);
   renderList();
-  showToast('已删除');
 }
 
-function escapeHtml(str) {
-  var div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+function escHtml(s) {
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
 }
 
-// ===== 图片压缩 =====
-function compressImage(imgItem, quality) {
-  return new Promise(function(resolve, reject) {
-    var img = new Image();
-    img.onload = function() {
-      var canvas = document.createElement('canvas');
-      var ctx = canvas.getContext('2d');
-      var maxDim = 2000;
-      var w = img.naturalWidth, h = img.naturalHeight;
-      if (w > maxDim || h > maxDim) {
-        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
-        else { w = Math.round(w * maxDim / h); h = maxDim; }
-      }
-      canvas.width = w;
-      canvas.height = h;
-      ctx.drawImage(img, 0, 0, w, h);
-      var dataUrl = canvas.toDataURL('image/jpeg', quality);
-      resolve({ dataUrl: dataUrl, width: w, height: h });
-    };
-    img.onerror = function() { reject(new Error('图片加载失败')); };
-    img.src = imgItem.dataUrl;
-  });
-}
-
-// ===== 导出PDF =====
-async function exportPDF() {
+// ===== OCR识别 =====
+async function startRecognize() {
   if (images.length === 0) { showToast('请先添加图片'); return; }
+  if (recognizing) return;
 
-  var btn = document.getElementById('btnPdf');
+  recognizing = true;
+  var btn = document.getElementById('btnRecognize');
   btn.disabled = true;
-  showProgress(true, '正在生成PDF...');
+  document.getElementById('btnIcon').innerHTML = '<span class="spinner"></span>';
+  document.getElementById('btnText').textContent = '识别中...';
+  document.getElementById('progressBox').classList.add('show');
+  document.getElementById('resultCard').style.display = 'none';
+
+  var lang = document.getElementById('lang').value;
 
   try {
-    var { jsPDF } = window.jspdf;
-    var pageSize = document.getElementById('pageSize').value;
-    var orientation = document.getElementById('orientation').value;
-    var quality = parseFloat(document.getElementById('quality').value);
-    var fileName = document.getElementById('fileName').value.trim() || '拍照文档';
+    updateProgress(0, '正在加载识别引擎...');
 
-    var pdf;
-    if (pageSize === 'fit') {
-      // 自适应：每页尺寸等于图片
-      var firstCompressed = await compressImage(images[0], quality);
-      pdf = new jsPDF({
-        orientation: firstCompressed.width > firstCompressed.height ? 'l' : 'p',
-        unit: 'px',
-        format: [firstCompressed.width, firstCompressed.height]
-      });
-      pdf.addImage(firstCompressed.dataUrl, 'JPEG', 0, 0, firstCompressed.width, firstCompressed.height);
-
-      for (var i = 1; i < images.length; i++) {
-        updateProgress(Math.round(i / images.length * 100), '处理第 ' + (i+1) + '/' + images.length + ' 张');
-        var comp = await compressImage(images[i], quality);
-        pdf.addPage([comp.width, comp.height], comp.width > comp.height ? 'l' : 'p');
-        pdf.addImage(comp.dataUrl, 'JPEG', 0, 0, comp.width, comp.height);
-      }
-    } else {
-      // A4/Letter固定尺寸
-      var format = pageSize === 'a4' ? 'a4' : 'letter';
-      pdf = new jsPDF({ orientation: orientation, unit: 'mm', format: format });
-      var pageW = pdf.internal.pageSize.getWidth();
-      var pageH = pdf.internal.pageSize.getHeight();
-      var margin = 5;
-      var availW = pageW - margin * 2;
-      var availH = pageH - margin * 2;
-
-      for (var j = 0; j < images.length; j++) {
-        updateProgress(Math.round(j / images.length * 100), '处理第 ' + (j+1) + '/' + images.length + ' 张');
-        var c = await compressImage(images[j], quality);
-
-        if (j > 0) pdf.addPage();
-
-        // 计算图片在页面内的缩放
-        var imgRatio = c.width / c.height;
-        var drawW, drawH;
-        if (orientation === 'portrait') {
-          drawW = availW;
-          drawH = drawW / imgRatio;
-          if (drawH > availH) { drawH = availH; drawW = drawH * imgRatio; }
-        } else {
-          drawH = availH;
-          drawW = drawH * imgRatio;
-          if (drawW > availW) { drawW = availW; drawH = drawW / imgRatio; }
+    var worker = await Tesseract.createWorker(lang, 1, {
+      workerPath: WORKER_PATH,
+      corePath: CORE_PATH,
+      langPath: LANG_PATH,
+      logger: function(m) {
+        if (m.status === 'recognizing text') {
+          // 这是单张图片的进度，我们在循环里更新
         }
-        var x = (pageW - drawW) / 2;
-        var y = (pageH - drawH) / 2;
-        pdf.addImage(c.dataUrl, 'JPEG', x, y, drawW, drawH);
       }
+    });
+
+    var allText = [];
+
+    for (var i = 0; i < images.length; i++) {
+      images[i].status = 'proc';
+      renderList();
+      updateProgress(
+        Math.round(i / images.length * 80) + 5,
+        '正在识别第 ' + (i+1) + '/' + images.length + ' 张...'
+      );
+
+      try {
+        var ret = await worker.recognize(images[i].dataUrl);
+        var text = (ret.data.text || '').trim();
+        images[i].text = text;
+        images[i].status = 'ok';
+        allText.push(text);
+      } catch(e) {
+        console.error('OCR error for image', i, e);
+        images[i].status = 'err';
+        images[i].text = '[识别失败]';
+        allText.push('[第' + (i+1) + '张识别失败]');
+      }
+      renderList();
     }
 
-    pdf.save(fileName + '.pdf');
-    showProgress(false);
-    showToast('PDF已生成，正在下载');
+    await worker.terminate();
+
+    updateProgress(95, '正在整理结果...');
+
+    // 合并结果，图片之间用换行分隔
+    var fullText = allText.filter(function(t) {
+      return t && t !== '[识别失败]';
+    }).join('\n\n');
+
+    document.getElementById('resultText').value = fullText;
+    document.getElementById('resultCount').textContent = '(' + fullText.length + '字)';
+    document.getElementById('resultCard').style.display = '';
+    updateProgress(100, '识别完成！');
+
+    setTimeout(function() {
+      document.getElementById('progressBox').classList.remove('show');
+    }, 1500);
+
+    showToast('识别完成，共' + fullText.length + '字');
+
   } catch(err) {
     console.error(err);
-    showProgress(false);
-    showToast('生成失败：' + err.message);
+    showToast('识别失败：' + (err.message || '请检查网络后重试'));
+    document.getElementById('progressBox').classList.remove('show');
   } finally {
+    recognizing = false;
     btn.disabled = false;
+    document.getElementById('btnIcon').textContent = '🔍';
+    document.getElementById('btnText').textContent = '重新识别';
+    // 恢复删除按钮
+    renderList();
   }
 }
 
-// ===== 导出Word =====
-async function exportWord() {
-  if (images.length === 0) { showToast('请先添加图片'); return; }
+function updateProgress(pct, text) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  if (text) document.getElementById('progressText').textContent = text;
+}
 
-  var btn = document.getElementById('btnWord');
-  btn.disabled = true;
-  showProgress(true, '正在生成Word...');
+// ===== 结果操作 =====
+function getResultText() {
+  return document.getElementById('resultText').value;
+}
+
+function copyResult() {
+  var text = getResultText();
+  if (!text) { showToast('没有可复制的内容'); return; }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      showToast('已复制到剪贴板');
+    }).catch(function() {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); showToast('已复制'); }
+  catch(e) { showToast('复制失败，请手动选择'); }
+  document.body.removeChild(ta);
+}
+
+function exportTxt() {
+  var text = getResultText();
+  if (!text) { showToast('没有可导出的内容'); return; }
+  var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  saveAs(blob, '识别结果_' + Date.now() + '.txt');
+  showToast('TXT已下载');
+}
+
+function exportWord() {
+  var text = getResultText();
+  if (!text) { showToast('没有可导出的内容'); return; }
 
   try {
     var docx = window.docx;
-    var quality = parseFloat(document.getElementById('quality').value);
-    var fileName = document.getElementById('fileName').value.trim() || '拍照文档';
-    var orientation = document.getElementById('orientation').value;
-
-    var children = [];
-
-    for (var i = 0; i < images.length; i++) {
-      updateProgress(Math.round(i / images.length * 100), '处理第 ' + (i+1) + '/' + images.length + ' 张');
-      var comp = await compressImage(images[i], quality);
-
-      // 将base64转为Uint8Array
-      var base64 = comp.dataUrl.split(',')[1];
-      var binary = atob(base64);
-      var bytes = new Uint8Array(binary.length);
-      for (var k = 0; k < binary.length; k++) bytes[k] = binary.charCodeAt(k);
-
-      // Word中图片最大宽度（A4约600px可用）
-      var maxWidth = orientation === 'landscape' ? 700 : 480;
-      var imgW = comp.width;
-      var imgH = comp.height;
-      if (imgW > maxWidth) {
-        imgH = Math.round(imgH * maxWidth / imgW);
-        imgW = maxWidth;
-      }
-
-      children.push(
-        new docx.ImageRun({
-          data: bytes,
-          transformation: { width: imgW, height: imgH }
-        })
-      );
-
-      // 图片之间加段落（分页）
-      if (i < images.length - 1) {
-        children.push(new docx.Paragraph({
-          children: [new docx.PageBreak()]
-        }));
-      }
-    }
+    var paragraphs = text.split('\n').map(function(line) {
+      return new docx.Paragraph({
+        children: [new docx.TextRun({ text: line, size: 24, font: 'Microsoft YaHei' })],
+        spacing: { after: 120 }
+      });
+    });
 
     var doc = new docx.Document({
       sections: [{
         properties: {
-          page: {
-            size: {
-              orientation: orientation === 'landscape' ? docx.PageOrientation.LANDSCAPE : docx.PageOrientation.PORTRAIT,
-            },
-            margin: { top: 360, bottom: 360, left: 360, right: 360 }
-          }
+          page: { margin: { top: 720, bottom: 720, left: 720, right: 720 } }
         },
-        children: [
-          new docx.Paragraph({
-            children: children,
-            alignment: docx.AlignmentType.CENTER
-          })
-        ]
+        children: paragraphs
       }]
     });
 
     docx.Packer.toBlob(doc).then(function(blob) {
-      saveAs(blob, fileName + '.docx');
-      showProgress(false);
-      showToast('Word已生成，正在下载');
-      btn.disabled = false;
+      saveAs(blob, '识别结果_' + Date.now() + '.docx');
+      showToast('Word已下载');
     });
   } catch(err) {
     console.error(err);
-    showProgress(false);
-    showToast('生成失败：' + err.message);
-    btn.disabled = false;
+    showToast('Word导出失败：' + err.message);
   }
 }
 
-// ===== 进度条 =====
-function showProgress(show, text) {
-  var bar = document.getElementById('progressBar');
-  bar.classList.toggle('show', show);
-  if (text) document.getElementById('progressText').textContent = text;
-  if (show) updateProgress(0, text);
-}
-function updateProgress(pct, text) {
-  document.getElementById('progressFill').style.width = pct + '%';
-  if (text) document.getElementById('progressText').textContent = text;
+function exportPdf() {
+  var text = getResultText();
+  if (!text) { showToast('没有可导出的内容'); return; }
+
+  try {
+    var { jsPDF } = window.jspdf;
+    var doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    var pageW = doc.internal.pageSize.getWidth();
+    var pageH = doc.internal.pageSize.getHeight();
+    var margin = 50;
+    var maxW = pageW - margin * 2;
+    var lineHeight = 18;
+    var startY = margin;
+    var y = startY;
+
+    // 按行拆分，自动换行
+    var lines = doc.splitTextToSize(text, maxW);
+
+    for (var i = 0; i < lines.length; i++) {
+      if (y > pageH - margin) {
+        doc.addPage();
+        y = startY;
+      }
+      doc.text(lines[i], margin, y);
+      y += lineHeight;
+    }
+
+    doc.save('识别结果_' + Date.now() + '.pdf');
+    showToast('PDF已下载');
+  } catch(err) {
+    console.error(err);
+    showToast('PDF导出失败：' + err.message);
+  }
 }
 
 // ===== Toast =====
@@ -602,7 +543,8 @@ function showToast(msg) {
   var t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(function() { t.classList.remove('show'); }, 2500);
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function() { t.classList.remove('show'); }, 2500);
 }
 </script>
 </body>
