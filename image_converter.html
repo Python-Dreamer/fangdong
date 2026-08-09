@@ -233,9 +233,10 @@ body {
 
 <script>
 // ===== CDN路径配置（引擎文件托管在自己服务器，同域加载秒开） =====
-var WORKER_PATH = '/libs/tesseract/worker.min.js';
-var CORE_PATH = '/libs/tesseract/tesseract-core-simd-lstm.wasm.js';
-var LANG_PATH = '/libs/tesseract/';
+var TESS_BASE = 'https://ruilifangfong.site/libs/tesseract';
+var WORKER_PATH = TESS_BASE + '/worker.min.js';
+var CORE_PATH = TESS_BASE + '/tesseract-core-simd-lstm.wasm.js';
+var LANG_PATH = TESS_BASE + '/';
 
 // ===== 状态 =====
 var images = [];
@@ -355,10 +356,10 @@ async function startRecognize() {
   try {
     updateProgress(0, '正在加载识别引擎（首次约需10-30秒）...');
 
-    // 超时保护：45秒未加载完成则报错，避免无限卡住
+    // 超时保护：首次加载引擎+语言包需要时间，给90秒
     var createResult;
     var timeoutPromise = new Promise(function(_, reject) {
-      setTimeout(function() { reject(new Error('引擎加载超时，请检查网络后重试')); }, 45000);
+      setTimeout(function() { reject(new Error('引擎加载超时，请刷新页面重试。如果多次超时请换个网络或WiFi试试')); }, 90000);
     });
 
     var worker;
