@@ -232,10 +232,10 @@ body {
 <script src="https://cdn.bootcdn.net/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
 <script>
-// ===== CDN路径配置 =====
-// Tesseract.js v5 默认从 jsdelivr 加载 worker/core/lang（国内可访问）
-// 不自定义 workerPath/corePath，避免跨域和MIME类型问题
-var LANG_PATH = 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/';
+// ===== CDN路径配置（引擎文件托管在自己服务器，同域加载秒开） =====
+var WORKER_PATH = '/libs/tesseract/worker.min.js';
+var CORE_PATH = '/libs/tesseract/tesseract-core-simd-lstm.wasm.js';
+var LANG_PATH = '/libs/tesseract/';
 
 // ===== 状态 =====
 var images = [];
@@ -365,7 +365,10 @@ async function startRecognize() {
     try {
       worker = await Promise.race([
         Tesseract.createWorker(lang, 1, {
+          workerPath: WORKER_PATH,
+          corePath: CORE_PATH,
           langPath: LANG_PATH,
+          gzip: true,
           logger: function(m) {
             if (m.status === 'loading language traineddata') {
               updateProgress(20, '正在下载中文语言包（约10MB，仅首次）...');
