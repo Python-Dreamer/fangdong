@@ -2,11 +2,11 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-<title>拍照转文字 - 瑞丽房东管家</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=no">
+<title>拍照扫描 - 瑞丽房东管家</title>
 <link rel="icon" type="image/jpeg" href="birthday_icon.jpg">
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 :root {
   --p: #6366f1; --p-light: #818cf8; --p-dark: #4f46e5;
   --g: #10b981; --o: #f97316; --d: #ef4444;
@@ -14,191 +14,207 @@
 }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
-  background: var(--bg); color: var(--t); min-height: 100vh;
-  padding-bottom: 40px;
+  background: #0f172a; color: var(--t); min-height: 100vh;
+  padding-bottom: 80px;
 }
 .topbar {
   position: sticky; top: 0; z-index: 100;
-  background: rgba(255,255,255,.95); backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--bd);
-  padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+  background: #1e293b; padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
 }
-.topbar a { color: var(--p); text-decoration: none; font-size: 15px; font-weight: 600; }
-.topbar h1 { font-size: 17px; font-weight: 700; flex: 1; text-align: center; margin-right: 40px; }
-.container { max-width: 600px; margin: 0 auto; padding: 16px; }
-.card {
-  background: var(--c); border-radius: 12px; padding: 16px;
-  margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08);
+.topbar a { color: #94a3b8; text-decoration: none; font-size: 15px; font-weight: 600; }
+.topbar h1 { font-size: 17px; font-weight: 700; color: #f1f5f9; flex: 1; text-align: center; margin-right: 40px; }
+.container { max-width: 600px; margin: 0 auto; padding: 12px; }
+
+/* 拍照按钮 */
+.capture-bar {
+  display: flex; gap: 10px; margin-bottom: 12px;
 }
-.upload-zone {
-  border: 2px dashed var(--p-light); border-radius: 12px;
-  padding: 28px 20px; text-align: center; cursor: pointer;
-  background: #fafaff; transition: .2s;
-}
-.upload-zone:active { background: #f0f0ff; border-color: var(--p); }
-.upload-zone .icon { font-size: 36px; margin-bottom: 8px; }
-.upload-zone .text { font-size: 14px; color: var(--p); font-weight: 600; }
-.upload-zone .hint { font-size: 12px; color: var(--ts); margin-top: 4px; }
-.btn {
-  padding: 12px 16px; border-radius: 10px; border: none;
+.cap-btn {
+  flex: 1; padding: 14px; border-radius: 12px; border: none;
   font-size: 14px; font-weight: 700; cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  transition: .2s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: .15s;
 }
-.btn-p { background: var(--p); color: #fff; box-shadow: 0 2px 8px rgba(99,102,241,.3); width: 100%; }
-.btn-p:active { background: var(--p-dark); }
-.btn-p:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
-.btn-o { background: var(--o); color: #fff; }
-.btn-g { background: var(--g); color: #fff; }
-.btn-sm { padding: 8px 14px; font-size: 13px; flex: 1; }
-.btn-row { display: flex; gap: 10px; margin-top: 12px; }
-.image-list { display: flex; flex-direction: column; gap: 10px; }
-.image-item {
-  display: flex; align-items: center; gap: 10px;
-  background: #f8fafc; border-radius: 10px; padding: 10px;
+.cap-btn:active { transform: scale(.97); }
+.cap-camera { background: var(--p); color: #fff; }
+.cap-album { background: #334155; color: #e2e8f0; }
+
+/* 图片列表 */
+.page-list { display: flex; flex-direction: column; gap: 10px; }
+.page-card {
+  background: #1e293b; border-radius: 12px; overflow: hidden;
 }
-.image-item img {
-  width: 52px; height: 52px; object-fit: cover;
-  border-radius: 8px; border: 1px solid var(--bd);
+.page-preview {
+  width: 100%; background: #0f172a; display: flex; justify-content: center;
+  min-height: 200px; position: relative;
 }
-.image-info { flex: 1; min-width: 0; }
-.image-name {
-  font-size: 13px; font-weight: 600; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis;
+.page-preview canvas, .page-preview img {
+  max-width: 100%; max-height: 400px; object-fit: contain;
 }
-.image-status { font-size: 11px; margin-top: 2px; }
-.status-wait { color: var(--ts); }
-.status-ok { color: var(--g); }
-.status-err { color: var(--d); }
-.status-proc { color: var(--p); }
-.icon-btn {
+.page-toolbar {
+  display: flex; align-items: center; padding: 8px 12px; gap: 6px;
+  background: #1e293b;
+}
+.page-num {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--p); color: #fff; font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.page-name {
+  flex: 1; font-size: 12px; color: #94a3b8;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.filter-group { display: flex; gap: 4px; }
+.fbtn {
+  padding: 5px 10px; border-radius: 6px; border: none;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  background: #334155; color: #94a3b8; transition: .15s;
+}
+.fbtn.active { background: var(--p); color: #fff; }
+.del-btn {
   width: 30px; height: 30px; border-radius: 8px; border: none;
-  background: #fff; cursor: pointer; font-size: 14px; color: var(--d);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+  background: rgba(239,68,68,.15); color: var(--d); font-size: 14px;
+  cursor: pointer; flex-shrink: 0;
 }
-.opt-row {
+.del-btn:active { background: rgba(239,68,68,.3); }
+.move-btn {
+  width: 30px; height: 30px; border-radius: 8px; border: none;
+  background: #334155; color: #94a3b8; font-size: 14px;
+  cursor: pointer; flex-shrink: 0;
+}
+.ocr-tag {
+  font-size: 10px; padding: 2px 6px; border-radius: 4px;
+  background: rgba(16,185,129,.15); color: var(--g); margin-left: 4px;
+}
+
+/* 空状态 */
+.empty {
+  text-align: center; padding: 60px 20px; color: #475569;
+}
+.empty .icon { font-size: 56px; margin-bottom: 12px; opacity: .4; }
+.empty p { font-size: 14px; line-height: 1.8; }
+
+/* 底部操作栏 */
+.bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: #1e293b; border-top: 1px solid #334155;
+  padding: 10px 16px; padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  display: flex; gap: 10px;
+}
+.bbtn {
+  flex: 1; padding: 13px; border-radius: 10px; border: none;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  transition: .15s;
+}
+.bbtn:active { transform: scale(.97); }
+.bbtn:disabled { opacity: .4; cursor: not-allowed; }
+.bbtn-pdf { background: var(--d); color: #fff; }
+.bbtn-ocr { background: var(--g); color: #fff; }
+.bbtn-word { background: var(--o); color: #fff; }
+
+/* 进度 */
+.progress-mask {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,.7); z-index: 999;
+  align-items: center; justify-content: center;
+}
+.progress-mask.show { display: flex; }
+.progress-box {
+  background: #1e293b; border-radius: 16px; padding: 28px 32px;
+  text-align: center; min-width: 240px;
+}
+.progress-spinner {
+  width: 36px; height: 36px; border: 3px solid #334155;
+  border-top-color: var(--p); border-radius: 50%;
+  animation: spin .7s linear infinite; margin: 0 auto 14px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.progress-msg { color: #e2e8f0; font-size: 14px; font-weight: 600; }
+.progress-sub { color: #64748b; font-size: 12px; margin-top: 6px; }
+
+/* OCR结果弹窗 */
+.ocr-modal {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,.6); z-index: 200;
+  align-items: flex-end; justify-content: center;
+}
+.ocr-modal.show { display: flex; }
+.ocr-sheet {
+  background: #fff; border-radius: 16px 16px 0 0; width: 100%;
+  max-width: 600px; max-height: 80vh; display: flex; flex-direction: column;
+}
+.ocr-header {
+  padding: 14px 16px; border-bottom: 1px solid var(--bd);
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 0; border-bottom: 1px solid var(--bd);
 }
-.opt-row:last-child { border-bottom: none; }
-.opt-label { font-size: 13px; font-weight: 600; }
-.opt-hint { font-size: 11px; color: var(--ts); margin-top: 2px; }
-.opt-control select {
-  padding: 6px 10px; border: 1.5px solid var(--bd); border-radius: 8px;
-  font-size: 13px; outline: none; background: #fff;
+.ocr-header h3 { font-size: 16px; }
+.ocr-close {
+  width: 30px; height: 30px; border-radius: 50%; border: none;
+  background: var(--bd); font-size: 16px; cursor: pointer;
 }
-.opt-control select:focus { border-color: var(--p); }
-.result-area {
-  width: 100%; min-height: 200px; padding: 12px;
-  border: 1.5px solid var(--bd); border-radius: 10px;
-  font-size: 14px; line-height: 1.7; outline: none;
-  font-family: inherit; resize: vertical; background: #fff;
+.ocr-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
+.ocr-body textarea {
+  width: 100%; min-height: 300px; border: 1.5px solid var(--bd);
+  border-radius: 10px; padding: 12px; font-size: 14px; line-height: 1.8;
+  outline: none; font-family: inherit; resize: vertical;
 }
-.result-area:focus { border-color: var(--p); }
-.result-toolbar {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 8px;
+.ocr-body textarea:focus { border-color: var(--p); }
+.ocr-footer {
+  padding: 10px 16px; border-top: 1px solid var(--bd);
+  display: flex; gap: 8px; padding-bottom: calc(10px + env(safe-area-inset-bottom));
 }
-.result-toolbar span { font-size: 13px; font-weight: 700; }
-.result-toolbar button {
-  background: none; border: none; color: var(--p);
-  font-size: 12px; cursor: pointer; font-weight: 600;
+.ocr-footer button {
+  flex: 1; padding: 11px; border-radius: 9px; border: none;
+  font-size: 13px; font-weight: 700; cursor: pointer;
 }
-.progress-box { display: none; margin-top: 12px; }
-.progress-box.show { display: block; }
-.progress-track {
-  height: 6px; background: var(--bd); border-radius: 3px; overflow: hidden;
-}
-.progress-fill {
-  height: 100%; background: var(--p); border-radius: 3px;
-  transition: width .3s; width: 0%;
-}
-.progress-text { font-size: 12px; color: var(--ts); text-align: center; margin-top: 6px; }
-.empty { text-align: center; padding: 30px 20px; color: var(--ts); }
-.empty .icon { font-size: 40px; margin-bottom: 8px; opacity: .5; }
+.of-copy { background: var(--p); color: #fff; }
+.of-word { background: var(--o); color: #fff; }
+.of-txt { background: var(--g); color: #fff; }
+
 .privacy-note {
-  text-align: center; font-size: 11px; color: var(--ts);
-  padding: 12px; line-height: 1.6;
+  text-align: center; font-size: 11px; color: #475569;
+  padding: 16px; line-height: 1.7;
 }
 .footer {
-  text-align: center; padding: 16px; font-size: 12px; color: var(--ts);
+  text-align: center; padding: 12px; font-size: 11px; color: #334155;
 }
-.footer a { color: var(--ts); text-decoration: none; }
+.footer a { color: #475569; text-decoration: none; }
 .toast {
   position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-  background: rgba(30,41,59,.9); color: #fff; padding: 10px 20px;
+  background: rgba(30,41,59,.95); color: #fff; padding: 10px 20px;
   border-radius: 10px; font-size: 13px; z-index: 9999;
   opacity: 0; transition: .3s; pointer-events: none; max-width: 80%; text-align: center;
 }
 .toast.show { opacity: 1; }
-.spinner {
-  display: inline-block; width: 14px; height: 14px;
-  border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
-  border-radius: 50%; animation: spin .6s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.engine-badge {
-  display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 4px;
-  margin-left: 6px; vertical-align: middle;
-}
-.engine-baidu { background: #dbeafe; color: #2563eb; }
-.engine-local { background: #fef3c7; color: #d97706; }
 </style>
 </head>
 <body>
 
 <div class="topbar">
   <a href="tools.html">‹ 返回</a>
-  <h1>📷 拍照转文字</h1>
+  <h1>📷 拍照扫描</h1>
 </div>
 
 <div class="container">
-  <!-- 上传区 -->
-  <div class="card">
-    <div class="upload-zone" id="uploadZone">
-      <div class="icon">📷</div>
-      <div class="text">点击拍照或选择图片</div>
-      <div class="hint">支持JPG/PNG，可多选 · 中文+英文+数字</div>
-    </div>
-    <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+  <div class="capture-bar">
+    <button class="cap-btn cap-camera" onclick="capturePhoto()">📸 拍照扫描</button>
+    <button class="cap-btn cap-album" onclick="pickAlbum()">🖼️ 从相册选</button>
   </div>
+  <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
+  <input type="file" id="albumInput" accept="image/*" multiple style="display:none">
 
-  <!-- 图片列表 -->
-  <div class="card" id="listCard" style="display:none">
-    <div style="font-size:14px;font-weight:700;margin-bottom:10px;">已选图片 <span id="imgCount" style="font-weight:400;color:var(--ts)"></span></div>
-    <div class="image-list" id="imageList"></div>
-  </div>
+  <div id="pageList" class="page-list"></div>
 
-  <!-- 识别按钮 -->
-  <div class="card" id="actionCard" style="display:none">
-    <button class="btn btn-p" id="btnRecognize" onclick="startRecognize()">
-      <span id="btnIcon">🔍</span>
-      <span id="btnText">开始识别文字</span>
-    </button>
-    <div class="progress-box" id="progressBox">
-      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-      <div class="progress-text" id="progressText">准备中...</div>
-    </div>
-  </div>
-
-  <!-- 识别结果 -->
-  <div class="card" id="resultCard" style="display:none">
-    <div class="result-toolbar">
-      <span>📝 识别结果 <span id="resultCount" style="font-weight:400;color:var(--ts);font-size:12px"></span></span>
-      <button onclick="copyResult()">📋 复制</button>
-    </div>
-    <textarea class="result-area" id="resultText" placeholder="识别结果将显示在这里，可以直接编辑..."></textarea>
-    <div class="btn-row">
-      <button class="btn btn-g btn-sm" onclick="exportTxt()">📄 导出TXT</button>
-      <button class="btn btn-o btn-sm" onclick="exportWord()">📘 导出Word</button>
-      <button class="btn btn-p btn-sm" onclick="exportPdf()">📕 导出PDF</button>
-    </div>
+  <div id="emptyState" class="empty">
+    <div class="icon">📄</div>
+    <p>拍照或选择图片开始扫描<br>支持多页文档 · 自动增强 · 生成PDF<br>识别文字可复制导出</p>
   </div>
 
   <div class="privacy-note">
-    🔒 识别结果直接下载到你的设备，服务器不留存<br>
-    高精度模式由百度AI提供识别能力
+    🔒 图片处理在浏览器完成，PDF直接下载到你的设备<br>
+    文字识别由百度AI提供，服务器不留存图片
   </div>
 </div>
 
@@ -206,407 +222,402 @@ body {
   <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">滇ICP备2026014743号</a>
 </div>
 
+<div class="bottom-bar" id="bottomBar" style="display:none">
+  <button class="bbtn bbtn-pdf" onclick="exportPDF()">📕 生成PDF</button>
+  <button class="bbtn bbtn-ocr" onclick="runOCR()">🔍 识别文字</button>
+  <button class="bbtn bbtn-word" onclick="exportWordFromOCR()">📘 导出Word</button>
+</div>
+
+<div class="progress-mask" id="progressMask">
+  <div class="progress-box">
+    <div class="progress-spinner"></div>
+    <div class="progress-msg" id="progMsg">处理中...</div>
+    <div class="progress-sub" id="progSub"></div>
+  </div>
+</div>
+
+<div class="ocr-modal" id="ocrModal">
+  <div class="ocr-sheet">
+    <div class="ocr-header">
+      <h3>📝 识别结果</h3>
+      <button class="ocr-close" onclick="closeOCR()">✕</button>
+    </div>
+    <div class="ocr-body">
+      <textarea id="ocrText" placeholder="识别结果..."></textarea>
+    </div>
+    <div class="ocr-footer">
+      <button class="of-copy" onclick="copyOCR()">📋 复制</button>
+      <button class="of-txt" onclick="exportOCRtxt()">📄 TXT</button>
+      <button class="of-word" onclick="exportOCRword()">📘 Word</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
-<!-- jsPDF for PDF export -->
 <script src="https://cdn.bootcdn.net/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<!-- docx for Word export -->
 <script src="https://registry.npmmirror.com/docx/8.5.0/files/build/index.umd.js"></script>
-<!-- FileSaver for download -->
 <script src="https://cdn.bootcdn.net/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
 <script>
 // ===== 状态 =====
-var images = [];
-var idCounter = 0;
-var recognizing = false;
+var pages = []; // {id, imgEl, canvas, filter, name}
+var pid = 0;
+var ocrResultText = '';
 
-var uploadZone = document.getElementById('uploadZone');
-var fileInput = document.getElementById('fileInput');
+document.getElementById('cameraInput').addEventListener('change', function(e) {
+  handleFiles(e.target.files); e.target.value = '';
+});
+document.getElementById('albumInput').addEventListener('change', function(e) {
+  handleFiles(e.target.files); e.target.value = '';
+});
 
-// ===== 上传 =====
-uploadZone.addEventListener('click', function() {
-  if (recognizing) return;
-  fileInput.click();
-});
-fileInput.addEventListener('change', function(e) {
-  handleFiles(e.target.files);
-  fileInput.value = '';
-});
-uploadZone.addEventListener('dragover', function(e) { e.preventDefault(); this.style.background = '#f0f0ff'; });
-uploadZone.addEventListener('dragleave', function(e) { this.style.background = '#fafaff'; });
-uploadZone.addEventListener('drop', function(e) {
-  e.preventDefault(); this.style.background = '#fafaff';
-  handleFiles(e.dataTransfer.files);
-});
+function capturePhoto() { document.getElementById('cameraInput').click(); }
+function pickAlbum() { document.getElementById('albumInput').click(); }
 
 function handleFiles(files) {
-  var imgFiles = Array.from(files).filter(function(f) { return f.type.startsWith('image/'); });
-  if (imgFiles.length === 0) { showToast('请选择图片文件'); return; }
-
-  imgFiles.forEach(function(file) {
+  var imgs = Array.from(files).filter(function(f) { return f.type.startsWith('image/'); });
+  if (!imgs.length) return;
+  imgs.forEach(function(file) {
     var reader = new FileReader();
     reader.onload = function(e) {
-      images.push({
-        id: ++idCounter,
-        file: file,
-        dataUrl: e.target.result,
-        name: file.name,
-        status: 'wait',
-        text: ''
-      });
-      renderList();
+      var img = new Image();
+      img.onload = function() {
+        pages.push({
+          id: ++pid,
+          imgEl: img,
+          canvas: null,
+          filter: 'enhance',
+          name: file.name || ('扫描_' + pid + '.jpg')
+        });
+        processPage(pages[pages.length - 1]);
+        render();
+      };
+      img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   });
 }
 
-// ===== 渲染列表 =====
-function renderList() {
-  var listCard = document.getElementById('listCard');
-  var actionCard = document.getElementById('actionCard');
+// ===== 图片处理 =====
+function processPage(page) {
+  var img = page.imgEl;
+  var w = img.width, h = img.height;
+  // 限制最大尺寸2000px
+  var maxDim = 2000;
+  if (Math.max(w, h) > maxDim) {
+    var s = maxDim / Math.max(w, h);
+    w = Math.round(w * s); h = Math.round(h * s);
+  }
+  var canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, w, h);
+  page.canvas = applyFilter(ctx, w, h, page.filter);
+}
 
-  if (images.length === 0) {
-    listCard.style.display = 'none';
-    actionCard.style.display = 'none';
+function applyFilter(ctx, w, h, filter) {
+  var src = ctx.getImageData(0, 0, w, h);
+  var d = src.data;
+
+  if (filter === 'original') {
+    ctx.putImageData(src, 0, 0);
+    return ctx.canvas;
+  }
+
+  if (filter === 'bw') {
+    // 黑白文档模式：灰度→自适应阈值
+    var gray = new Uint8ClampedArray(w * h);
+    for (var i = 0; i < d.length; i += 4) {
+      gray[i/4] = Math.round(0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]);
+    }
+    // 积分图快速自适应阈值
+    var integral = new Float64Array((w+1) * (h+1));
+    for (var y = 0; y < h; y++) {
+      var sum = 0;
+      for (var x = 0; x < w; x++) {
+        sum += gray[y*w + x];
+        integral[(y+1)*(w+1) + (x+1)] = integral[y*(w+1) + (x+1)] + sum;
+      }
+    }
+    var win = Math.round(Math.min(w, h) * 0.08);
+    if (win < 8) win = 8;
+    for (var y2 = 0; y2 < h; y2++) {
+      for (var x2 = 0; x2 < w; x2++) {
+        var x1 = Math.max(0, x2 - win), x2e = Math.min(w-1, x2 + win);
+        var y1 = Math.max(0, y2 - win), y2e = Math.min(h-1, y2 + win);
+        var count = (x2e - x1 + 1) * (y2e - y1 + 1);
+        var sum2 = integral[(y2e+1)*(w+1)+(x2e+1)] - integral[y1*(w+1)+(x2e+1)]
+                 - integral[(y2e+1)*(w+1)+(x1+1)] + integral[y1*(w+1)+(x1+1)];
+        var avg = sum2 / count;
+        var val = gray[y2*w + x2] < avg - 12 ? 0 : 255;
+        var idx2 = (y2*w + x2) * 4;
+        d[idx2] = d[idx2+1] = d[idx2+2] = val;
+      }
+    }
+    ctx.putImageData(src, 0, 0);
+    return ctx.canvas;
+  }
+
+  // enhance模式：去阴影+对比度增强
+  var gray2 = new Float32Array(w * h);
+  for (var i2 = 0; i2 < d.length; i2 += 4) {
+    gray2[i2/4] = 0.299*d[i2] + 0.587*d[i2+1] + 0.114*d[i2+2];
+  }
+  // 背景估计
+  var bgC = document.createElement('canvas');
+  bgC.width = w; bgC.height = h;
+  var bgCtx = bgC.getContext('2d');
+  bgCtx.filter = 'blur(24px)';
+  bgCtx.drawImage(ctx.canvas, 0, 0, w, h);
+  var bgD = bgCtx.getImageData(0, 0, w, h).data;
+
+  var mn = 255, mx = 0;
+  var norm = new Float32Array(w * h);
+  for (var j = 0; j < w * h; j++) {
+    var bg = 0.299*bgD[j*4] + 0.587*bgD[j*4+1] + 0.114*bgD[j*4+2];
+    if (bg < 1) bg = 1;
+    var v = (gray2[j] / bg) * 205;
+    if (v > 255) v = 255; if (v < 0) v = 0;
+    norm[j] = v;
+    if (v < mn) mn = v; if (v > mx) mx = v;
+  }
+  var range = mx - mn; if (range < 1) range = 1;
+  for (var k = 0; k < w * h; k++) {
+    var out = Math.round(((norm[k] - mn) / range) * 255);
+    var ki = k * 4;
+    d[ki] = d[ki+1] = d[ki+2] = out;
+  }
+  ctx.putImageData(src, 0, 0);
+  return ctx.canvas;
+}
+
+// ===== 渲染 =====
+function render() {
+  var list = document.getElementById('pageList');
+  var empty = document.getElementById('emptyState');
+  var bar = document.getElementById('bottomBar');
+
+  if (!pages.length) {
+    list.innerHTML = '';
+    empty.style.display = '';
+    bar.style.display = 'none';
     return;
   }
-  listCard.style.display = '';
-  actionCard.style.display = '';
-  document.getElementById('imgCount').textContent = '(' + images.length + '张)';
+  empty.style.display = 'none';
+  bar.style.display = 'flex';
 
-  var list = document.getElementById('imageList');
   list.innerHTML = '';
-  images.forEach(function(img, idx) {
-    var item = document.createElement('div');
-    item.className = 'image-item';
-
-    var statusClass = 'status-wait', statusText = '等待识别';
-    if (img.status === 'ok') { statusClass = 'status-ok'; statusText = '✓ 已识别'; }
-    else if (img.status === 'proc') { statusClass = 'status-proc'; statusText = '识别中...'; }
-    else if (img.status === 'err') { statusClass = 'status-err'; statusText = '✕ 识别失败'; }
-
-    item.innerHTML =
-      '<img src="' + img.dataUrl + '" alt="">' +
-      '<div class="image-info">' +
-        '<div class="image-name">' + escHtml(img.name) + '</div>' +
-        '<div class="image-status ' + statusClass + '">' + statusText + '</div>' +
+  pages.forEach(function(p, idx) {
+    var card = document.createElement('div');
+    card.className = 'page-card';
+    card.innerHTML =
+      '<div class="page-preview"><canvas id="cv' + p.id + '"></canvas></div>' +
+      '<div class="page-toolbar">' +
+        '<div class="page-num">' + (idx+1) + '</div>' +
+        '<div class="page-name">' + escHtml(p.name) + '</div>' +
+        '<div class="filter-group">' +
+          '<button class="fbtn ' + (p.filter==='original'?'active':'') + '" onclick="setFilter(' + idx + ",\'original\')" + '">原图</button>' +
+          '<button class="fbtn ' + (p.filter==='enhance'?'active':'') + '" onclick="setFilter(' + idx + ",\'enhance\')" + '">增强</button>' +
+          '<button class="fbtn ' + (p.filter==='bw'?'active':'') + '" onclick="setFilter(' + idx + ",\'bw\')" + '">黑白</button>' +
+        '</div>' +
+        (idx > 0 ? '<button class="move-btn" onclick="movePage(' + idx + ',-1)">↑</button>' : '') +
+        (idx < pages.length-1 ? '<button class="move-btn" onclick="movePage(' + idx + ',1)">↓</button>' : '') +
+        '<button class="del-btn" onclick="delPage(' + idx + ')">✕</button>' +
       '</div>';
-    if (!recognizing) {
-      item.innerHTML += '<button class="icon-btn" onclick="removeImg(' + idx + ')">✕</button>';
+    list.appendChild(card);
+    // 画canvas
+    var cv = document.getElementById('cv' + p.id);
+    if (p.canvas && cv) {
+      cv.width = p.canvas.width;
+      cv.height = p.canvas.height;
+      cv.getContext('2d').drawImage(p.canvas, 0, 0);
     }
-    list.appendChild(item);
   });
 }
 
-function removeImg(idx) {
-  if (recognizing) return;
-  images.splice(idx, 1);
-  renderList();
+function setFilter(idx, f) {
+  pages[idx].filter = f;
+  processPage(pages[idx]);
+  render();
+}
+
+function movePage(idx, dir) {
+  var ni = idx + dir;
+  if (ni < 0 || ni >= pages.length) return;
+  var t = pages[idx]; pages[idx] = pages[ni]; pages[ni] = t;
+  render();
+}
+
+function delPage(idx) {
+  pages.splice(idx, 1);
+  render();
 }
 
 function escHtml(s) {
-  var d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
+  var d = document.createElement('div'); d.textContent = s; return d.innerHTML;
 }
 
-// ===== 图片压缩（百度API限制base64后4MB） =====
-function compressForOCR(dataUrl, maxSize) {
-  return new Promise(function(resolve) {
-    var img = new Image();
-    img.onload = function() {
-      // 先尝试缩放长边到2000px
-      var maxDim = 2000;
-      var w = img.width, h = img.height;
-      if (Math.max(w, h) > maxDim) {
-        var scale = maxDim / Math.max(w, h);
-        w = Math.round(w * scale);
-        h = Math.round(h * scale);
-      }
+// ===== 进度 =====
+function showProg(msg, sub) {
+  document.getElementById('progMsg').textContent = msg;
+  document.getElementById('progSub').textContent = sub || '';
+  document.getElementById('progressMask').classList.add('show');
+}
+function hideProg() {
+  document.getElementById('progressMask').classList.remove('show');
+}
 
-      var canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      var ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
-
-      // 检查大小，如果太大逐步降质量
-      var quality = 0.92;
-      var result = canvas.toDataURL('image/jpeg', quality);
-
-      function checkSize() {
-        // base64字符串长度 * 0.75 ≈ 实际字节数
-        var approxBytes = result.length * 0.75;
-        if (approxBytes <= maxSize || quality <= 0.3) {
-          resolve(result);
-          return;
+// ===== 生成PDF（图片模式，原版式100%保留） =====
+function exportPDF() {
+  if (!pages.length) return;
+  showProg('正在生成PDF...', pages.length + '页');
+  setTimeout(function() {
+    try {
+      var { jsPDF } = window.jspdf;
+      var pdf = null;
+      for (var i = 0; i < pages.length; i++) {
+        var cv = pages[i].canvas;
+        var w = cv.width, h = cv.height;
+        // A4比例适配
+        var pdfW = 595.28, pdfH = 841.89;
+        var ratio = Math.min(pdfW / w, pdfH / h);
+        var rw = w * ratio, rh = h * ratio;
+        var x = (pdfW - rw) / 2, y = (pdfH - rh) / 2;
+        var imgData = cv.toDataURL('image/jpeg', 0.88);
+        if (!pdf) {
+          pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+        } else {
+          pdf.addPage();
         }
-        quality -= 0.1;
-        result = canvas.toDataURL('image/jpeg', quality);
-        checkSize();
+        pdf.addImage(imgData, 'JPEG', x, y, rw, rh);
       }
-      checkSize();
-    };
-    img.src = dataUrl;
-  });
+      pdf.save('扫描件_' + Date.now() + '.pdf');
+      hideProg();
+      showToast('PDF已生成，共' + pages.length + '页');
+    } catch(e) {
+      hideProg();
+      showToast('生成失败：' + e.message);
+    }
+  }, 100);
 }
 
-// ===== 百度OCR（主引擎） =====
-async function recognizeBaidu(dataUrl) {
-  var compressed = await compressForOCR(dataUrl, 3_500_000);
-
-  var resp = await fetch('/api/ocr', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image: compressed, accurate: true })
-  });
-
-  var data = await resp.json();
-  if (!resp.ok) {
-    throw new Error(data.error || '识别服务异常');
+// ===== 图片压缩（百度API限制4MB base64） =====
+function compressForAPI(canvas) {
+  var maxDim = 2000;
+  var w = canvas.width, h = canvas.height;
+  var c = canvas;
+  if (Math.max(w, h) > maxDim) {
+    var s = maxDim / Math.max(w, h);
+    var nc = document.createElement('canvas');
+    nc.width = Math.round(w*s); nc.height = Math.round(h*s);
+    nc.getContext('2d').drawImage(canvas, 0, 0, nc.width, nc.height);
+    c = nc;
   }
-
-  return (data.words || []).join('\n');
-}
-
-// ===== Tesseract本地OCR（备用引擎，服务不可用时使用） =====
-async function recognizeTesseract(dataUrl) {
-  // 动态加载Tesseract
-  if (!window.Tesseract) {
-    await loadScript('https://cdn.bootcdn.net/ajax/libs/tesseract.js/5.1.1/tesseract.min.js');
+  var q = 0.9;
+  var data = c.toDataURL('image/jpeg', q);
+  while (data.length * 0.75 > 3500000 && q > 0.3) {
+    q -= 0.1;
+    data = c.toDataURL('image/jpeg', q);
   }
-
-  var worker = await Tesseract.createWorker('chi_sim+eng', 1, {
-    workerPath: '/libs/tesseract/worker.min.js',
-    corePath: '/libs/tesseract/tesseract-core-simd-lstm.wasm.js',
-    langPath: '/libs/tesseract/',
-    gzip: true
-  });
-
-  var ret = await worker.recognize(dataUrl);
-  await worker.terminate();
-  return (ret.data.text || '').trim();
+  return data;
 }
 
-function loadScript(src) {
-  return new Promise(function(resolve, reject) {
-    var s = document.createElement('script');
-    s.src = src;
-    s.onload = resolve;
-    s.onerror = reject;
-    document.head.appendChild(s);
-  });
-}
-
-// ===== 主识别流程 =====
-async function startRecognize() {
-  if (images.length === 0) { showToast('请先添加图片'); return; }
-  if (recognizing) return;
-
-  recognizing = true;
-  var btn = document.getElementById('btnRecognize');
-  btn.disabled = true;
-  document.getElementById('btnIcon').innerHTML = '<span class="spinner"></span>';
-  document.getElementById('btnText').textContent = '识别中...';
-  document.getElementById('progressBox').classList.add('show');
-  document.getElementById('resultCard').style.display = 'none';
-
-  var useBaidu = true;
-  var allText = [];
-  var engineName = '';
+// ===== OCR文字识别 =====
+async function runOCR() {
+  if (!pages.length) return;
+  showProg('正在识别文字...', '0/' + pages.length);
+  ocrResultText = '';
+  var all = [];
 
   try {
-    // 先测试百度服务是否可用（第一张图试一下）
-    updateProgress(5, '正在连接识别服务...');
+    for (var i = 0; i < pages.length; i++) {
+      document.getElementById('progSub').textContent = (i+1) + '/' + pages.length;
+      var imgData = compressForAPI(pages[i].canvas);
 
-    for (var i = 0; i < images.length; i++) {
-      images[i].status = 'proc';
-      renderList();
-      updateProgress(
-        Math.round(10 + (i / images.length) * 80),
-        '正在识别第 ' + (i+1) + '/' + images.length + ' 张...'
-      );
-
-      var text = '';
-      var tryLocal = false;
-
-      if (useBaidu) {
-        try {
-          text = await recognizeBaidu(images[i].dataUrl);
-          engineName = '百度高精度';
-        } catch(e) {
-          console.warn('百度OCR失败，切换本地引擎:', e.message);
-          useBaidu = false;
-          tryLocal = true;
-          engineName = '本地引擎';
-        }
+      try {
+        var resp = await fetch('/api/ocr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: imgData, accurate: true })
+        });
+        var data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || '识别失败');
+        if (data.text) all.push(data.text);
+      } catch(e) {
+        console.warn('第' + (i+1) + '页识别失败:', e);
+        all.push('[第' + (i+1) + '页识别失败]');
       }
-
-      if (!useBaidu) {
-        try {
-          if (i === 0 || tryLocal) {
-            updateProgress(
-              Math.round(10 + (i / images.length) * 80),
-              '正在加载本地识别引擎（首次需10-30秒）...'
-            );
-          }
-          text = await recognizeTesseract(images[i].dataUrl);
-        } catch(e2) {
-          console.error('本地OCR也失败:', e2);
-          text = '';
-        }
-      }
-
-      images[i].text = text;
-      images[i].status = text ? 'ok' : 'err';
-      if (text) allText.push(text);
-      renderList();
     }
 
-    updateProgress(95, '正在整理结果...');
-
-    var fullText = allText.join('\n\n');
-
-    document.getElementById('resultText').value = fullText;
-    document.getElementById('resultCount').textContent = '(' + fullText.length + '字 · ' + engineName + ')';
-    document.getElementById('resultCard').style.display = '';
-    updateProgress(100, '识别完成！');
-
-    setTimeout(function() {
-      document.getElementById('progressBox').classList.remove('show');
-    }, 1500);
-
-    showToast('识别完成，共' + fullText.length + '字');
-
-  } catch(err) {
-    console.error(err);
-    showToast('识别失败：' + (err.message || '请重试'));
-    document.getElementById('progressBox').classList.remove('show');
-  } finally {
-    recognizing = false;
-    btn.disabled = false;
-    document.getElementById('btnIcon').textContent = '🔍';
-    document.getElementById('btnText').textContent = '重新识别';
-    renderList();
+    ocrResultText = all.join('\n\n———————\n\n');
+    document.getElementById('ocrText').value = ocrResultText;
+    hideProg();
+    document.getElementById('ocrModal').classList.add('show');
+  } catch(e) {
+    hideProg();
+    showToast('识别失败：' + e.message);
   }
 }
 
-function updateProgress(pct, text) {
-  document.getElementById('progressFill').style.width = pct + '%';
-  if (text) document.getElementById('progressText').textContent = text;
+function closeOCR() {
+  document.getElementById('ocrModal').classList.remove('show');
 }
 
-// ===== 结果操作 =====
-function getResultText() {
-  return document.getElementById('resultText').value;
-}
-
-function copyResult() {
-  var text = getResultText();
-  if (!text) { showToast('没有可复制的内容'); return; }
-
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function() {
-      showToast('已复制到剪贴板');
-    }).catch(function() {
-      fallbackCopy(text);
-    });
+function copyOCR() {
+  var t = document.getElementById('ocrText').value;
+  if (!t) { showToast('没有内容'); return; }
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(t).then(function() { showToast('已复制'); });
   } else {
-    fallbackCopy(text);
+    var ta = document.createElement('textarea');
+    ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('已复制');
   }
 }
 
-function fallbackCopy(text) {
-  var ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.opacity = '0';
-  document.body.appendChild(ta);
-  ta.select();
-  try { document.execCommand('copy'); showToast('已复制'); }
-  catch(e) { showToast('复制失败，请手动选择'); }
-  document.body.removeChild(ta);
-}
-
-function exportTxt() {
-  var text = getResultText();
-  if (!text) { showToast('没有可导出的内容'); return; }
-  var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-  saveAs(blob, '识别结果_' + Date.now() + '.txt');
+function exportOCRtxt() {
+  var t = document.getElementById('ocrText').value;
+  if (!t) { showToast('没有内容'); return; }
+  saveAs(new Blob([t], { type: 'text/plain;charset=utf-8' }), '识别结果_' + Date.now() + '.txt');
   showToast('TXT已下载');
 }
 
-function exportWord() {
-  var text = getResultText();
-  if (!text) { showToast('没有可导出的内容'); return; }
-
+function exportOCRword() {
+  var t = document.getElementById('ocrText').value;
+  if (!t) { showToast('没有内容'); return; }
   try {
     var docx = window.docx;
-    var paragraphs = text.split('\n').map(function(line) {
+    var paras = t.split('\n').map(function(line) {
       return new docx.Paragraph({
         children: [new docx.TextRun({ text: line, size: 24, font: 'Microsoft YaHei' })],
         spacing: { after: 120 }
       });
     });
-
     var doc = new docx.Document({
-      sections: [{
-        properties: {
-          page: { margin: { top: 720, bottom: 720, left: 720, right: 720 } }
-        },
-        children: paragraphs
-      }]
+      sections: [{ properties: { page: { margin: { top: 720, bottom: 720, left: 720, right: 720 } } }, children: paras }]
     });
-
     docx.Packer.toBlob(doc).then(function(blob) {
       saveAs(blob, '识别结果_' + Date.now() + '.docx');
       showToast('Word已下载');
     });
-  } catch(err) {
-    console.error(err);
-    showToast('Word导出失败：' + err.message);
-  }
+  } catch(e) { showToast('Word导出失败：' + e.message); }
 }
 
-function exportPdf() {
-  var text = getResultText();
-  if (!text) { showToast('没有可导出的内容'); return; }
-
-  try {
-    var { jsPDF } = window.jspdf;
-    var doc = new jsPDF({ unit: 'pt', format: 'a4' });
-    var pageW = doc.internal.pageSize.getWidth();
-    var pageH = doc.internal.pageSize.getHeight();
-    var margin = 50;
-    var maxW = pageW - margin * 2;
-    var lineHeight = 18;
-    var startY = margin;
-    var y = startY;
-
-    var lines = doc.splitTextToSize(text, maxW);
-
-    for (var i = 0; i < lines.length; i++) {
-      if (y > pageH - margin) {
-        doc.addPage();
-        y = startY;
-      }
-      doc.text(lines[i], margin, y);
-      y += lineHeight;
-    }
-
-    doc.save('识别结果_' + Date.now() + '.pdf');
-    showToast('PDF已下载');
-  } catch(err) {
-    console.error(err);
-    showToast('PDF导出失败：' + err.message);
+function exportWordFromOCR() {
+  if (!ocrResultText) {
+    showToast('请先识别文字');
+    setTimeout(function() { runOCR(); }, 500);
+    return;
   }
+  exportOCRword();
 }
 
-// ===== Toast =====
 function showToast(msg) {
   var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   clearTimeout(t._timer);
   t._timer = setTimeout(function() { t.classList.remove('show'); }, 2500);
 }
