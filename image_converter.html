@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>拍照转文档 - 瑞丽房东管家</title>
+<link rel="icon" type="image/jpeg" href="birthday_icon.jpg">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --p: #6366f1; --p-light: #818cf8; --p-dark: #4f46e5;
+  --g: #10b981; --o: #f97316; --d: #ef4444;
+  --bg: #f1f5f9; --c: #fff; --t: #1e293b; --ts: #64748b; --bd: #e2e8f0;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+  background: var(--bg); color: var(--t); min-height: 100vh;
+  padding-bottom: 100px;
+}
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,.95); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--bd);
+  padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+}
+.topbar a { color: var(--p); text-decoration: none; font-size: 15px; font-weight: 600; }
+.topbar h1 { font-size: 17px; font-weight: 700; flex: 1; text-align: center; margin-right: 40px; }
+.container { max-width: 600px; margin: 0 auto; padding: 16px; }
+.card {
+  background: var(--c); border-radius: 12px; padding: 16px;
+  margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.upload-zone {
+  border: 2px dashed var(--p-light); border-radius: 12px;
+  padding: 32px 20px; text-align: center; cursor: pointer;
+  background: #fafaff; transition: .2s;
+}
+.upload-zone:active, .upload-zone:hover { background: #f0f0ff; border-color: var(--p); }
+.upload-zone .icon { font-size: 40px; margin-bottom: 8px; }
+.upload-zone .text { font-size: 14px; color: var(--p); font-weight: 600; }
+.upload-zone .hint { font-size: 12px; color: var(--ts); margin-top: 4px; }
+.btn-row { display: flex; gap: 10px; margin-top: 12px; }
+.btn {
+  padding: 12px 16px; border-radius: 10px; border: none;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  transition: .2s; flex: 1;
+}
+.btn-p { background: var(--p); color: #fff; box-shadow: 0 2px 8px rgba(99,102,241,.3); }
+.btn-p:active { background: var(--p-dark); }
+.btn-o { background: var(--o); color: #fff; box-shadow: 0 2px 8px rgba(249,115,22,.3); }
+.btn-o:active { background: #ea580c; }
+.btn-g { background: var(--g); color: #fff; }
+.btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.image-list { display: flex; flex-direction: column; gap: 10px; }
+.image-item {
+  display: flex; align-items: center; gap: 12px;
+  background: #f8fafc; border-radius: 10px; padding: 10px;
+  position: relative;
+}
+.image-item img {
+  width: 64px; height: 64px; object-fit: cover;
+  border-radius: 8px; border: 1px solid var(--bd);
+}
+.image-info { flex: 1; min-width: 0; }
+.image-name {
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.image-meta { font-size: 11px; color: var(--ts); margin-top: 2px; }
+.image-actions { display: flex; gap: 4px; }
+.icon-btn {
+  width: 32px; height: 32px; border-radius: 8px; border: none;
+  background: #fff; cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,.1); transition: .15s;
+}
+.icon-btn:active { transform: scale(.92); }
+.icon-btn.del { color: var(--d); }
+.drag-handle { color: var(--ts); font-size: 18px; cursor: grab; user-select: none; padding: 4px; }
+.drag-handle:active { cursor: grabbing; }
+.empty-state {
+  text-align: center; padding: 40px 20px; color: var(--ts);
+}
+.empty-state .icon { font-size: 48px; margin-bottom: 12px; opacity: .5; }
+.empty-state p { font-size: 14px; }
+.opt-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid var(--bd);
+}
+.opt-row:last-child { border-bottom: none; }
+.opt-label { font-size: 13px; font-weight: 600; }
+.opt-hint { font-size: 11px; color: var(--ts); margin-top: 2px; }
+.opt-control select, .opt-control input[type="text"] {
+  padding: 6px 10px; border: 1.5px solid var(--bd); border-radius: 8px;
+  font-size: 13px; outline: none; background: #fff;
+}
+.opt-control select:focus { border-color: var(--p); }
+.switch { position: relative; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; inset: 0; background: #cbd5e1;
+  border-radius: 24px; cursor: pointer; transition: .2s;
+}
+.slider::before {
+  content: ''; position: absolute; width: 18px; height: 18px;
+  left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s;
+}
+.switch input:checked + .slider { background: var(--p); }
+.switch input:checked + .slider::before { transform: translateX(20px); }
+.progress-bar {
+  display: none; margin-top: 12px;
+}
+.progress-bar.show { display: block; }
+.progress-track {
+  height: 6px; background: var(--bd); border-radius: 3px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; background: var(--p); border-radius: 3px;
+  transition: width .3s; width: 0%;
+}
+.progress-text { font-size: 12px; color: var(--ts); text-align: center; margin-top: 6px; }
+.toast {
+  position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
+  background: rgba(30,41,59,.9); color: #fff; padding: 10px 20px;
+  border-radius: 10px; font-size: 13px; z-index: 9999;
+  opacity: 0; transition: .3s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+.privacy-note {
+  text-align: center; font-size: 11px; color: var(--ts);
+  padding: 12px; line-height: 1.6;
+}
+.privacy-note .lock { font-size: 14px; }
+.footer {
+  text-align: center; padding: 16px; font-size: 12px; color: var(--ts);
+}
+.footer a { color: var(--ts); text-decoration: none; }
+.sort-hint {
+  font-size: 11px; color: var(--ts); text-align: center;
+  padding: 8px; background: #f0f0ff; border-radius: 8px; margin-bottom: 10px;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="tools.html">‹ 返回</a>
+  <h1>📄 拍照转文档</h1>
+</div>
+
+<div class="container">
+  <!-- 上传区 -->
+  <div class="card">
+    <div class="upload-zone" id="uploadZone">
+      <div class="icon">📷</div>
+      <div class="text">点击拍照或选择图片</div>
+      <div class="hint">支持JPG/PNG，可多选，文件不会上传服务器</div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+  </div>
+
+  <!-- 图片列表 -->
+  <div class="card" id="listCard" style="display:none">
+    <div class="sort-hint">⬆️⬇️ 拖动调整顺序，或用箭头按钮排序</div>
+    <div class="image-list" id="imageList"></div>
+  </div>
+
+  <!-- 输出选项 -->
+  <div class="card" id="optCard" style="display:none">
+    <div style="font-size:15px;font-weight:700;margin-bottom:8px;">输出设置</div>
+    <div class="opt-row">
+      <div>
+        <div class="opt-label">页面尺寸</div>
+        <div class="opt-hint">PDF/Word页面大小</div>
+      </div>
+      <div class="opt-control">
+        <select id="pageSize">
+          <option value="a4">A4</option>
+          <option value="letter">Letter</option>
+          <option value="fit">自适应图片</option>
+        </select>
+      </div>
+    </div>
+    <div class="opt-row">
+      <div>
+        <div class="opt-label">图片方向</div>
+        <div class="opt-hint">竖向或横向排列</div>
+      </div>
+      <div class="opt-control">
+        <select id="orientation">
+          <option value="portrait">竖向</option>
+          <option value="landscape">横向</option>
+        </select>
+      </div>
+    </div>
+    <div class="opt-row">
+      <div>
+        <div class="opt-label">图片压缩</div>
+        <div class="opt-hint">压缩后文件更小</div>
+      </div>
+      <div class="opt-control">
+        <select id="quality">
+          <option value="0.92">高质量</option>
+          <option value="0.75" selected>标准</option>
+          <option value="0.5">小文件</option>
+        </select>
+      </div>
+    </div>
+    <div class="opt-row">
+      <div>
+        <div class="opt-label">文件名</div>
+      </div>
+      <div class="opt-control">
+        <input type="text" id="fileName" value="拍照文档" style="width:120px">
+      </div>
+    </div>
+  </div>
+
+  <!-- 导出按钮 -->
+  <div class="card" id="exportCard" style="display:none">
+    <div class="btn-row">
+      <button class="btn btn-p" id="btnPdf" onclick="exportPDF()">
+        📕 导出PDF
+      </button>
+      <button class="btn btn-o" id="btnWord" onclick="exportWord()">
+        📘 导出Word
+      </button>
+    </div>
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-text" id="progressText">处理中...</div>
+    </div>
+  </div>
+
+  <div class="privacy-note" id="privacyNote">
+    <span class="lock">🔒</span> 所有图片在您的手机/电脑本地处理，不会上传到任何服务器<br>
+    关闭页面后图片自动清除
+  </div>
+</div>
+
+<div class="footer">
+  <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">滇ICP备2026014743号</a>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- jsPDF for PDF generation -->
+<script src="https://cdn.bootcdn.net/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- docx for Word generation (npmmirror国内镜像) -->
+<script src="https://registry.npmmirror.com/docx/8.5.0/files/build/index.umd.js"></script>
+<!-- FileSaver for download -->
+<script src="https://cdn.bootcdn.net/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<script>
+// ===== 状态 =====
+var images = []; // {id, file, dataUrl, width, height}
+var idCounter = 0;
+
+var uploadZone = document.getElementById('uploadZone');
+var fileInput = document.getElementById('fileInput');
+var imageList = document.getElementById('imageList');
+var listCard = document.getElementById('listCard');
+var optCard = document.getElementById('optCard');
+var exportCard = document.getElementById('exportCard');
+
+// ===== 上传 =====
+uploadZone.addEventListener('click', function() { fileInput.click(); });
+fileInput.addEventListener('change', function(e) {
+  handleFiles(e.target.files);
+  fileInput.value = '';
+});
+
+// 拖拽上传
+uploadZone.addEventListener('dragover', function(e) { e.preventDefault(); this.style.background = '#f0f0ff'; });
+uploadZone.addEventListener('dragleave', function(e) { this.style.background = '#fafaff'; });
+uploadZone.addEventListener('drop', function(e) {
+  e.preventDefault(); this.style.background = '#fafaff';
+  handleFiles(e.dataTransfer.files);
+});
+
+function handleFiles(files) {
+  var imgFiles = Array.from(files).filter(function(f) { return f.type.startsWith('image/'); });
+  if (imgFiles.length === 0) { showToast('请选择图片文件'); return; }
+
+  var loaded = 0;
+  imgFiles.forEach(function(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        images.push({
+          id: ++idCounter,
+          file: file,
+          dataUrl: e.target.result,
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+          displayUrl: e.target.result
+        });
+        loaded++;
+        if (loaded === imgFiles.length) {
+          renderList();
+          showToast('已添加 ' + imgFiles.length + ' 张图片');
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ===== 渲染列表 =====
+function renderList() {
+  if (images.length === 0) {
+    listCard.style.display = 'none';
+    optCard.style.display = 'none';
+    exportCard.style.display = 'none';
+    return;
+  }
+  listCard.style.display = '';
+  optCard.style.display = '';
+  exportCard.style.display = '';
+
+  imageList.innerHTML = '';
+  images.forEach(function(img, idx) {
+    var item = document.createElement('div');
+    item.className = 'image-item';
+    item.draggable = true;
+    item.dataset.idx = idx;
+
+    var sizeKB = (img.file.size / 1024).toFixed(0);
+    var sizeText = sizeKB > 1024 ? (sizeKB / 1024).toFixed(1) + 'MB' : sizeKB + 'KB';
+
+    item.innerHTML =
+      '<span class="drag-handle">☰</span>' +
+      '<img src="' + img.displayUrl + '" alt="">' +
+      '<div class="image-info">' +
+        '<div class="image-name">' + escapeHtml(img.file.name) + '</div>' +
+        '<div class="image-meta">' + img.width + '×' + img.height + ' · ' + sizeText + '</div>' +
+      '</div>' +
+      '<div class="image-actions">' +
+        '<button class="icon-btn" onclick="moveImg(' + idx + ',-1)" title="上移">↑</button>' +
+        '<button class="icon-btn" onclick="moveImg(' + idx + ',1)" title="下移">↓</button>' +
+        '<button class="icon-btn del" onclick="removeImg(' + idx + ')" title="删除">✕</button>' +
+      '</div>';
+
+    // 拖拽排序
+    item.addEventListener('dragstart', handleDragStart);
+    item.addEventListener('dragover', handleDragOver);
+    item.addEventListener('drop', handleDrop);
+    item.addEventListener('dragend', handleDragEnd);
+
+    imageList.appendChild(item);
+  });
+}
+
+// 拖拽排序
+var dragSrcIdx = null;
+function handleDragStart(e) {
+  dragSrcIdx = parseInt(this.dataset.idx);
+  this.style.opacity = '0.4';
+  e.dataTransfer.effectAllowed = 'move';
+}
+function handleDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+function handleDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  var targetIdx = parseInt(this.dataset.idx);
+  if (dragSrcIdx !== null && dragSrcIdx !== targetIdx) {
+    var item = images.splice(dragSrcIdx, 1)[0];
+    images.splice(targetIdx, 0, item);
+    renderList();
+  }
+}
+function handleDragEnd() {
+  this.style.opacity = '';
+  dragSrcIdx = null;
+}
+
+function moveImg(idx, dir) {
+  var newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= images.length) return;
+  var item = images.splice(idx, 1)[0];
+  images.splice(newIdx, 0, item);
+  renderList();
+}
+
+function removeImg(idx) {
+  images.splice(idx, 1);
+  renderList();
+  showToast('已删除');
+}
+
+function escapeHtml(str) {
+  var div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ===== 图片压缩 =====
+function compressImage(imgItem, quality) {
+  return new Promise(function(resolve, reject) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var ctx = canvas.getContext('2d');
+      var maxDim = 2000;
+      var w = img.naturalWidth, h = img.naturalHeight;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else { w = Math.round(w * maxDim / h); h = maxDim; }
+      }
+      canvas.width = w;
+      canvas.height = h;
+      ctx.drawImage(img, 0, 0, w, h);
+      var dataUrl = canvas.toDataURL('image/jpeg', quality);
+      resolve({ dataUrl: dataUrl, width: w, height: h });
+    };
+    img.onerror = function() { reject(new Error('图片加载失败')); };
+    img.src = imgItem.dataUrl;
+  });
+}
+
+// ===== 导出PDF =====
+async function exportPDF() {
+  if (images.length === 0) { showToast('请先添加图片'); return; }
+
+  var btn = document.getElementById('btnPdf');
+  btn.disabled = true;
+  showProgress(true, '正在生成PDF...');
+
+  try {
+    var { jsPDF } = window.jspdf;
+    var pageSize = document.getElementById('pageSize').value;
+    var orientation = document.getElementById('orientation').value;
+    var quality = parseFloat(document.getElementById('quality').value);
+    var fileName = document.getElementById('fileName').value.trim() || '拍照文档';
+
+    var pdf;
+    if (pageSize === 'fit') {
+      // 自适应：每页尺寸等于图片
+      var firstCompressed = await compressImage(images[0], quality);
+      pdf = new jsPDF({
+        orientation: firstCompressed.width > firstCompressed.height ? 'l' : 'p',
+        unit: 'px',
+        format: [firstCompressed.width, firstCompressed.height]
+      });
+      pdf.addImage(firstCompressed.dataUrl, 'JPEG', 0, 0, firstCompressed.width, firstCompressed.height);
+
+      for (var i = 1; i < images.length; i++) {
+        updateProgress(Math.round(i / images.length * 100), '处理第 ' + (i+1) + '/' + images.length + ' 张');
+        var comp = await compressImage(images[i], quality);
+        pdf.addPage([comp.width, comp.height], comp.width > comp.height ? 'l' : 'p');
+        pdf.addImage(comp.dataUrl, 'JPEG', 0, 0, comp.width, comp.height);
+      }
+    } else {
+      // A4/Letter固定尺寸
+      var format = pageSize === 'a4' ? 'a4' : 'letter';
+      pdf = new jsPDF({ orientation: orientation, unit: 'mm', format: format });
+      var pageW = pdf.internal.pageSize.getWidth();
+      var pageH = pdf.internal.pageSize.getHeight();
+      var margin = 5;
+      var availW = pageW - margin * 2;
+      var availH = pageH - margin * 2;
+
+      for (var j = 0; j < images.length; j++) {
+        updateProgress(Math.round(j / images.length * 100), '处理第 ' + (j+1) + '/' + images.length + ' 张');
+        var c = await compressImage(images[j], quality);
+
+        if (j > 0) pdf.addPage();
+
+        // 计算图片在页面内的缩放
+        var imgRatio = c.width / c.height;
+        var drawW, drawH;
+        if (orientation === 'portrait') {
+          drawW = availW;
+          drawH = drawW / imgRatio;
+          if (drawH > availH) { drawH = availH; drawW = drawH * imgRatio; }
+        } else {
+          drawH = availH;
+          drawW = drawH * imgRatio;
+          if (drawW > availW) { drawW = availW; drawH = drawW / imgRatio; }
+        }
+        var x = (pageW - drawW) / 2;
+        var y = (pageH - drawH) / 2;
+        pdf.addImage(c.dataUrl, 'JPEG', x, y, drawW, drawH);
+      }
+    }
+
+    pdf.save(fileName + '.pdf');
+    showProgress(false);
+    showToast('PDF已生成，正在下载');
+  } catch(err) {
+    console.error(err);
+    showProgress(false);
+    showToast('生成失败：' + err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ===== 导出Word =====
+async function exportWord() {
+  if (images.length === 0) { showToast('请先添加图片'); return; }
+
+  var btn = document.getElementById('btnWord');
+  btn.disabled = true;
+  showProgress(true, '正在生成Word...');
+
+  try {
+    var docx = window.docx;
+    var quality = parseFloat(document.getElementById('quality').value);
+    var fileName = document.getElementById('fileName').value.trim() || '拍照文档';
+    var orientation = document.getElementById('orientation').value;
+
+    var children = [];
+
+    for (var i = 0; i < images.length; i++) {
+      updateProgress(Math.round(i / images.length * 100), '处理第 ' + (i+1) + '/' + images.length + ' 张');
+      var comp = await compressImage(images[i], quality);
+
+      // 将base64转为Uint8Array
+      var base64 = comp.dataUrl.split(',')[1];
+      var binary = atob(base64);
+      var bytes = new Uint8Array(binary.length);
+      for (var k = 0; k < binary.length; k++) bytes[k] = binary.charCodeAt(k);
+
+      // Word中图片最大宽度（A4约600px可用）
+      var maxWidth = orientation === 'landscape' ? 700 : 480;
+      var imgW = comp.width;
+      var imgH = comp.height;
+      if (imgW > maxWidth) {
+        imgH = Math.round(imgH * maxWidth / imgW);
+        imgW = maxWidth;
+      }
+
+      children.push(
+        new docx.ImageRun({
+          data: bytes,
+          transformation: { width: imgW, height: imgH }
+        })
+      );
+
+      // 图片之间加段落（分页）
+      if (i < images.length - 1) {
+        children.push(new docx.Paragraph({
+          children: [new docx.PageBreak()]
+        }));
+      }
+    }
+
+    var doc = new docx.Document({
+      sections: [{
+        properties: {
+          page: {
+            size: {
+              orientation: orientation === 'landscape' ? docx.PageOrientation.LANDSCAPE : docx.PageOrientation.PORTRAIT,
+            },
+            margin: { top: 360, bottom: 360, left: 360, right: 360 }
+          }
+        },
+        children: [
+          new docx.Paragraph({
+            children: children,
+            alignment: docx.AlignmentType.CENTER
+          })
+        ]
+      }]
+    });
+
+    docx.Packer.toBlob(doc).then(function(blob) {
+      saveAs(blob, fileName + '.docx');
+      showProgress(false);
+      showToast('Word已生成，正在下载');
+      btn.disabled = false;
+    });
+  } catch(err) {
+    console.error(err);
+    showProgress(false);
+    showToast('生成失败：' + err.message);
+    btn.disabled = false;
+  }
+}
+
+// ===== 进度条 =====
+function showProgress(show, text) {
+  var bar = document.getElementById('progressBar');
+  bar.classList.toggle('show', show);
+  if (text) document.getElementById('progressText').textContent = text;
+  if (show) updateProgress(0, text);
+}
+function updateProgress(pct, text) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  if (text) document.getElementById('progressText').textContent = text;
+}
+
+// ===== Toast =====
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+</script>
+</body>
+</html>
