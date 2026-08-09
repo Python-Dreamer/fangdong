@@ -232,10 +232,9 @@ body {
 <script src="https://cdn.bootcdn.net/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
 <script>
-// ===== CDN路径配置（全部国内镜像） =====
-var CDN_BASE = 'https://registry.npmmirror.com';
-var WORKER_PATH = CDN_BASE + '/tesseract.js/5.1.1/files/dist/worker.min.js';
-var CORE_PATH = CDN_BASE + '/tesseract.js-core/5.1.1/files/tesseract-core-simd-lstm.wasm.js';
+// ===== CDN路径配置 =====
+// Tesseract.js v5 默认从 jsdelivr 加载 worker/core/lang（国内可访问）
+// 不自定义 workerPath/corePath，避免跨域和MIME类型问题
 var LANG_PATH = 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/';
 
 // ===== 状态 =====
@@ -354,18 +353,34 @@ async function startRecognize() {
   var lang = document.getElementById('lang').value;
 
   try {
-    updateProgress(0, '正在加载识别引擎...');
+    updateProgress(0, '正在加载识别引擎（首次约需10-30秒）...');
 
-    var worker = await Tesseract.createWorker(lang, 1, {
-      workerPath: WORKER_PATH,
-      corePath: CORE_PATH,
-      langPath: LANG_PATH,
-      logger: function(m) {
-        if (m.status === 'recognizing text') {
-          // 这是单张图片的进度，我们在循环里更新
-        }
-      }
+    // 超时保护：45秒未加载完成则报错，避免无限卡住
+    var createResult;
+    var timeoutPromise = new Promise(function(_, reject) {
+      setTimeout(function() { reject(new Error('引擎加载超时，请检查网络后重试')); }, 45000);
     });
+
+    var worker;
+    try {
+      worker = await Promise.race([
+        Tesseract.createWorker(lang, 1, {
+          langPath: LANG_PATH,
+          logger: function(m) {
+            if (m.status === 'loading language traineddata') {
+              updateProgress(20, '正在下载中文语言包（约10MB，仅首次）...');
+            } else if (m.status === 'initializing api') {
+              updateProgress(60, '正在初始化识别引擎...');
+            } else if (m.status === 'loading tesseract core') {
+              updateProgress(10, '正在加载识别核心...');
+            }
+          }
+        }),
+        timeoutPromise
+      ]);
+    } catch(initErr) {
+      throw initErr;
+    }
 
     var allText = [];
 
@@ -373,7 +388,7 @@ async function startRecognize() {
       images[i].status = 'proc';
       renderList();
       updateProgress(
-        Math.round(i / images.length * 80) + 5,
+        Math.round(70 + (i / images.length) * 25),
         '正在识别第 ' + (i+1) + '/' + images.length + ' 张...'
       );
 
