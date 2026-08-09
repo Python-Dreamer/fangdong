@@ -138,6 +138,18 @@ body {
   border-radius: 50%; animation: spin .6s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+  background: #cbd5e1; border-radius: 24px; transition: .2s;
+}
+.slider:before {
+  content: ''; position: absolute; height: 18px; width: 18px;
+  left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .2s;
+}
+.switch input:checked + .slider { background: var(--p); }
+.switch input:checked + .slider:before { transform: translateX(20px); }
 </style>
 </head>
 <body>
@@ -177,6 +189,18 @@ body {
           <option value="chi_sim">仅中文</option>
           <option value="eng">仅英文/数字</option>
         </select>
+      </div>
+    </div>
+    <div class="opt-row">
+      <div>
+        <div class="opt-label">智能增强</div>
+        <div class="opt-hint">自动去阴影、增强对比度，大幅提升识别率</div>
+      </div>
+      <div class="opt-control">
+        <label class="switch">
+          <input type="checkbox" id="enhance" checked>
+          <span class="slider"></span>
+        </label>
       </div>
     </div>
   </div>
@@ -338,6 +362,78 @@ function escHtml(s) {
   return d.innerHTML;
 }
 
+// ===== 图片预处理（大幅提升OCR精度） =====
+function preprocessImage(dataUrl) {
+  return new Promise(function(resolve) {
+    var enhance = document.getElementById('enhance').checked;
+    if (!enhance) { resolve(dataUrl); return; }
+
+    var img = new Image();
+    img.onload = function() {
+      // 1. 统一分辨率：长边缩放到1600px（兼顾精度和性能）
+      var maxDim = 1600;
+      var w = img.width, h = img.height;
+      if (Math.max(w, h) > maxDim) {
+        var scale = maxDim / Math.max(w, h);
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+      }
+
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      var imageData = ctx.getImageData(0, 0, w, h);
+      var data = imageData.data;
+
+      // 2. 灰度化 + 去阴影（背景归一化）
+      var gray = new Float32Array(w * h);
+      for (var i = 0; i < data.length; i += 4) {
+        var g = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+        gray[i/4] = g;
+      }
+
+      // 3. 用模糊版本估计背景光照（去阴影）
+      var bgCanvas = document.createElement('canvas');
+      bgCanvas.width = w; bgCanvas.height = h;
+      var bgCtx = bgCanvas.getContext('2d');
+      bgCtx.filter = 'blur(20px)';
+      bgCtx.drawImage(canvas, 0, 0, w, h);
+      var bgData = bgCtx.getImageData(0, 0, w, h).data;
+
+      // 4. 归一化：除以背景，拉伸对比度
+      var minV = 255, maxV = 0;
+      var norm = new Float32Array(w * h);
+      for (var j = 0; j < w * h; j++) {
+        var bg = 0.299 * bgData[j*4] + 0.587 * bgData[j*4+1] + 0.114 * bgData[j*4+2];
+        if (bg < 1) bg = 1;
+        var val = (gray[j] / bg) * 200; // 归一化到~0-255
+        if (val > 255) val = 255;
+        if (val < 0) val = 0;
+        norm[j] = val;
+        if (val < minV) minV = val;
+        if (val > maxV) maxV = val;
+      }
+
+      // 5. 对比度拉伸
+      var range = maxV - minV;
+      if (range < 1) range = 1;
+      for (var k = 0; k < w * h; k++) {
+        var v = Math.round(((norm[k] - minV) / range) * 255);
+        var idx = k * 4;
+        data[idx] = v;
+        data[idx+1] = v;
+        data[idx+2] = v;
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
+    };
+    img.src = dataUrl;
+  });
+}
+
 // ===== OCR识别 =====
 async function startRecognize() {
   if (images.length === 0) { showToast('请先添加图片'); return; }
@@ -397,7 +493,12 @@ async function startRecognize() {
       );
 
       try {
-        var ret = await worker.recognize(images[i].dataUrl);
+        updateProgress(
+          Math.round(70 + (i / images.length) * 25),
+          '正在增强并识别第 ' + (i+1) + '/' + images.length + ' 张...'
+        );
+        var processed = await preprocessImage(images[i].dataUrl);
+        var ret = await worker.recognize(processed);
         var text = (ret.data.text || '').trim();
         images[i].text = text;
         images[i].status = 'ok';
