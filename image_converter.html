@@ -138,18 +138,12 @@ body {
   border-radius: 50%; animation: spin .6s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-.switch input { opacity: 0; width: 0; height: 0; }
-.slider {
-  position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-  background: #cbd5e1; border-radius: 24px; transition: .2s;
+.engine-badge {
+  display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 4px;
+  margin-left: 6px; vertical-align: middle;
 }
-.slider:before {
-  content: ''; position: absolute; height: 18px; width: 18px;
-  left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .2s;
-}
-.switch input:checked + .slider { background: var(--p); }
-.switch input:checked + .slider:before { transform: translateX(20px); }
+.engine-baidu { background: #dbeafe; color: #2563eb; }
+.engine-local { background: #fef3c7; color: #d97706; }
 </style>
 </head>
 <body>
@@ -165,7 +159,7 @@ body {
     <div class="upload-zone" id="uploadZone">
       <div class="icon">📷</div>
       <div class="text">点击拍照或选择图片</div>
-      <div class="hint">支持JPG/PNG，可多选 · 识别中文+英文+数字</div>
+      <div class="hint">支持JPG/PNG，可多选 · 中文+英文+数字</div>
     </div>
     <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
   </div>
@@ -174,35 +168,6 @@ body {
   <div class="card" id="listCard" style="display:none">
     <div style="font-size:14px;font-weight:700;margin-bottom:10px;">已选图片 <span id="imgCount" style="font-weight:400;color:var(--ts)"></span></div>
     <div class="image-list" id="imageList"></div>
-  </div>
-
-  <!-- 识别设置 -->
-  <div class="card" id="optCard" style="display:none">
-    <div class="opt-row">
-      <div>
-        <div class="opt-label">识别语言</div>
-        <div class="opt-hint">中文+英文识别效果最好</div>
-      </div>
-      <div class="opt-control">
-        <select id="lang">
-          <option value="chi_sim+eng" selected>中文+英文</option>
-          <option value="chi_sim">仅中文</option>
-          <option value="eng">仅英文/数字</option>
-        </select>
-      </div>
-    </div>
-    <div class="opt-row">
-      <div>
-        <div class="opt-label">智能增强</div>
-        <div class="opt-hint">自动去阴影、增强对比度，大幅提升识别率</div>
-      </div>
-      <div class="opt-control">
-        <label class="switch">
-          <input type="checkbox" id="enhance" checked>
-          <span class="slider"></span>
-        </label>
-      </div>
-    </div>
   </div>
 
   <!-- 识别按钮 -->
@@ -214,9 +179,6 @@ body {
     <div class="progress-box" id="progressBox">
       <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
       <div class="progress-text" id="progressText">准备中...</div>
-    </div>
-    <div style="font-size:11px;color:var(--ts);text-align:center;margin-top:8px">
-      首次使用需下载识别引擎（约10MB），请耐心等待
     </div>
   </div>
 
@@ -235,8 +197,8 @@ body {
   </div>
 
   <div class="privacy-note">
-    🔒 所有识别在浏览器本地完成，图片和文字不会上传到任何服务器<br>
-    关闭页面后自动清除
+    🔒 识别结果直接下载到你的设备，服务器不留存<br>
+    高精度模式由百度AI提供识别能力
   </div>
 </div>
 
@@ -246,22 +208,14 @@ body {
 
 <div class="toast" id="toast"></div>
 
-<!-- Tesseract.js OCR引擎 (国内CDN) -->
-<script src="https://cdn.bootcdn.net/ajax/libs/tesseract.js/5.1.1/tesseract.min.js"></script>
 <!-- jsPDF for PDF export -->
 <script src="https://cdn.bootcdn.net/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<!-- docx for Word export (npmmirror国内镜像) -->
+<!-- docx for Word export -->
 <script src="https://registry.npmmirror.com/docx/8.5.0/files/build/index.umd.js"></script>
 <!-- FileSaver for download -->
 <script src="https://cdn.bootcdn.net/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
 <script>
-// ===== CDN路径配置（引擎文件托管在自己服务器，同域加载秒开） =====
-var TESS_BASE = 'https://ruilifangfong.site/libs/tesseract';
-var WORKER_PATH = TESS_BASE + '/worker.min.js';
-var CORE_PATH = TESS_BASE + '/tesseract-core-simd-lstm.wasm.js';
-var LANG_PATH = TESS_BASE + '/';
-
 // ===== 状态 =====
 var images = [];
 var idCounter = 0;
@@ -279,8 +233,6 @@ fileInput.addEventListener('change', function(e) {
   handleFiles(e.target.files);
   fileInput.value = '';
 });
-
-// 拖拽
 uploadZone.addEventListener('dragover', function(e) { e.preventDefault(); this.style.background = '#f0f0ff'; });
 uploadZone.addEventListener('dragleave', function(e) { this.style.background = '#fafaff'; });
 uploadZone.addEventListener('drop', function(e) {
@@ -312,17 +264,14 @@ function handleFiles(files) {
 // ===== 渲染列表 =====
 function renderList() {
   var listCard = document.getElementById('listCard');
-  var optCard = document.getElementById('optCard');
   var actionCard = document.getElementById('actionCard');
 
   if (images.length === 0) {
     listCard.style.display = 'none';
-    optCard.style.display = 'none';
     actionCard.style.display = 'none';
     return;
   }
   listCard.style.display = '';
-  optCard.style.display = '';
   actionCard.style.display = '';
   document.getElementById('imgCount').textContent = '(' + images.length + '张)';
 
@@ -362,16 +311,13 @@ function escHtml(s) {
   return d.innerHTML;
 }
 
-// ===== 图片预处理（大幅提升OCR精度） =====
-function preprocessImage(dataUrl) {
+// ===== 图片压缩（百度API限制base64后4MB） =====
+function compressForOCR(dataUrl, maxSize) {
   return new Promise(function(resolve) {
-    var enhance = document.getElementById('enhance').checked;
-    if (!enhance) { resolve(dataUrl); return; }
-
     var img = new Image();
     img.onload = function() {
-      // 1. 统一分辨率：长边缩放到1600px（兼顾精度和性能）
-      var maxDim = 1600;
+      // 先尝试缩放长边到2000px
+      var maxDim = 2000;
       var w = img.width, h = img.height;
       if (Math.max(w, h) > maxDim) {
         var scale = maxDim / Math.max(w, h);
@@ -384,57 +330,75 @@ function preprocessImage(dataUrl) {
       var ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, w, h);
 
-      var imageData = ctx.getImageData(0, 0, w, h);
-      var data = imageData.data;
+      // 检查大小，如果太大逐步降质量
+      var quality = 0.92;
+      var result = canvas.toDataURL('image/jpeg', quality);
 
-      // 2. 灰度化 + 去阴影（背景归一化）
-      var gray = new Float32Array(w * h);
-      for (var i = 0; i < data.length; i += 4) {
-        var g = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-        gray[i/4] = g;
+      function checkSize() {
+        // base64字符串长度 * 0.75 ≈ 实际字节数
+        var approxBytes = result.length * 0.75;
+        if (approxBytes <= maxSize || quality <= 0.3) {
+          resolve(result);
+          return;
+        }
+        quality -= 0.1;
+        result = canvas.toDataURL('image/jpeg', quality);
+        checkSize();
       }
-
-      // 3. 用模糊版本估计背景光照（去阴影）
-      var bgCanvas = document.createElement('canvas');
-      bgCanvas.width = w; bgCanvas.height = h;
-      var bgCtx = bgCanvas.getContext('2d');
-      bgCtx.filter = 'blur(20px)';
-      bgCtx.drawImage(canvas, 0, 0, w, h);
-      var bgData = bgCtx.getImageData(0, 0, w, h).data;
-
-      // 4. 归一化：除以背景，拉伸对比度
-      var minV = 255, maxV = 0;
-      var norm = new Float32Array(w * h);
-      for (var j = 0; j < w * h; j++) {
-        var bg = 0.299 * bgData[j*4] + 0.587 * bgData[j*4+1] + 0.114 * bgData[j*4+2];
-        if (bg < 1) bg = 1;
-        var val = (gray[j] / bg) * 200; // 归一化到~0-255
-        if (val > 255) val = 255;
-        if (val < 0) val = 0;
-        norm[j] = val;
-        if (val < minV) minV = val;
-        if (val > maxV) maxV = val;
-      }
-
-      // 5. 对比度拉伸
-      var range = maxV - minV;
-      if (range < 1) range = 1;
-      for (var k = 0; k < w * h; k++) {
-        var v = Math.round(((norm[k] - minV) / range) * 255);
-        var idx = k * 4;
-        data[idx] = v;
-        data[idx+1] = v;
-        data[idx+2] = v;
-      }
-
-      ctx.putImageData(imageData, 0, 0);
-      resolve(canvas.toDataURL('image/jpeg', 0.92));
+      checkSize();
     };
     img.src = dataUrl;
   });
 }
 
-// ===== OCR识别 =====
+// ===== 百度OCR（主引擎） =====
+async function recognizeBaidu(dataUrl) {
+  var compressed = await compressForOCR(dataUrl, 3_500_000);
+
+  var resp = await fetch('/api/ocr', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: compressed, accurate: true })
+  });
+
+  var data = await resp.json();
+  if (!resp.ok) {
+    throw new Error(data.error || '识别服务异常');
+  }
+
+  return (data.words || []).join('\n');
+}
+
+// ===== Tesseract本地OCR（备用引擎，服务不可用时使用） =====
+async function recognizeTesseract(dataUrl) {
+  // 动态加载Tesseract
+  if (!window.Tesseract) {
+    await loadScript('https://cdn.bootcdn.net/ajax/libs/tesseract.js/5.1.1/tesseract.min.js');
+  }
+
+  var worker = await Tesseract.createWorker('chi_sim+eng', 1, {
+    workerPath: '/libs/tesseract/worker.min.js',
+    corePath: '/libs/tesseract/tesseract-core-simd-lstm.wasm.js',
+    langPath: '/libs/tesseract/',
+    gzip: true
+  });
+
+  var ret = await worker.recognize(dataUrl);
+  await worker.terminate();
+  return (ret.data.text || '').trim();
+}
+
+function loadScript(src) {
+  return new Promise(function(resolve, reject) {
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+// ===== 主识别流程 =====
 async function startRecognize() {
   if (images.length === 0) { showToast('请先添加图片'); return; }
   if (recognizing) return;
@@ -447,82 +411,64 @@ async function startRecognize() {
   document.getElementById('progressBox').classList.add('show');
   document.getElementById('resultCard').style.display = 'none';
 
-  var lang = document.getElementById('lang').value;
+  var useBaidu = true;
+  var allText = [];
+  var engineName = '';
 
   try {
-    updateProgress(0, '正在加载识别引擎（首次约需10-30秒）...');
-
-    // 超时保护：首次加载引擎+语言包需要时间，给90秒
-    var createResult;
-    var timeoutPromise = new Promise(function(_, reject) {
-      setTimeout(function() { reject(new Error('引擎加载超时，请刷新页面重试。如果多次超时请换个网络或WiFi试试')); }, 90000);
-    });
-
-    var worker;
-    try {
-      worker = await Promise.race([
-        Tesseract.createWorker(lang, 1, {
-          workerPath: WORKER_PATH,
-          corePath: CORE_PATH,
-          langPath: LANG_PATH,
-          gzip: true,
-          logger: function(m) {
-            if (m.status === 'loading language traineddata') {
-              updateProgress(20, '正在下载中文语言包（约10MB，仅首次）...');
-            } else if (m.status === 'initializing api') {
-              updateProgress(60, '正在初始化识别引擎...');
-            } else if (m.status === 'loading tesseract core') {
-              updateProgress(10, '正在加载识别核心...');
-            }
-          }
-        }),
-        timeoutPromise
-      ]);
-    } catch(initErr) {
-      throw initErr;
-    }
-
-    var allText = [];
+    // 先测试百度服务是否可用（第一张图试一下）
+    updateProgress(5, '正在连接识别服务...');
 
     for (var i = 0; i < images.length; i++) {
       images[i].status = 'proc';
       renderList();
       updateProgress(
-        Math.round(70 + (i / images.length) * 25),
+        Math.round(10 + (i / images.length) * 80),
         '正在识别第 ' + (i+1) + '/' + images.length + ' 张...'
       );
 
-      try {
-        updateProgress(
-          Math.round(70 + (i / images.length) * 25),
-          '正在增强并识别第 ' + (i+1) + '/' + images.length + ' 张...'
-        );
-        var processed = await preprocessImage(images[i].dataUrl);
-        var ret = await worker.recognize(processed);
-        var text = (ret.data.text || '').trim();
-        images[i].text = text;
-        images[i].status = 'ok';
-        allText.push(text);
-      } catch(e) {
-        console.error('OCR error for image', i, e);
-        images[i].status = 'err';
-        images[i].text = '[识别失败]';
-        allText.push('[第' + (i+1) + '张识别失败]');
+      var text = '';
+      var tryLocal = false;
+
+      if (useBaidu) {
+        try {
+          text = await recognizeBaidu(images[i].dataUrl);
+          engineName = '百度高精度';
+        } catch(e) {
+          console.warn('百度OCR失败，切换本地引擎:', e.message);
+          useBaidu = false;
+          tryLocal = true;
+          engineName = '本地引擎';
+        }
       }
+
+      if (!useBaidu) {
+        try {
+          if (i === 0 || tryLocal) {
+            updateProgress(
+              Math.round(10 + (i / images.length) * 80),
+              '正在加载本地识别引擎（首次需10-30秒）...'
+            );
+          }
+          text = await recognizeTesseract(images[i].dataUrl);
+        } catch(e2) {
+          console.error('本地OCR也失败:', e2);
+          text = '';
+        }
+      }
+
+      images[i].text = text;
+      images[i].status = text ? 'ok' : 'err';
+      if (text) allText.push(text);
       renderList();
     }
 
-    await worker.terminate();
-
     updateProgress(95, '正在整理结果...');
 
-    // 合并结果，图片之间用换行分隔
-    var fullText = allText.filter(function(t) {
-      return t && t !== '[识别失败]';
-    }).join('\n\n');
+    var fullText = allText.join('\n\n');
 
     document.getElementById('resultText').value = fullText;
-    document.getElementById('resultCount').textContent = '(' + fullText.length + '字)';
+    document.getElementById('resultCount').textContent = '(' + fullText.length + '字 · ' + engineName + ')';
     document.getElementById('resultCard').style.display = '';
     updateProgress(100, '识别完成！');
 
@@ -534,14 +480,13 @@ async function startRecognize() {
 
   } catch(err) {
     console.error(err);
-    showToast('识别失败：' + (err.message || '请检查网络后重试'));
+    showToast('识别失败：' + (err.message || '请重试'));
     document.getElementById('progressBox').classList.remove('show');
   } finally {
     recognizing = false;
     btn.disabled = false;
     document.getElementById('btnIcon').textContent = '🔍';
     document.getElementById('btnText').textContent = '重新识别';
-    // 恢复删除按钮
     renderList();
   }
 }
@@ -638,7 +583,6 @@ function exportPdf() {
     var startY = margin;
     var y = startY;
 
-    // 按行拆分，自动换行
     var lines = doc.splitTextToSize(text, maxW);
 
     for (var i = 0; i < lines.length; i++) {
