@@ -595,7 +595,11 @@ function exportOCRtxt() {
 // ocrData: {text, lines, paragraphs, image_width, image_height, _canvasW, _canvasH}
 function analyzeLayout(ocrData) {
   if (!ocrData || !ocrData.lines || !ocrData.lines.length) return [];
-  var lines = ocrData.lines.slice();
+  // 过滤空行/纯空格行（OCR有时识别出无意义空片段）
+  var lines = ocrData.lines.filter(function(l) {
+    return l.text && l.text.replace(/\s+/g,'').length > 0;
+  });
+  if (!lines.length) return [];
 
   // 使用canvas真实尺寸（优先），其次用OCR估算
   var imgW = ocrData._canvasW || ocrData.image_width || 1000;
@@ -869,13 +873,11 @@ function analyzeLayout(ocrData) {
 
 // ===== 像素高度转Word半磅（half-points）=====
 function pixelToHalfPoints(pixelH, imgH) {
-  // 假设图片DPI约为150（手机拍照常见），则1px = 1/150 inch
-  // 1pt = 1/72 inch, 所以 1px = 72/150 pt = 0.48pt
-  // half-points = pt * 2
-  var pt = pixelH * 0.48;
-  // 限制范围
+  // A4纸高16838twips=11.69inch，图片按A4拍摄DPI≈170
+  // 1px = 1/170 inch, 1pt = 1/72 inch, 所以 1px = 72/170 ≈ 0.424pt
+  var pt = pixelH * 0.42;
   if (pt < 9) pt = 9;
-  if (pt > 28) pt = 28;
+  if (pt > 26) pt = 26;
   return Math.round(pt * 2);
 }
 
@@ -906,22 +908,22 @@ function buildDocxParasFromLayout(allPagesData, docx) {
 
       if (el.type === 'title') {
         var sz = pixelToHalfPoints(el.height, pageData.imgH);
-        if (sz < 24) sz = 24;
+        if (sz < 28) sz = 28; // 标题至少14pt
         opts.alignment = docx.AlignmentType.CENTER;
-        opts.spacing = { before: 200, after: 400, line: 360 };
+        opts.spacing = { before: 0, after: 240, line: 300, lineRule: 'auto' };
         opts.children = [new docx.TextRun({
           text: el.text, font: CN_FONT, size: sz, bold: true
         })];
       } else if (el.type === 'heading') {
         var hsz = pixelToHalfPoints(el.height, pageData.imgH);
-        if (hsz < 20) hsz = 20;
-        opts.spacing = { before: 280, after: 120, line: 340 };
+        if (hsz < 24) hsz = 24; // 条款标题至少12pt
+        opts.spacing = { before: 180, after: 80, line: 280, lineRule: 'auto' };
         opts.children = [new docx.TextRun({
           text: el.text, font: CN_FONT, size: hsz, bold: true
         })];
       } else if (el.isMulticol && el.cells && el.cells.length >= 2) {
         // 多列行：用制表位对齐，使用合并后的cells
-        opts.spacing = { after: 40, line: 320 };
+        opts.spacing = { after: 20, line: 280, lineRule: 'auto' };
         var runs = [];
         var tabPositions = [];
         // 第一个cell的left作为基准
@@ -944,7 +946,8 @@ function buildDocxParasFromLayout(allPagesData, docx) {
       } else {
         // 正文
         var bsz = pixelToHalfPoints(el.height, pageData.imgH);
-        opts.spacing = { after: 40, line: 360 };
+        if (bsz < 24) bsz = 24; // 正文至少12pt（小四）
+        opts.spacing = { after: 20, line: 300, lineRule: 'auto' };
         // 正文两端对齐
         opts.alignment = docx.AlignmentType.JUSTIFIED;
         if (el.indent) {
