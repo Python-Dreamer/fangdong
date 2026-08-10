@@ -223,10 +223,10 @@ body {
 </div>
 
 <div class="bottom-bar" id="bottomBar" style="display:none">
-  <button class="bbtn bbtn-pdf" onclick="exportPDF()">📕 生成PDF</button>
-  <button class="bbtn bbtn-ocr" onclick="runOCR()">🔍 识别文字</button>
-  <button class="bbtn bbtn-word" onclick="exportWordFromOCR()">📘 导出Word</button>
-
+  <button class="bbtn bbtn-pdf" onclick="exportPDF()">📕 PDF</button>
+  <button class="bbtn bbtn-ocr" onclick="runOCR()">🔍 识别</button>
+  <button class="bbtn bbtn-word" onclick="exportWordFromOCR()">📝 可编辑</button>
+  <button class="bbtn" onclick="exportWordImage()" style="background:#3b82f6;color:#fff">📷 原图</button>
 </div>
 
 <div class="progress-mask" id="progressMask">
@@ -249,7 +249,8 @@ body {
     <div class="ocr-footer">
       <button class="of-copy" onclick="copyOCR()">📋 复制</button>
       <button class="of-txt" onclick="exportOCRtxt()">📄 TXT</button>
-      <button class="of-word" onclick="exportOCRword()">📘 Word</button>
+      <button class="of-word" onclick="exportOCRword()">📝 可编辑Word</button>
+      <button class="of-word" onclick="exportOCRwordImage()" style="background:#3b82f6">📷 原图Word</button>
     </div>
   </div>
 </div>
@@ -599,11 +600,12 @@ function classifyParagraphs(ocrData) {
   var imgW = ocrData.image_width || 1000;
   var imgH = ocrData.image_height || 1000;
 
-  // 计算正文字高中位数
-  var heights = paras.map(function(p) { return p.height; }).sort(function(a,b){return a-b;});
+  // 只统计有效高度（>5px）的段落作为基准
+  var valid = paras.filter(function(p) { return p.height > 5; });
+  var heights = (valid.length ? valid : paras).map(function(p) { return p.height; }).sort(function(a,b){return a-b;});
   var medianH = heights[Math.floor(heights.length / 2)] || 20;
+  if (medianH < 8) medianH = 20; // 兜底
 
-  // 计算正文左边界中位数（用于判断缩进）
   var lefts = paras.map(function(p){return p.left;}).sort(function(a,b){return a-b;});
   var medianLeft = lefts[Math.floor(lefts.length / 2)] || 0;
 
@@ -612,18 +614,22 @@ function classifyParagraphs(ocrData) {
     var p = paras[i];
     var text = p.text;
     var h = p.height;
-    var ratio = medianH > 0 ? h / medianH : 1;
-    var relWidth = p.width / imgW;
+    var ratio = h > 0 ? h / medianH : 1;
+    var relWidth = imgW > 0 ? p.width / imgW : 0.5;
     var centerX = p.left + p.width / 2;
     var pageCenter = imgW / 2;
-    var isCentered = Math.abs(centerX - pageCenter) < imgW * 0.08;
+    var isCentered = imgW > 0 && Math.abs(centerX - pageCenter) < imgW * 0.1;
     var isTop = p.top < imgH * 0.12;
-    var isShort = text.length <= 20;
-    var isHeadingPattern = /^(第[一二三四五六七八九十百千0-9]+[章节条篇部]|[一二三四五六七八九十]+[、.．])/.test(text);
-    var isTitle = isTop && isCentered && isShort && ratio >= 1.15 && relWidth < 0.7;
-    var isHeading = (!isTitle && ratio >= 1.08 && isShort) || isHeadingPattern;
-    var isIndented = p.left > medianLeft + imgW * 0.03;
-    var isLongPara = text.length > 25;
+    var isShort = text.length <= 22;
+    var isHeadingPattern = /^(第[一二三四五六七八九十百千0-9]+[章节条篇部、.．]|[一二三四五六七八九十]+[、.．]|[0-9]+[.、][\u4e00-\u9fa5])/.test(text);
+    // 标题：顶部+居中+短+字号偏大 OR 明显标题模式
+    var isTitle = (isTop && isCentered && isShort && ratio >= 1.1 && relWidth < 0.7)
+               || (isTop && isCentered && isShort && isHeadingPattern && text.length < 12);
+    // 条款：字号略大且短，或匹配"第X条"等模式
+    var isHeading = !isTitle && ((ratio >= 1.08 && isShort) ||
+                   (isHeadingPattern && text.length <= 30));
+    var isIndented = p.left > medianLeft + Math.max(20, imgW * 0.03);
+    var isLongPara = text.length > 30;
 
     result.push({
       text: text,
@@ -741,12 +747,72 @@ function exportOCRword() {
     var doc = buildFormattedWord();
     window.docx.Packer.toBlob(doc).then(function(blob) {
       saveAs(blob, '识别结果_' + Date.now() + '.docx');
-      showToast('Word已下载');
+      showToast('可编辑Word已下载');
     });
   } catch(e) { showToast('Word导出失败：' + e.message); }
 }
 
-// ===== 导出Word（底部按钮，自动OCR+格式化）=====
+// ===== 导出原图Word（弹窗内按钮，不需要OCR）=====
+function exportOCRwordImage() {
+  if (!pages.length) { showToast('没有图片'); return; }
+  try {
+    var docx = window.docx;
+    var children = buildImageWordChildren(docx);
+    var doc = new docx.Document({
+      sections: [{
+        properties: {
+          page: {
+            size: { width: 11906, height: 16838 },
+            margin: { top: 720, bottom: 720, left: 720, right: 720 }
+          }
+        },
+        children: children
+      }]
+    });
+    docx.Packer.toBlob(doc).then(function(blob) {
+      saveAs(blob, '扫描原图_' + Date.now() + '.docx');
+      showToast('原图Word已下载');
+    });
+  } catch(e) { showToast('Word导出失败：' + e.message); }
+}
+
+// ===== 构建图片Word的children（每页一张图，原版式100%保留）=====
+function buildImageWordChildren(docx) {
+  var children = [];
+  for (var i = 0; i < pages.length; i++) {
+    var cv = pages[i].canvas;
+    // 控制图片宽度适应A4页面（A4可用宽度约450pt = 600px @96dpi）
+    var maxW = 600;
+    var w = cv.width, h = cv.height;
+    var scale = w > maxW ? maxW / w : 1;
+    var tmp = document.createElement('canvas');
+    tmp.width = Math.round(w * scale);
+    tmp.height = Math.round(h * scale);
+    tmp.getContext('2d').drawImage(cv, 0, 0, tmp.width, tmp.height);
+    var b64 = tmp.toDataURL('image/jpeg', 0.9).split(',')[1];
+
+    children.push(new docx.Paragraph({
+      children: [new docx.ImageRun({
+        data: b64,
+        transformation: {
+          width: Math.round(tmp.width * 0.75),  // px to dxa
+          height: Math.round(tmp.height * 0.75)
+        }
+      })],
+      alignment: docx.AlignmentType.CENTER,
+      spacing: { after: 0 }
+    }));
+
+    if (i < pages.length - 1) {
+      children.push(new docx.Paragraph({
+        children: [new docx.PageBreak()]
+      }));
+    }
+  }
+  return children;
+}
+
+// ===== 导出可编辑Word（底部按钮，自动OCR+格式化）=====
 async function exportWordFromOCR() {
   if (!pages.length) return;
   try {
@@ -755,13 +821,44 @@ async function exportWordFromOCR() {
     hideProg();
     var doc = buildFormattedWord();
     window.docx.Packer.toBlob(doc).then(function(blob) {
-      saveAs(blob, '扫描件_' + Date.now() + '.docx');
-      showToast('Word已生成，共' + pages.length + '页');
+      saveAs(blob, '扫描件_可编辑_' + Date.now() + '.docx');
+      showToast('可编辑Word已生成，共' + pages.length + '页');
     });
   } catch(e) {
     hideProg();
     showToast('Word生成失败：' + e.message);
   }
+}
+
+// ===== 导出原图Word（底部按钮，不需要OCR，100%原版式）=====
+function exportWordImage() {
+  if (!pages.length) return;
+  showProg('正在生成原图Word...', pages.length + '页');
+  setTimeout(function() {
+    try {
+      var docx = window.docx;
+      var children = buildImageWordChildren(docx);
+      var doc = new docx.Document({
+        sections: [{
+          properties: {
+            page: {
+              size: { width: 11906, height: 16838 },
+              margin: { top: 720, bottom: 720, left: 720, right: 720 }
+            }
+          },
+          children: children
+        }]
+      });
+      docx.Packer.toBlob(doc).then(function(blob) {
+        saveAs(blob, '扫描件_原图_' + Date.now() + '.docx');
+        hideProg();
+        showToast('原图Word已生成，共' + pages.length + '页');
+      });
+    } catch(e) {
+      hideProg();
+      showToast('Word生成失败：' + e.message);
+    }
+  }, 100);
 }
 
 function showToast(msg) {

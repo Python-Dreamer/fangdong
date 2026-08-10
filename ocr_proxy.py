@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """百度OCR代理服务 - 监听127.0.0.1:8889，nginx反代 /api/ocr/
-返回结构化数据：text(纯文本) + paragraphs(带位置的段落) + lines(带位置的行)
+使用 general 接口（带位置坐标），返回结构化数据用于智能排版。
+每天免费1000次。
 """
 
 import json
@@ -34,18 +35,45 @@ def get_access_token():
     return _token_cache['token']
 
 
-def baidu_ocr(image_base64, accurate=True):
+def extract_location(w):
+    """从百度返回中提取位置，支持 location dict 和 vertexes 多边形两种格式"""
+    loc = w.get('location', {})
+    if loc and loc.get('width', 0) > 0:
+        return {
+            'top': loc.get('top', 0),
+            'left': loc.get('left', 0),
+            'width': loc.get('width', 0),
+            'height': loc.get('height', 0)
+        }
+    v = w.get('vertexes', [])
+    if v and len(v) >= 4:
+        xs = [p.get('x', 0) for p in v]
+        ys = [p.get('y', 0) for p in v]
+        left = min(xs)
+        top = min(ys)
+        return {
+            'top': top,
+            'left': left,
+            'width': max(xs) - left,
+            'height': max(ys) - top
+        }
+    return {'top': 0, 'left': 0, 'width': 0, 'height': 0}
+
+
+def baidu_ocr(image_base64, accurate=False):
     token = get_access_token()
-    if accurate:
-        url = f'https://aip.baidubce.com/rest/2.0/ocr/v1/accurate_basic?access_token={token}'
-    else:
-        url = f'https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic?access_token={token}'
+    # 用 general（标准版）带 vertexes_location，返回位置坐标
+    # 高精度版 accurate_basic 不返回位置，无法做排版分析
+    # general 每天免费1000次，带位置后精度对中文文档足够
+    url = f'https://aip.baidubce.com/rest/2.0/ocr/v1/general?access_token={token}'
 
     post_data = urllib.parse.urlencode({
         'image': image_base64,
         'language_type': 'CHN_ENG',
         'detect_direction': 'true',
-        'paragraph': 'true'
+        'paragraph': 'true',
+        'vertexes_location': 'true',
+        'probability': 'false'
     }).encode()
 
     req = urllib.request.Request(url, data=post_data, method='POST')
@@ -59,20 +87,21 @@ def baidu_ocr(image_base64, accurate=True):
     words_list = result.get('words_result', [])
     paragraphs_raw = result.get('paragraphs_result', [])
     direction = result.get('direction', 0)
+    pdf_total = result.get('pdf_total', 0)
 
     # 构建带位置的行对象
     lines = []
     for i, w in enumerate(words_list):
-        loc = w.get('location', {})
+        loc = extract_location(w)
         text = w.get('words', '').strip()
         if text:
             lines.append({
                 'i': i,
                 'text': text,
-                'top': loc.get('top', 0),
-                'left': loc.get('left', 0),
-                'width': loc.get('width', 0),
-                'height': loc.get('height', 0)
+                'top': loc['top'],
+                'left': loc['left'],
+                'width': loc['width'],
+                'height': loc['height']
             })
 
     # 构建带位置的段落对象
@@ -86,10 +115,11 @@ def baidu_ocr(image_base64, accurate=True):
             text = ''.join(words_list[i].get('words', '') for i in valid).strip()
             if not text:
                 continue
-            tops = [words_list[i].get('location', {}).get('top', 0) for i in valid]
-            lefts = [words_list[i].get('location', {}).get('left', 0) for i in valid]
-            rights = [words_list[i].get('location', {}).get('left', 0) + words_list[i].get('location', {}).get('width', 0) for i in valid]
-            bots = [words_list[i].get('location', {}).get('top', 0) + words_list[i].get('location', {}).get('height', 0) for i in valid]
+            locs = [extract_location(words_list[i]) for i in valid]
+            tops = [l['top'] for l in locs]
+            lefts = [l['left'] for l in locs]
+            rights = [l['left'] + l['width'] for l in locs]
+            bots = [l['top'] + l['height'] for l in locs]
             paras.append({
                 'text': text,
                 'top': min(tops),
@@ -146,7 +176,7 @@ class OCRHandler(BaseHTTPRequestHandler):
             data = json.loads(body)
 
             image_b64 = data.get('image', '')
-            accurate = data.get('accurate', True)
+            accurate = data.get('accurate', False)  # 默认False，用带位置的标准版
 
             if not image_b64:
                 self._json_resp(400, {'error': '缺少图片数据'})
