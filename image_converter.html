@@ -591,7 +591,7 @@ function exportOCRtxt() {
   showToast('TXT已下载');
 }
 
-// ===== 版面分析引擎 v3：基于真实canvas尺寸+段落重组 =====
+// ===== 版面分析引擎 v4：单元格合并+智能多列检测 =====
 // ocrData: {text, lines, paragraphs, image_width, image_height, _canvasW, _canvasH}
 function analyzeLayout(ocrData) {
   if (!ocrData || !ocrData.lines || !ocrData.lines.length) return [];
@@ -601,11 +601,20 @@ function analyzeLayout(ocrData) {
   var imgW = ocrData._canvasW || ocrData.image_width || 1000;
   var imgH = ocrData._canvasH || ocrData.image_height || 1000;
 
-  // DPI换算：图片像素到Word dxa(twips)的比例
-  // A4宽度11906twips，左右边距各1440，可用9026twips
-  // 图片内容区域约占图片宽度的85%（有页边距），所以：
-  var contentAreaW = imgW * 0.82; // 图片中文字内容区宽度
-  var SCALE = 9026 / contentAreaW; // 每像素对应多少twips
+  // 计算正文字高中位数
+  var heights = lines.map(function(l){return l.height;}).filter(function(h){return h>5;}).sort(function(a,b){return a-b;});
+  var medianH = heights[Math.floor(heights.length/2)] || 28;
+  if (medianH < 10) medianH = 28;
+
+  // DPI换算：基于所有文字行的实际左右边界计算内容区域
+  var allLefts = lines.map(function(l){return l.left;});
+  var allRights = lines.map(function(l){return l.left + l.width;});
+  var contentLeft = Math.min.apply(null, allLefts);
+  var contentRight = Math.max.apply(null, allRights);
+  var contentAreaW = contentRight - contentLeft;
+  if (contentAreaW < imgW * 0.3) contentAreaW = imgW * 0.7; // 兜底
+  // A4可用宽度9026twips，SCALE = 9026 / 内容区像素宽
+  var SCALE = 9026 / contentAreaW;
 
   // 按top排序，同top按left排序
   lines.sort(function(a, b) {
@@ -613,13 +622,7 @@ function analyzeLayout(ocrData) {
     return a.left - b.left;
   });
 
-  // 计算正文字高中位数
-  var heights = lines.map(function(l){return l.height;}).filter(function(h){return h>5;}).sort(function(a,b){return a-b;});
-  var medianH = heights[Math.floor(heights.length/2)] || 28;
-  if (medianH < 10) medianH = 28;
-
-  // ========== 第一步：将OCR行组合为"视觉行"（同排多列合并）==========
-  // 判断两行是否在同一视觉行：垂直中心接近 + 垂直范围重叠
+  // ========== 第一步：将OCR行组合为"视觉行"（同排合并）==========
   var visualRows = [];
   var used = {};
   for (var i = 0; i < lines.length; i++) {
@@ -640,36 +643,70 @@ function analyzeLayout(ocrData) {
       }
     }
     row.segments.sort(function(a,b){return a.left - b.left;});
-    row.left = Math.min.apply(null, row.segments.map(function(s){return s.left;}));
-    row.right = Math.max.apply(null, row.segments.map(function(s){return s.left + s.width;}));
+
+    // ★ 关键修复：将间距小的相邻segments合并为"单元格"
+    // OCR常把"出租人（甲方）："和"熊永燕"拆成两个片段，但它们属于同一列
+    // 间距 < medianH*1.8 的合并为同一单元格，间距大的才是列与列之间的分界
+    var cells = [];
+    for (var si = 0; si < row.segments.length; si++) {
+      var seg = row.segments[si];
+      if (cells.length === 0) {
+        cells.push({ text: seg.text, left: seg.left, top: seg.top,
+                     right: seg.left + seg.width, bottom: seg.top + seg.height,
+                     height: seg.height, width: seg.width });
+      } else {
+        var lastCell = cells[cells.length - 1];
+        var cellGap = seg.left - lastCell.right;
+        if (cellGap < medianH * 1.8) {
+          // 间距小，合并到当前单元格
+          lastCell.text += seg.text;
+          lastCell.right = Math.max(lastCell.right, seg.left + seg.width);
+          lastCell.bottom = Math.max(lastCell.bottom, seg.top + seg.height);
+          lastCell.top = Math.min(lastCell.top, seg.top);
+          lastCell.width = lastCell.right - lastCell.left;
+          lastCell.height = Math.max(lastCell.height, seg.height);
+        } else {
+          // 间距大，新建单元格（新的一列）
+          cells.push({ text: seg.text, left: seg.left, top: seg.top,
+                       right: seg.left + seg.width, bottom: seg.top + seg.height,
+                       height: seg.height, width: seg.width });
+        }
+      }
+    }
+    row.cells = cells;
+    row.left = cells[0].left;
+    row.right = cells[cells.length - 1].right;
     row.avgH = row.segments.reduce(function(s,l){return s+l.height;},0) / row.segments.length;
-    row.text = row.segments.map(function(s){return s.text;}).join('');
+    row.text = cells.map(function(c){return c.text;}).join('  ');
     visualRows.push(row);
   }
   visualRows.sort(function(a,b){return a.top - b.top;});
 
-  // ========== 第二步：判断是否为真正的多列行 ==========
-  // 关键：如果相邻segments水平重叠或间距很小，说明是同一段落的自然换行（两端对齐导致的空隙）
-  // 如果水平不重叠且间距大，才是真正的多列
+  // ========== 第二步：基于单元格判断多列行 ==========
   function isMultiColumn(row) {
-    if (row.segments.length < 2) return false;
-    // 真正的多列行：每个segment都较短（标签/字段），且间距大
-    // 两端对齐的正文换行：segment较长，虽然间距大但是同一段落
-    var allShort = row.segments.every(function(s) {
-      return s.text.replace(/\s+/g,'').length <= 20;
+    if (!row.cells || row.cells.length < 2) return false;
+    // 多列行是表单/标签行：总文本短，每个cell短，且跨整个内容宽度
+    var totalText = row.cells.map(function(c){return c.text;}).join('');
+    var totalLen = totalText.replace(/\s+/g,'').length;
+    if (totalLen > 80) return false;
+    // 每个单元格都较短（标签+值≤30字，如身份证号18位）
+    var allCellShort = row.cells.every(function(c) {
+      return c.text.replace(/\s+/g,'').length <= 30;
     });
-    // 至少有一个segment是短标签，且整体文本不长
-    var hasShortLabel = row.segments.some(function(s) {
-      return s.text.replace(/\s+/g,'').length <= 12;
-    });
-    if (!allShort && !hasShortLabel) return false;
-
-    for (var k = 0; k < row.segments.length - 1; k++) {
-      var a = row.segments[k], b = row.segments[k+1];
-      var aRight = a.left + a.width;
-      var gap = b.left - aRight;
-      if (gap < medianH * 2.5) return false;
+    if (!allCellShort) return false;
+    // 单元格间距大（> medianH*2.0），确认是列分隔
+    for (var k = 0; k < row.cells.length - 1; k++) {
+      var gap = row.cells[k+1].left - row.cells[k].right;
+      if (gap < medianH * 2.0) return false;
     }
+    // 整行宽度至少占内容区域的40%
+    var rowWidth = row.cells[row.cells.length-1].right - row.cells[0].left;
+    if (rowWidth < contentAreaW * 0.4) return false;
+    // ★ 关键：表单行至少有一个cell含冒号（标签：值模式），正文两端对齐换行没有冒号
+    var hasColon = row.cells.some(function(c) {
+      return /[：:]/.test(c.text);
+    });
+    if (!hasColon) return false;
     return true;
   }
 
@@ -699,7 +736,7 @@ function analyzeLayout(ocrData) {
     var isTitlePat = /(合同|协议|责任书|证明|委托书|申请书|清单|报告|通知|守则|制度)$/.test(allText) && allText.length <= 20;
 
     // 判断是否是条款标题
-    var isHeadingPat = /^(第[一二三四五六七八九十百千0-9]+[章节条篇部、.．]|[一二三四五六七八九十]+[、.．]|[0-9]+[.、]\s*[\u4e00-\u9fa5])/.test(allText);
+    var isHeadingPat = /^(第[一二三四五六七八九十百千0-9]+[章节条篇部、.．]|[一二三四五六七八九十]+[、.．])/.test(allText);
     var isSingleShort = paraBuf.length === 1 && isShort;
 
     var type = 'body';
@@ -746,12 +783,12 @@ function analyzeLayout(ocrData) {
       // 先冲刷缓冲的段落
       flushPara();
       var ratio = vr.avgH / medianH;
-      // 多列行（表单字段等）
-      var colTexts = vr.segments.map(function(s){return s.text;});
+      // 多列行（表单字段等），使用合并后的cells
       var isHeading = /^(第[一二三四五六七八九十百千0-9]+[章节条篇部、.．]|[一二三四五六七八九十]+[、.．])/.test(vr.text);
       elements.push({
         type: isHeading ? 'heading' : 'multicol',
         text: vr.text,
+        cells: vr.cells,
         segments: vr.segments,
         indent: false,
         height: vr.avgH,
@@ -762,16 +799,16 @@ function analyzeLayout(ocrData) {
         pixelH: vr.avgH
       });
     } else {
-      // 单列行（可能是两端对齐被拆成多segment，需要拆开）
-      if (vr.segments.length > 1) {
-        // 把多segment拆成独立的虚拟行，按顺序加入段落缓冲
-        for (var si = 0; si < vr.segments.length; si++) {
-          var seg = vr.segments[si];
+      // 单列行（可能是两端对齐被拆成多segment/cell，需要拆开）
+      if (vr.cells.length > 1) {
+        // 把多cell拆成独立的虚拟行，按顺序加入段落缓冲
+        for (var si = 0; si < vr.cells.length; si++) {
+          var cell = vr.cells[si];
           var vrow = {
-            segments: [seg], text: seg.text,
-            top: seg.top, bottom: seg.top + seg.height,
-            left: seg.left, right: seg.left + seg.width,
-            avgH: seg.height || medianH
+            segments: [cell], text: cell.text,
+            top: cell.top, bottom: cell.bottom,
+            left: cell.left, right: cell.right,
+            avgH: cell.height || medianH
           };
           if (paraBuf.length > 0) {
             var prev2 = paraBuf[paraBuf.length - 1];
@@ -786,7 +823,7 @@ function analyzeLayout(ocrData) {
         continue;
       }
       // 真正的单列行
-      var headPattern = /^(第[一二三四五六七八九十百千0-9]+[章节条篇部、.．]|[一二三四五六七八九十]+[、.．]|[0-9]+[.、]\s*[\u4e00-\u9fa5])/;
+      var headPattern = /^(第[一二三四五六七八九十百千0-9]+[章节条篇部、.．]|[一二三四五六七八九十]+[、.．])/;
       var curIsHead = headPattern.test(vr.text) && vr.text.length <= 40;
 
       // 条款标题直接输出，不进入段落缓冲
@@ -826,6 +863,7 @@ function analyzeLayout(ocrData) {
   // 附加SCALE供Word构建使用
   elements._SCALE = SCALE;
   elements._imgW = imgW;
+  elements._contentLeft = contentLeft;
   return elements;
 }
 
@@ -856,44 +894,49 @@ function buildDocxParasFromLayout(allPagesData, docx) {
       children.push(new docx.Paragraph({ children: [new docx.PageBreak()] }));
     }
 
-    var SCALE = pageData.SCALE || (9026 / (pageData.imgW * 0.82));
+    var SCALE = pageData.SCALE || (9026 / (pageData.imgW * 0.7));
+    // 内容左边界，用于计算相对位置
+    var contentLeftPx = pageData.contentLeft || 0;
     var elements = pageData.elements;
 
     for (var i = 0; i < elements.length; i++) {
       var el = elements[i];
       var opts = { children: [] };
+      var CN_FONT = 'SimSun'; // 宋体，更接近合同文档
 
       if (el.type === 'title') {
         var sz = pixelToHalfPoints(el.height, pageData.imgH);
-        if (sz < 24) sz = 24; // 标题至少12pt
+        if (sz < 24) sz = 24;
         opts.alignment = docx.AlignmentType.CENTER;
         opts.spacing = { before: 200, after: 400, line: 360 };
         opts.children = [new docx.TextRun({
-          text: el.text, font: 'Microsoft YaHei', size: sz, bold: true
+          text: el.text, font: CN_FONT, size: sz, bold: true
         })];
       } else if (el.type === 'heading') {
         var hsz = pixelToHalfPoints(el.height, pageData.imgH);
         if (hsz < 20) hsz = 20;
         opts.spacing = { before: 280, after: 120, line: 340 };
         opts.children = [new docx.TextRun({
-          text: el.text, font: 'Microsoft YaHei', size: hsz, bold: true
+          text: el.text, font: CN_FONT, size: hsz, bold: true
         })];
-      } else if (el.isMulticol && el.segments && el.segments.length >= 2) {
-        // 多列行：用制表位对齐
+      } else if (el.isMulticol && el.cells && el.cells.length >= 2) {
+        // 多列行：用制表位对齐，使用合并后的cells
         opts.spacing = { after: 40, line: 320 };
         var runs = [];
         var tabPositions = [];
-        for (var s = 0; s < el.segments.length; s++) {
+        // 第一个cell的left作为基准
+        var baseLeft = el.cells[0].left;
+        for (var s = 0; s < el.cells.length; s++) {
           if (s > 0) {
-            runs.push(new docx.TextRun({ text: '\t', font: 'Microsoft YaHei', size: 22 }));
-            // 计算这个segment的左边界对应的twips位置
-            var tabPos = Math.round((el.segments[s].left - 40) * SCALE);
+            runs.push(new docx.TextRun({ text: '\t', font: CN_FONT, size: 22 }));
+            // tab位置 = (该cell的left - 第一个cell的left) * SCALE
+            var tabPos = Math.round((el.cells[s].left - baseLeft) * SCALE);
             if (tabPos < 0) tabPos = 0;
             if (tabPos > PAGE_CONTENT_W) tabPos = PAGE_CONTENT_W;
             tabPositions.push({ type: TabStopType.LEFT, position: tabPos });
           }
           runs.push(new docx.TextRun({
-            text: el.segments[s].text, font: 'Microsoft YaHei', size: 22
+            text: el.cells[s].text, font: CN_FONT, size: 22
           }));
         }
         opts.children = runs;
@@ -902,11 +945,13 @@ function buildDocxParasFromLayout(allPagesData, docx) {
         // 正文
         var bsz = pixelToHalfPoints(el.height, pageData.imgH);
         opts.spacing = { after: 40, line: 360 };
+        // 正文两端对齐
+        opts.alignment = docx.AlignmentType.JUSTIFIED;
         if (el.indent) {
-          opts.indent = { firstLine: 480 }; // 2字符缩进
+          opts.indent = { firstLine: 480 };
         }
         opts.children = [new docx.TextRun({
-          text: el.text, font: 'Microsoft YaHei', size: bsz
+          text: el.text, font: CN_FONT, size: bsz
         })];
       }
       children.push(new docx.Paragraph(opts));
@@ -927,12 +972,13 @@ function buildFormattedWord() {
     r._canvasW = canvasW;
     r._canvasH = canvasH;
     var elements = analyzeLayout(r);
-    var SCALE = elements._SCALE || (9026 / (canvasW * 0.82));
+    var SCALE = elements._SCALE || (9026 / (canvasW * 0.7));
     return {
       elements: elements,
       SCALE: SCALE,
       imgW: canvasW,
-      imgH: canvasH
+      imgH: canvasH,
+      contentLeft: elements._contentLeft || 0
     };
   }).filter(Boolean);
 
