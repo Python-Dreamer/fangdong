@@ -226,6 +226,7 @@ body {
   <button class="bbtn bbtn-pdf" onclick="exportPDF()">📕 生成PDF</button>
   <button class="bbtn bbtn-ocr" onclick="runOCR()">🔍 识别文字</button>
   <button class="bbtn bbtn-word" onclick="exportWordFromOCR()">📘 导出Word</button>
+
 </div>
 
 <div class="progress-mask" id="progressMask">
@@ -607,12 +608,66 @@ function exportOCRword() {
 }
 
 function exportWordFromOCR() {
-  if (!ocrResultText) {
-    showToast('请先识别文字');
-    setTimeout(function() { runOCR(); }, 500);
-    return;
-  }
-  exportOCRword();
+  if (!pages.length) return;
+  showProg('正在生成Word...', pages.length + '页');
+  setTimeout(function() {
+    try {
+      var docx = window.docx;
+      var children = [];
+      for (var i = 0; i < pages.length; i++) {
+        var cv = pages[i].canvas;
+        // 转base64，压缩尺寸
+        var maxW = 600;
+        var w = cv.width, h = cv.height;
+        var scale = w > maxW ? maxW / w : 1;
+        var tmp = document.createElement('canvas');
+        tmp.width = Math.round(w * scale);
+        tmp.height = Math.round(h * scale);
+        tmp.getContext('2d').drawImage(cv, 0, 0, tmp.width, tmp.height);
+        var dataUrl = tmp.toDataURL('image/jpeg', 0.85);
+        var b64 = dataUrl.split(',')[1];
+
+        children.push(new docx.Paragraph({
+          children: [new docx.ImageRun({
+            data: b64,
+            transformation: {
+              width: Math.round(tmp.width * 0.75),
+              height: Math.round(tmp.height * 0.75)
+            }
+          })],
+          alignment: docx.AlignmentType.CENTER,
+          spacing: { after: 200 }
+        }));
+
+        if (i < pages.length - 1) {
+          children.push(new docx.Paragraph({
+            children: [new docx.PageBreak()]
+          }));
+        }
+      }
+
+      var doc = new docx.Document({
+        sections: [{
+          properties: {
+            page: {
+              size: { width: 11906, height: 16838 },
+              margin: { top: 720, bottom: 720, left: 720, right: 720 }
+            }
+          },
+          children: children
+        }]
+      });
+
+      docx.Packer.toBlob(doc).then(function(blob) {
+        saveAs(blob, '扫描件_' + Date.now() + '.docx');
+        hideProg();
+        showToast('Word已生成，共' + pages.length + '页');
+      });
+    } catch(e) {
+      hideProg();
+      showToast('Word生成失败：' + e.message);
+    }
+  }, 100);
 }
 
 function showToast(msg) {
