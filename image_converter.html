@@ -265,6 +265,7 @@ body {
 var pages = []; // {id, imgEl, canvas, filter, name}
 var pid = 0;
 var ocrResultText = '';
+var ocrResults = []; // 每页的结构化OCR结果 [{text, lines, paragraphs, image_width, image_height}]
 
 document.getElementById('cameraInput').addEventListener('change', function(e) {
   handleFiles(e.target.files); e.target.value = '';
@@ -529,6 +530,7 @@ async function runOCR() {
   if (!pages.length) return;
   showProg('正在识别文字...', '0/' + pages.length);
   ocrResultText = '';
+  ocrResults = [];
   var all = [];
 
   try {
@@ -544,9 +546,11 @@ async function runOCR() {
         });
         var data = await resp.json();
         if (!resp.ok) throw new Error(data.error || '识别失败');
+        ocrResults.push(data);
         if (data.text) all.push(data.text);
       } catch(e) {
         console.warn('第' + (i+1) + '页识别失败:', e);
+        ocrResults.push(null);
         all.push('[第' + (i+1) + '页识别失败]');
       }
     }
@@ -586,88 +590,178 @@ function exportOCRtxt() {
   showToast('TXT已下载');
 }
 
-function exportOCRword() {
-  var t = document.getElementById('ocrText').value;
-  if (!t) { showToast('没有内容'); return; }
-  try {
-    var docx = window.docx;
-    var paras = t.split('\n').map(function(line) {
-      return new docx.Paragraph({
-        children: [new docx.TextRun({ text: line, size: 24, font: 'Microsoft YaHei' })],
-        spacing: { after: 120 }
+// ===== 智能排版分析：判断段落类型（标题/条款/正文） =====
+function classifyParagraphs(ocrData) {
+  if (!ocrData || !ocrData.paragraphs || !ocrData.paragraphs.length) return [];
+
+  var paras = ocrData.paragraphs;
+  var lines = ocrData.lines || [];
+  var imgW = ocrData.image_width || 1000;
+  var imgH = ocrData.image_height || 1000;
+
+  // 计算正文字高中位数
+  var heights = paras.map(function(p) { return p.height; }).sort(function(a,b){return a-b;});
+  var medianH = heights[Math.floor(heights.length / 2)] || 20;
+
+  // 计算正文左边界中位数（用于判断缩进）
+  var lefts = paras.map(function(p){return p.left;}).sort(function(a,b){return a-b;});
+  var medianLeft = lefts[Math.floor(lefts.length / 2)] || 0;
+
+  var result = [];
+  for (var i = 0; i < paras.length; i++) {
+    var p = paras[i];
+    var text = p.text;
+    var h = p.height;
+    var ratio = medianH > 0 ? h / medianH : 1;
+    var relWidth = p.width / imgW;
+    var centerX = p.left + p.width / 2;
+    var pageCenter = imgW / 2;
+    var isCentered = Math.abs(centerX - pageCenter) < imgW * 0.08;
+    var isTop = p.top < imgH * 0.12;
+    var isShort = text.length <= 20;
+    var isHeadingPattern = /^(第[一二三四五六七八九十百千0-9]+[章节条篇部]|[一二三四五六七八九十]+[、.．])/.test(text);
+    var isTitle = isTop && isCentered && isShort && ratio >= 1.15 && relWidth < 0.7;
+    var isHeading = (!isTitle && ratio >= 1.08 && isShort) || isHeadingPattern;
+    var isIndented = p.left > medianLeft + imgW * 0.03;
+    var isLongPara = text.length > 25;
+
+    result.push({
+      text: text,
+      type: isTitle ? 'title' : (isHeading ? 'heading' : 'body'),
+      indent: isIndented || isLongPara,
+      align: isTitle ? 'center' : 'left',
+      height: h,
+      ratio: ratio
+    });
+  }
+  return result;
+}
+
+// ===== 合并跨页段落 =====
+function mergeAcrossPages(allClassified) {
+  var merged = [];
+  for (var pi = 0; pi < allClassified.length; pi++) {
+    var pageParas = allClassified[pi];
+    if (!pageParas || !pageParas.length) continue;
+
+    if (merged.length > 0) {
+      var last = merged[merged.length - 1];
+      var first = pageParas[0];
+      if (last.type === 'body' && first.type === 'body' &&
+          last.text.length > 15 && !/[。！？：；]$/.test(last.text) &&
+          !/^[（(]/.test(first.text) && !/^第[一二三四五六七八九十百千0-9]+[章节条]/.test(first.text)) {
+        last.text += first.text;
+        pageParas = pageParas.slice(1);
+      }
+    }
+    for (var j = 0; j < pageParas.length; j++) {
+      merged.push(pageParas[j]);
+    }
+  }
+  return merged;
+}
+
+// ===== 构建docx段落 =====
+function buildDocxParas(classified, docx) {
+  return classified.map(function(p) {
+    var opts = {};
+    var runOpts = { text: p.text, font: 'Microsoft YaHei' };
+
+    if (p.type === 'title') {
+      runOpts.size = 36;
+      runOpts.bold = true;
+      opts.alignment = docx.AlignmentType.CENTER;
+      opts.spacing = { before: 240, after: 360, line: 360 };
+    } else if (p.type === 'heading') {
+      runOpts.size = 24;
+      runOpts.bold = true;
+      opts.spacing = { before: 200, after: 120, line: 360 };
+      if (p.align === 'center') opts.alignment = docx.AlignmentType.CENTER;
+    } else {
+      runOpts.size = 24;
+      opts.spacing = { after: 80, line: 360 };
+      if (p.indent) {
+        opts.indent = { firstLine: 480 };
+      }
+    }
+    opts.children = [new docx.TextRun(runOpts)];
+    return new docx.Paragraph(opts);
+  });
+}
+
+// ===== 格式化Word导出（核心） =====
+function buildFormattedWord() {
+  var docx = window.docx;
+  var allClassified = ocrResults.map(function(r) { return classifyParagraphs(r); });
+  var merged = mergeAcrossPages(allClassified);
+  var children = buildDocxParas(merged, docx);
+
+  return new docx.Document({
+    sections: [{
+      properties: {
+        page: {
+          size: { width: 11906, height: 16838 },
+          margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 }
+        }
+      },
+      children: children
+    }]
+  });
+}
+
+// ===== 运行OCR（如果还没跑过）=====
+async function ensureOCR() {
+  if (ocrResults.length === pages.length) return true;
+  showProg('正在识别文字...', '0/' + pages.length);
+  ocrResults = [];
+  for (var i = 0; i < pages.length; i++) {
+    document.getElementById('progSub').textContent = (i+1) + '/' + pages.length;
+    var imgData = compressForAPI(pages[i].canvas);
+    try {
+      var resp = await fetch('/api/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imgData, accurate: true })
       });
-    });
-    var doc = new docx.Document({
-      sections: [{ properties: { page: { margin: { top: 720, bottom: 720, left: 720, right: 720 } } }, children: paras }]
-    });
-    docx.Packer.toBlob(doc).then(function(blob) {
+      var data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || '识别失败');
+      ocrResults.push(data);
+    } catch(e) {
+      console.warn('第' + (i+1) + '页识别失败:', e);
+      ocrResults.push(null);
+    }
+  }
+  return ocrResults.some(function(r){return r;});
+}
+
+// ===== 导出Word（OCR弹窗内按钮）=====
+function exportOCRword() {
+  if (!ocrResults.length) { showToast('请先识别文字'); return; }
+  try {
+    var doc = buildFormattedWord();
+    window.docx.Packer.toBlob(doc).then(function(blob) {
       saveAs(blob, '识别结果_' + Date.now() + '.docx');
       showToast('Word已下载');
     });
   } catch(e) { showToast('Word导出失败：' + e.message); }
 }
 
-function exportWordFromOCR() {
+// ===== 导出Word（底部按钮，自动OCR+格式化）=====
+async function exportWordFromOCR() {
   if (!pages.length) return;
-  showProg('正在生成Word...', pages.length + '页');
-  setTimeout(function() {
-    try {
-      var docx = window.docx;
-      var children = [];
-      for (var i = 0; i < pages.length; i++) {
-        var cv = pages[i].canvas;
-        // 转base64，压缩尺寸
-        var maxW = 600;
-        var w = cv.width, h = cv.height;
-        var scale = w > maxW ? maxW / w : 1;
-        var tmp = document.createElement('canvas');
-        tmp.width = Math.round(w * scale);
-        tmp.height = Math.round(h * scale);
-        tmp.getContext('2d').drawImage(cv, 0, 0, tmp.width, tmp.height);
-        var dataUrl = tmp.toDataURL('image/jpeg', 0.85);
-        var b64 = dataUrl.split(',')[1];
-
-        children.push(new docx.Paragraph({
-          children: [new docx.ImageRun({
-            data: b64,
-            transformation: {
-              width: Math.round(tmp.width * 0.75),
-              height: Math.round(tmp.height * 0.75)
-            }
-          })],
-          alignment: docx.AlignmentType.CENTER,
-          spacing: { after: 200 }
-        }));
-
-        if (i < pages.length - 1) {
-          children.push(new docx.Paragraph({
-            children: [new docx.PageBreak()]
-          }));
-        }
-      }
-
-      var doc = new docx.Document({
-        sections: [{
-          properties: {
-            page: {
-              size: { width: 11906, height: 16838 },
-              margin: { top: 720, bottom: 720, left: 720, right: 720 }
-            }
-          },
-          children: children
-        }]
-      });
-
-      docx.Packer.toBlob(doc).then(function(blob) {
-        saveAs(blob, '扫描件_' + Date.now() + '.docx');
-        hideProg();
-        showToast('Word已生成，共' + pages.length + '页');
-      });
-    } catch(e) {
-      hideProg();
-      showToast('Word生成失败：' + e.message);
-    }
-  }, 100);
+  try {
+    var ok = await ensureOCR();
+    if (!ok) { hideProg(); showToast('文字识别失败，请重试'); return; }
+    hideProg();
+    var doc = buildFormattedWord();
+    window.docx.Packer.toBlob(doc).then(function(blob) {
+      saveAs(blob, '扫描件_' + Date.now() + '.docx');
+      showToast('Word已生成，共' + pages.length + '页');
+    });
+  } catch(e) {
+    hideProg();
+    showToast('Word生成失败：' + e.message);
+  }
 }
 
 function showToast(msg) {
