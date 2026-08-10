@@ -543,7 +543,7 @@ async function runOCR() {
         var resp = await fetch('/api/ocr', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: imgData, accurate: true })
+          body: JSON.stringify({ image: imgData, accurate: false })
         });
         var data = await resp.json();
         if (!resp.ok) throw new Error(data.error || '识别失败');
@@ -591,116 +591,180 @@ function exportOCRtxt() {
   showToast('TXT已下载');
 }
 
-// ===== 智能排版分析：判断段落类型（标题/条款/正文） =====
-function classifyParagraphs(ocrData) {
-  if (!ocrData || !ocrData.paragraphs || !ocrData.paragraphs.length) return [];
+// ===== 版面分析引擎：把OCR行组合成逻辑行（处理同排多列），再分类排版 =====
+function analyzeLayout(ocrData) {
+  if (!ocrData || !ocrData.lines || !ocrData.lines.length) return [];
 
-  var paras = ocrData.paragraphs;
-  var lines = ocrData.lines || [];
+  var lines = ocrData.lines.slice().sort(function(a,b){
+    if (Math.abs(a.top - b.top) > Math.max(a.height, b.height) * 0.5) return a.top - b.top;
+    return a.left - b.left;
+  });
   var imgW = ocrData.image_width || 1000;
   var imgH = ocrData.image_height || 1000;
 
-  // 只统计有效高度（>5px）的段落作为基准
-  var valid = paras.filter(function(p) { return p.height > 5; });
-  var heights = (valid.length ? valid : paras).map(function(p) { return p.height; }).sort(function(a,b){return a-b;});
-  var medianH = heights[Math.floor(heights.length / 2)] || 20;
-  if (medianH < 8) medianH = 20; // 兜底
+  // 计算正文字高中位数
+  var heights = lines.map(function(l){return l.height;}).filter(function(h){return h>5;}).sort(function(a,b){return a-b;});
+  var medianH = heights[Math.floor(heights.length/2)] || 20;
+  if (medianH < 8) medianH = 20;
 
-  var lefts = paras.map(function(p){return p.left;}).sort(function(a,b){return a-b;});
-  var medianLeft = lefts[Math.floor(lefts.length / 2)] || 0;
-
-  var result = [];
-  for (var i = 0; i < paras.length; i++) {
-    var p = paras[i];
-    var text = p.text;
-    var h = p.height;
-    var ratio = h > 0 ? h / medianH : 1;
-    var relWidth = imgW > 0 ? p.width / imgW : 0.5;
-    var centerX = p.left + p.width / 2;
-    var pageCenter = imgW / 2;
-    var isCentered = imgW > 0 && Math.abs(centerX - pageCenter) < imgW * 0.1;
-    var isTop = p.top < imgH * 0.12;
-    var isShort = text.length <= 22;
-    var isHeadingPattern = /^(第[一二三四五六七八九十百千0-9]+[章节条篇部、.．]|[一二三四五六七八九十]+[、.．]|[0-9]+[.、][\u4e00-\u9fa5])/.test(text);
-    // 标题：顶部+居中+短+字号偏大 OR 明显标题模式
-    var isTitle = (isTop && isCentered && isShort && ratio >= 1.1 && relWidth < 0.7)
-               || (isTop && isCentered && isShort && isHeadingPattern && text.length < 12);
-    // 条款：字号略大且短，或匹配"第X条"等模式
-    var isHeading = !isTitle && ((ratio >= 1.08 && isShort) ||
-                   (isHeadingPattern && text.length <= 30));
-    var isIndented = p.left > medianLeft + Math.max(20, imgW * 0.03);
-    var isLongPara = text.length > 30;
-
-    result.push({
-      text: text,
-      type: isTitle ? 'title' : (isHeading ? 'heading' : 'body'),
-      indent: isIndented || isLongPara,
-      align: isTitle ? 'center' : 'left',
-      height: h,
-      ratio: ratio
+  // 第一步：把垂直重叠的OCR行合并成"逻辑行"（处理同一行上的多列文本）
+  var logicLines = [];
+  var used = {};
+  for (var i = 0; i < lines.length; i++) {
+    if (used[i]) continue;
+    var row = [lines[i]];
+    used[i] = true;
+    for (var j = i+1; j < lines.length; j++) {
+      if (used[j]) continue;
+      // 垂直中心接近（在字高60%范围内）且水平不重叠 = 同排不同列
+      var cy1 = lines[i].top + lines[i].height/2;
+      var cy2 = lines[j].top + lines[j].height/2;
+      if (Math.abs(cy1-cy2) < medianH * 0.6 &&
+          Math.abs(lines[j].top - lines[i].top) < medianH * 0.8) {
+        row.push(lines[j]);
+        used[j] = true;
+      }
+    }
+    row.sort(function(a,b){return a.left - b.left;});
+    var top = Math.min.apply(null, row.map(function(l){return l.top;}));
+    var left = Math.min.apply(null, row.map(function(l){return l.left;}));
+    var right = Math.max.apply(null, row.map(function(l){return l.left+l.width;}));
+    var bot = Math.max.apply(null, row.map(function(l){return l.top+l.height;}));
+    logicLines.push({
+      segments: row,
+      text: row.map(function(s){return s.text;}).join('  '),
+      top: top, left: left, width: right-left, height: bot-top,
+      avgH: row.reduce(function(s,l){return s+l.height;},0)/row.length
     });
   }
-  return result;
+  logicLines.sort(function(a,b){return a.top-b.top;});
+
+  // 计算正文左边界
+  var bodyLefts = logicLines.filter(function(l){
+    return l.avgH < medianH * 1.1 && l.width/imgW < 0.7;
+  }).map(function(l){return l.left;}).sort(function(a,b){return a-b;});
+  var bodyLeft = bodyLefts[Math.floor(bodyLefts.length/2)] || 0;
+
+  // 第二步：分类每个逻辑行
+  var elements = [];
+  for (var k = 0; k < logicLines.length; k++) {
+    var ll = logicLines[k];
+    var text = ll.text.trim();
+    if (!text) continue;
+    var h = ll.avgH;
+    var ratio = h / medianH;
+    var centerX = ll.left + ll.width/2;
+    var isCentered = Math.abs(centerX - imgW/2) < imgW * 0.1;
+    var isTop = ll.top < imgH * 0.1;
+    var isShort = text.replace(/\s+/g,'').length <= 25;
+    var isHeadingPat = /^(第[一二三四五六七八九十百千0-9]+[章节条篇部、.．]|[一二三四五六七八九十]+[、.．]|[0-9]+[.、]\s*[\u4e00-\u9fa5])/.test(text);
+    var isTitlePat = /(合同|协议|责任书|证明|委托书|申请书|清单|报告|通知)$/.test(text) && text.length <= 20;
+
+    var type = 'body';
+    if ((isTop && isCentered && isShort && ratio >= 1.1) ||
+        (isTop && isCentered && isTitlePat)) {
+      type = 'title';
+    } else if ((ratio >= 1.12 && isShort) || (isHeadingPat && text.length <= 35)) {
+      type = 'heading';
+    } else if (ll.segments.length >= 2 && ll.width < imgW * 0.85) {
+      type = 'two-col';
+    }
+
+    // 正文缩进判断
+    var indent = false;
+    if (type === 'body') {
+      var isLongPara = text.replace(/\s+/g,'').length > 20;
+      var startsWithIndent = ll.left > bodyLeft + Math.max(15, imgW*0.02);
+      indent = isLongPara || startsWithIndent;
+    }
+
+    elements.push({
+      segments: ll.segments,
+      text: text,
+      type: type,
+      indent: indent,
+      align: type==='title' ? 'center' : 'left',
+      height: h,
+      ratio: ratio,
+      top: ll.top,
+      isMulticol: ll.segments.length >= 2
+    });
+  }
+  return elements;
 }
 
-// ===== 合并跨页段落 =====
-function mergeAcrossPages(allClassified) {
-  var merged = [];
-  for (var pi = 0; pi < allClassified.length; pi++) {
-    var pageParas = allClassified[pi];
-    if (!pageParas || !pageParas.length) continue;
+// ===== 构建docx段落（支持多列同排、标题、条款、正文缩进） =====
+function buildDocxParasFromLayout(allElements, docx) {
+  var children = [];
+  var TabStopType = docx.TabStopType || { LEFT: 'left', RIGHT: 'right', CENTER: 'center' };
+  var TabStopPosition = docx.TabStopPosition || { MAX: 9026 };
 
-    if (merged.length > 0) {
-      var last = merged[merged.length - 1];
-      var first = pageParas[0];
-      if (last.type === 'body' && first.type === 'body' &&
-          last.text.length > 15 && !/[。！？：；]$/.test(last.text) &&
-          !/^[（(]/.test(first.text) && !/^第[一二三四五六七八九十百千0-9]+[章节条]/.test(first.text)) {
-        last.text += first.text;
-        pageParas = pageParas.slice(1);
-      }
+  for (var pi = 0; pi < allElements.length; pi++) {
+    var pageEls = allElements[pi];
+    if (!pageEls || !pageEls.length) continue;
+
+    // 页间分页符（非首页）
+    if (pi > 0 && children.length) {
+      children.push(new docx.Paragraph({ children: [new docx.PageBreak()] }));
     }
-    for (var j = 0; j < pageParas.length; j++) {
-      merged.push(pageParas[j]);
+
+    for (var i = 0; i < pageEls.length; i++) {
+      var el = pageEls[i];
+      var runOpts = { font: 'Microsoft YaHei' };
+      var opts = { children: [] };
+
+      if (el.type === 'title') {
+        runOpts.size = 36;
+        runOpts.bold = true;
+        opts.alignment = docx.AlignmentType.CENTER;
+        opts.spacing = { before: 120, after: 360, line: 360 };
+        opts.children = [new docx.TextRun({ text: el.text, font: 'Microsoft YaHei', size: 36, bold: true })];
+      } else if (el.type === 'heading') {
+        runOpts.size = 24;
+        runOpts.bold = true;
+        opts.spacing = { before: 240, after: 100, line: 360 };
+        opts.children = [new docx.TextRun({ text: el.text, font: 'Microsoft YaHei', size: 24, bold: true })];
+      } else if (el.isMulticol && el.segments.length >= 2) {
+        // 同排多列：用tab stops实现左右分栏
+        opts.spacing = { after: 60, line: 320 };
+        var runs = [];
+        for (var s = 0; s < el.segments.length; s++) {
+          if (s > 0) runs.push(new docx.TextRun({ text: '\t', font: 'Microsoft YaHei', size: 22 }));
+          runs.push(new docx.TextRun({ text: el.segments[s].text, font: 'Microsoft YaHei', size: 22 }));
+        }
+        opts.children = runs;
+        // 设置制表位：两列时右列在页面中部偏右；三列时均匀分布
+        var pageWidth = 11906 - 1440*2; // A4 width minus margins
+        if (el.segments.length === 2) {
+          opts.tabStops = [{ type: TabStopType.LEFT, position: Math.round(pageWidth * 0.52) }];
+        } else {
+          var stops = [];
+          for (var t = 1; t < el.segments.length; t++) {
+            stops.push({ type: TabStopType.LEFT, position: Math.round(pageWidth * t / el.segments.length) });
+          }
+          opts.tabStops = stops;
+        }
+      } else {
+        // 普通正文
+        runOpts.size = 22;
+        opts.spacing = { after: 60, line: 340 };
+        if (el.indent) {
+          opts.indent = { firstLine: 440 };
+        }
+        opts.children = [new docx.TextRun({ text: el.text, font: 'Microsoft YaHei', size: 22 })];
+      }
+
+      children.push(new docx.Paragraph(opts));
     }
   }
-  return merged;
-}
-
-// ===== 构建docx段落 =====
-function buildDocxParas(classified, docx) {
-  return classified.map(function(p) {
-    var opts = {};
-    var runOpts = { text: p.text, font: 'Microsoft YaHei' };
-
-    if (p.type === 'title') {
-      runOpts.size = 36;
-      runOpts.bold = true;
-      opts.alignment = docx.AlignmentType.CENTER;
-      opts.spacing = { before: 240, after: 360, line: 360 };
-    } else if (p.type === 'heading') {
-      runOpts.size = 24;
-      runOpts.bold = true;
-      opts.spacing = { before: 200, after: 120, line: 360 };
-      if (p.align === 'center') opts.alignment = docx.AlignmentType.CENTER;
-    } else {
-      runOpts.size = 24;
-      opts.spacing = { after: 80, line: 360 };
-      if (p.indent) {
-        opts.indent = { firstLine: 480 };
-      }
-    }
-    opts.children = [new docx.TextRun(runOpts)];
-    return new docx.Paragraph(opts);
-  });
+  return children;
 }
 
 // ===== 格式化Word导出（核心） =====
 function buildFormattedWord() {
   var docx = window.docx;
-  var allClassified = ocrResults.map(function(r) { return classifyParagraphs(r); });
-  var merged = mergeAcrossPages(allClassified);
-  var children = buildDocxParas(merged, docx);
+  var allElements = ocrResults.map(function(r) { return analyzeLayout(r); });
+  var children = buildDocxParasFromLayout(allElements, docx);
 
   return new docx.Document({
     sections: [{
@@ -727,7 +791,7 @@ async function ensureOCR() {
       var resp = await fetch('/api/ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: imgData, accurate: true })
+        body: JSON.stringify({ image: imgData, accurate: false })
       });
       var data = await resp.json();
       if (!resp.ok) throw new Error(data.error || '识别失败');
