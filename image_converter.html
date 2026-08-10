@@ -543,7 +543,7 @@ async function runOCR() {
         var resp = await fetch('/api/ocr', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: imgData, accurate: false })
+          body: JSON.stringify({ image: imgData, accurate: true })
         });
         var data = await resp.json();
         if (!resp.ok) throw new Error(data.error || '识别失败');
@@ -791,7 +791,7 @@ async function ensureOCR() {
       var resp = await fetch('/api/ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: imgData, accurate: false })
+        body: JSON.stringify({ image: imgData, accurate: true })
       });
       var data = await resp.json();
       if (!resp.ok) throw new Error(data.error || '识别失败');

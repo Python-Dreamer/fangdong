@@ -60,12 +60,15 @@ def extract_location(w):
     return {'top': 0, 'left': 0, 'width': 0, 'height': 0}
 
 
-def baidu_ocr(image_base64, accurate=False):
+def baidu_ocr(image_base64, accurate=True):
     token = get_access_token()
-    # 用 general（标准版）带 vertexes_location，返回位置坐标
-    # 高精度版 accurate_basic 不返回位置，无法做排版分析
-    # general 每天免费1000次，带位置后精度对中文文档足够
-    url = f'https://aip.baidubce.com/rest/2.0/ocr/v1/general?access_token={token}'
+    # accurate 接口：高精度+位置坐标（vertexes_location），用于排版分析
+    # accurate_basic 不返回位置，general 精度不够
+    # accurate 每天免费500次
+    if accurate:
+        url = f'https://aip.baidubce.com/rest/2.0/ocr/v1/accurate?access_token={token}'
+    else:
+        url = f'https://aip.baidubce.com/rest/2.0/ocr/v1/general?access_token={token}'
 
     post_data = urllib.parse.urlencode({
         'image': image_base64,
