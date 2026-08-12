@@ -226,6 +226,7 @@ body {
   <button class="bbtn bbtn-pdf" onclick="exportPDF()">📕 PDF</button>
   <button class="bbtn bbtn-ocr" onclick="runOCR()">🔍 识别</button>
   <button class="bbtn bbtn-word" onclick="exportWordFromOCR()">📝 可编辑</button>
+  <button class="bbtn" onclick="exportExcelFromOCR()" style="background:#16a34a;color:#fff">📊 表格</button>
   <button class="bbtn" onclick="exportWordImage()" style="background:#3b82f6;color:#fff">📷 原图</button>
 </div>
 
@@ -250,6 +251,7 @@ body {
       <button class="of-copy" onclick="copyOCR()">📋 复制</button>
       <button class="of-txt" onclick="exportOCRtxt()">📄 TXT</button>
       <button class="of-word" onclick="exportOCRword()">📝 可编辑Word</button>
+      <button class="of-word" onclick="exportExcelFromOCR()" style="background:#16a34a">📊 Excel表格</button>
       <button class="of-word" onclick="exportOCRwordImage()" style="background:#3b82f6">📷 原图Word</button>
     </div>
   </div>
@@ -260,6 +262,7 @@ body {
 <script src="https://cdn.bootcdn.net/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://registry.npmmirror.com/docx/8.5.0/files/build/index.umd.js"></script>
 <script src="https://cdn.bootcdn.net/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
 // ===== 状态 =====
@@ -1115,6 +1118,111 @@ async function exportWordFromOCR() {
   } catch(e) {
     hideProg();
     showToast('Word生成失败：' + e.message);
+  }
+}
+
+// ===== 导出Excel表格 =====
+// 策略：利用已有的版面分析结果，把 multicol 多列行识别为表格数据
+async function exportExcelFromOCR() {
+  if (!pages.length) return;
+  try {
+    var ok = await ensureOCR();
+    if (!ok) { hideProg(); showToast('文字识别失败，请重试'); return; }
+    hideProg();
+    showProg('正在生成Excel...', '');
+
+    setTimeout(function() {
+      try {
+        var XLSX = window.XLSX;
+        if (!XLSX) throw new Error('Excel库未加载，请刷新页面重试');
+        var wb = XLSX.utils.book_new();
+        var hasTable = false;
+
+        for (var pi = 0; pi < ocrResults.length; pi++) {
+          var r = ocrResults[pi];
+          if (!r || !r.lines) continue;
+          r._canvasW = pages[pi].canvas.width;
+          r._canvasH = pages[pi].canvas.height;
+          var elements = analyzeLayout(r);
+
+          // 收集连续的多列行作为表格块
+          var blocks = [];
+          var cur = null;
+          for (var ei = 0; ei < elements.length; ei++) {
+            var el = elements[ei];
+            if (el.isMulticol && el.cells && el.cells.length >= 2) {
+              if (!cur) cur = [];
+              cur.push(el.cells.map(function(c){return c.text.trim();}));
+            } else {
+              if (cur && cur.length) { blocks.push(cur); cur = null; }
+            }
+          }
+          if (cur && cur.length) blocks.push(cur);
+
+          if (!blocks.length) continue;
+          hasTable = true;
+
+          // 把本页所有表格块拼到一个sheet（块之间空一行）
+          var aoa = [];
+          blocks.forEach(function(block, bi) {
+            if (bi > 0) aoa.push([]);
+            // 统一列数（取块内最大列数）
+            var maxCols = block.reduce(function(m, row){return Math.max(m, row.length);}, 0);
+            block.forEach(function(row) {
+              while (row.length < maxCols) row.push('');
+              aoa.push(row);
+            });
+          });
+
+          var ws = XLSX.utils.aoa_to_sheet(aoa);
+          // 自动列宽
+          var colWidths = [];
+          aoa.forEach(function(row) {
+            row.forEach(function(cell, ci) {
+              var len = String(cell || '').length;
+              // 中文按2字宽计
+              var w = 0;
+              for (var cc = 0; cc < String(cell||'').length; cc++) {
+                w += String(cell).charCodeAt(cc) > 255 ? 2 : 1;
+              }
+              colWidths[ci] = Math.max(colWidths[ci]||8, Math.min(w+2, 50));
+            });
+          });
+          ws['!cols'] = colWidths.map(function(w){return {wch: w};});
+
+          var sheetName = '第' + (pi+1) + '页';
+          XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        }
+
+        if (!hasTable) {
+          // 没有识别出表格结构，把所有识别文字按行导出作为兜底
+          var fallback = [];
+          ocrResults.forEach(function(r, pi) {
+            if (!r || !r.lines) return;
+            if (fallback.length) fallback.push([]);
+            fallback.push(['第' + (pi+1) + '页']);
+            r.lines.forEach(function(l) {
+              if (l.text && l.text.trim()) fallback.push([l.text.trim()]);
+            });
+          });
+          var ws2 = XLSX.utils.aoa_to_sheet(fallback.length ? fallback : [['未识别到文字']]);
+          ws2['!cols'] = [{wch: 80}];
+          XLSX.utils.book_append_sheet(wb, ws2, '识别文字');
+        }
+
+        var wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        var blob = new Blob([wbout], { type: 'application/octet-stream' });
+        saveAs(blob, '扫描表格_' + Date.now() + '.xlsx');
+        hideProg();
+        showToast(hasTable ? 'Excel表格已生成' : '未发现表格结构，已按文字行导出');
+      } catch(e) {
+        hideProg();
+        showToast('Excel生成失败：' + e.message);
+      }
+    }, 50);
+  } catch(e) {
+    hideProg();
+    showToast('Excel生成失败：' + e.message);
   }
 }
 
