@@ -45,7 +45,7 @@ def extract_location(w):
             'width': loc.get('width', 0),
             'height': loc.get('height', 0)
         }
-    v = w.get('vertexes', [])
+    v = w.get('vertexes_location', w.get('vertexes', []))
     if v and len(v) >= 4:
         xs = [p.get('x', 0) for p in v]
         ys = [p.get('y', 0) for p in v]

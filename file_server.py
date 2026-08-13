@@ -267,6 +267,12 @@ class FileHandler(BaseHTTPRequestHandler):
             target = os.path.normpath(os.path.join(target_dir, parts[-1]))
             if not target.startswith(UPLOAD_DIR):
                 self._json(403, {"error": "forbidden"}); return
+            # 文件类型白名单（只允许图片和PDF，防止上传HTML/JS等可执行文件）
+            import re as _re
+            ext = os.path.splitext(parts[-1])[1].lower()
+            ALLOWED_EXT = {'.jpg','.jpeg','.png','.gif','.webp','.bmp','.pdf','.heic','.heif'}
+            if ext not in ALLOWED_EXT:
+                self._json(400, {"error": "不支持的文件类型，仅允许图片和PDF"}); return
             length = int(self.headers.get("Content-Length", 0))
             if length > 20 * 1024 * 1024:
                 self._json(413, {"error": "too large"}); return

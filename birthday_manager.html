@@ -514,6 +514,8 @@ function formatOriginal(b) {
 }
 
 // ========== UI 渲染 ==========
+function escHtml(s){if(s==null)return '';var d=document.createElement('div');d.textContent=String(s);return d.innerHTML}
+
 function renderList() {
   const search = document.getElementById('searchInput').value.toLowerCase();
   let list = birthdays.filter(b => {
@@ -547,7 +549,7 @@ function renderList() {
     
     return `<div class="birthday-item" onclick="showDetail(${birthdays.indexOf(b)})">
       <div class="birthday-info">
-        <div class="birthday-name">${b.name}<span class="tag ${tagClass}">${tagText}</span></div>
+        <div class="birthday-name">${escHtml(b.name)}<span class="tag ${tagClass}">${tagText}</span></div>
         <div class="birthday-detail">${formatOriginal(b)} → ${formatDate(nextDate)}</div>
       </div>
       <div class="birthday-countdown ${countdownClass}">${countdownText}</div>
@@ -599,7 +601,7 @@ function showDetail(index) {
   
   document.getElementById('detailContent').innerHTML = `
     <div style="text-align:center;padding:16px 0">
-      <div style="font-size:20px;font-weight:700;margin-bottom:8px">${b.name}</div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:8px">${escHtml(b.name)}</div>
       <div style="font-size:14px;color:var(--ts);margin-bottom:16px">${formatOriginal(b)}</div>
       <div style="background:#fef3c7;border-radius:12px;padding:16px;margin-bottom:16px">
         <div style="font-size:13px;color:#92400e;margin-bottom:4px">下次生日</div>
