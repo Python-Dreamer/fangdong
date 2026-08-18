@@ -1,0 +1,10 @@
+libs/tesseract/
+*.bak
+check_*.js
+check_*.py
+i18n_build.py
+i18n_final.py
+i18n_phase*.py
+__pycache__/
+*.pyc
+.DS_Store
