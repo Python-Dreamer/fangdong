@@ -252,7 +252,7 @@ function syncOccValues(){for(var i=0;i<_occList.length;i++){var n=document.getEl
 
 // ========== 日期工具 ==========
 function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
-function fmtDate(d){if(!d)return'-';var s=String(d).slice(0,10).split('-');return s[0]+i18n.t('common.year')+parseInt(s[1],10)+''+i18n.t('common.month2')+''+parseInt(s[2],10)+''+i18n.t('common.day2')+''}
+function fmtDate(d){if(!d)return'-';var s=String(d).slice(0,10).split('-');return i18n.t('date.fmtDate',{y:s[0],m:parseInt(s[1],10),d:parseInt(s[2],10)})}
 function daysDiff(a,b){return Math.ceil((new Date(b)-new Date(a))/86400000)}
 function esc(s){if(s===null||s===undefined)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function getGenderFromId(id){if(!id)return'';id=id.trim();if(id.length===18){var g=parseInt(id.charAt(16));return g%2===0?i18n.t('tenant.female'):i18n.t('tenant.male')}if(id.length===15){var g=parseInt(id.charAt(14));return g%2===0?i18n.t('tenant.female'):i18n.t('tenant.male')}return''}
@@ -788,7 +788,7 @@ async function doNewPassword(){var p1=document.getElementById('fNewPass').value,
 // ========== 数据备份 ==========
 function doAutoBackup(){try{var data={rooms:cache.rooms,tenants:cache.tenants,rents:cache.rents,settings:cache.settings,backupTime:new Date().toISOString(),version:'1.0',ownerId:getOwnerId()};localStorage.setItem('fangdong_backup',JSON.stringify(data));localStorage.setItem('fangdong_backup_time',new Date().toISOString())}catch(e){console.warn(''+i18n.t('common.autoBackupFail')+':',e)}}
 
-function getLastBackupTime(){var t=localStorage.getItem('fangdong_backup_time');if(!t)return null;var d=new Date(t);return d.getFullYear()+i18n.t('common.year')+(d.getMonth()+1)+''+i18n.t('common.month2')+''+d.getDate()+''+i18n.t('common.day2')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function getLastBackupTime(){var t=localStorage.getItem('fangdong_backup_time');if(!t)return null;var d=new Date(t);return i18n.t('date.fmtDate',{y:d.getFullYear(),m:d.getMonth()+1,d:d.getDate()})+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
 
 function getLocalBackupInfo(){var raw=localStorage.getItem('fangdong_backup');if(!raw)return null;try{var d=JSON.parse(raw);return{rooms:(d.rooms||[]).length,tenants:(d.tenants||[]).length,rents:(d.rents||[]).length,time:d.backupTime,ownerId:d.ownerId}}catch(e){return null}}
 
