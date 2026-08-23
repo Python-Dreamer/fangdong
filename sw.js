@@ -1,10 +1,14 @@
-var CACHE_NAME='fangdong-v40';
+var CACHE_NAME='fangdong-v41';
 var CACHE_URLS=[
   './',
   './index.html',
   './app.html',
   './sign.html',
   './match.html',
+  './tools.html',
+  './image_converter.html',
+  './image_compress.html',
+  './birthday_manager.html',
   './manifest.json',
   './match-manifest.json',
   './icons/icon-192x192.png',
