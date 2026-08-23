@@ -1,4 +1,4 @@
-var CACHE_NAME='fangdong-v39';
+var CACHE_NAME='fangdong-v40';
 var CACHE_URLS=[
   './',
   './index.html',
@@ -24,11 +24,35 @@ self.addEventListener('activate',function(e){
   }));
   self.clients.claim();
 });
+function _isAuthRequest(url){
+  var u=url.split('#')[0];
+  return u.indexOf('type=recovery')>=0
+    || u.indexOf('code=')>=0
+    || u.indexOf('access_token=')>=0
+    || u.indexOf('error=')>=0
+    || u.indexOf('reset=1')>=0;
+}
 self.addEventListener('fetch',function(e){
   if(e.request.method!=='GET')return;
+  var reqUrl=e.request.url||'';
+  if(_isAuthRequest(reqUrl)){
+    e.respondWith(fetch(e.request,{cache:'no-store'}).catch(function(){
+      return caches.match(e.request,{ignoreSearch:false})
+    }));
+    return;
+  }
+  if(reqUrl.indexOf('/app.html')>=0){
+    var urlObj=new URL(reqUrl);
+    if(urlObj.search&&urlObj.search.length>0){
+      e.respondWith(fetch(e.request,{cache:'no-store'}).catch(function(){
+        return caches.match(e.request,{ignoreSearch:false})
+      }));
+      return;
+    }
+  }
   e.respondWith(
     fetch(e.request).then(function(r){
-      if(r&&r.status===200){
+      if(r&&r.status===200&&r.type==='basic'){
         var rc=r.clone();
         caches.open(CACHE_NAME).then(function(c){c.put(e.request,rc)});
       }
