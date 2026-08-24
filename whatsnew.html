@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>功能更新说明 - 瑞丽房东管家</title>
+<link rel="icon" type="image/jpeg" href="birthday_icon.jpg">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --p: #6366f1; --p-light: #818cf8; --p-dark: #4f46e5;
+  --g: #10b981; --o: #f97316; --d: #ef4444; --b: #3b82f6;
+  --bg: #f1f5f9; --c: #fff; --t: #1e293b; --ts: #64748b; --bd: #e2e8f0;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+  background: var(--bg); color: var(--t); min-height: 100vh;
+  padding-bottom: 40px;
+}
+.header {
+  background: linear-gradient(135deg, var(--p) 0%, #7c3aed 100%);
+  color: #fff; padding: 32px 20px 28px; text-align: center; position: relative;
+}
+.back-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  color: rgba(255,255,255,.85); font-size: 13px; text-decoration: none;
+  position: absolute; top: 16px; left: 16px;
+}
+.back-link:hover { color: #fff; }
+.header h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+.header p { font-size: 13px; opacity: .85; }
+.container { max-width: 640px; margin: 0 auto; padding: 0 16px; margin-top: -16px; }
+
+.version-card {
+  background: var(--c); border-radius: 16px; padding: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06); margin-bottom: 16px;
+}
+.version-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px dashed var(--bd);
+}
+.version-tag {
+  display: inline-block; background: linear-gradient(135deg, var(--p), #7c3aed);
+  color: #fff; font-size: 12px; font-weight: 700; padding: 4px 10px;
+  border-radius: 999px;
+}
+.version-date { font-size: 12px; color: var(--ts); }
+
+.feat {
+  display: flex; gap: 12px; padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.feat:last-child { border-bottom: none; }
+.feat-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.feat-icon.new { background: #ecfdf5; }
+.feat-icon.fix { background: #fff7ed; }
+.feat-icon.imp { background: #eff6ff; }
+.feat-body { flex: 1; min-width: 0; }
+.feat-title {
+  font-size: 14px; font-weight: 700; margin-bottom: 4px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.badge {
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px;
+  letter-spacing: .3px;
+}
+.badge.new { background: #d1fae5; color: #065f46; }
+.badge.fix { background: #ffedd5; color: #9a3412; }
+.badge.imp { background: #dbeafe; color: #1e40af; }
+.feat-desc { font-size: 13px; color: var(--ts); line-height: 1.6; }
+.feat-desc b { color: var(--t); font-weight: 600; }
+.feat-tip {
+  margin-top: 8px; background: #f8fafc; border-left: 3px solid var(--p-light);
+  padding: 8px 12px; font-size: 12px; color: var(--ts); border-radius: 0 6px 6px 0;
+  line-height: 1.6;
+}
+.feat-tip.green { border-left-color: var(--g); background: #f0fdf4; color: #065f46; }
+
+.howto {
+  background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 10px;
+  padding: 14px 16px; margin-top: 10px;
+}
+.howto h4 {
+  font-size: 13px; color: #6b21a8; font-weight: 700; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.howto ol { padding-left: 20px; font-size: 12px; color: #6b21a8; line-height: 1.9; }
+.howto ol b { color: #581c87; }
+
+.footer {
+  text-align: center; padding: 20px 12px 8px; font-size: 12px; color: var(--ts);
+}
+.footer a { color: var(--ts); text-decoration: none; }
+.cta {
+  display: block; background: linear-gradient(135deg, var(--p), #7c3aed);
+  color: #fff; text-align: center; padding: 14px; border-radius: 12px;
+  font-size: 15px; font-weight: 700; text-decoration: none; margin-top: 8px;
+  box-shadow: 0 4px 14px rgba(99,102,241,.3);
+}
+.cta:active { transform: scale(.98); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="tools.html" class="back-link">‹ 返回工具箱</a>
+  <h1>✨ 功能更新说明</h1>
+  <p>最近上线了这些新功能，一起来看看</p>
+</div>
+
+<div class="container">
+
+  <!-- 2026-08-24 版本 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 8 月 24 日</span>
+    </div>
+
+    <!-- 新功能：图片压缩 -->
+    <div class="feat">
+      <div class="feat-icon new">🖼️</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          新增「图片压缩」工具
+          <span class="badge new">NEW</span>
+        </div>
+        <div class="feat-desc">
+          工具箱新增<b>图片压缩</b>功能，可批量压缩手机里的照片，<b>图片全程在本地处理，不上传服务器</b>，隐私安全。
+        </div>
+        <div class="howto">
+          <h4>📱 怎么用</h4>
+          <ol>
+            <li>打开<b>工具箱</b>，点「图片压缩」</li>
+            <li>点上传或直接<b>把图片拖进去</b>（支持多张）</li>
+            <li>调整<b>压缩质量</b>（默认 75%，越高质量越好但文件越大）</li>
+            <li>需要的话设置<b>最大尺寸</b>（默认 1920px，适合发微信/朋友圈）</li>
+            <li>点「<b>开始压缩</b>」，完成后单张下载或<b>打包成 ZIP</b> 一次下载</li>
+          </ol>
+        </div>
+        <div class="feat-tip green">
+          💡 适合场景：微信发图被限制大小、上传证件照、节省手机空间、发邮件附件太大。常见照片能压缩到原来的 30%~60%。
+        </div>
+        <a href="image_compress.html" class="cta">立即体验图片压缩 →</a>
+      </div>
+    </div>
+
+    <!-- 修复：密码重置 -->
+    <div class="feat">
+      <div class="feat-icon fix">🔐</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修复「忘记密码」邮件跳转问题
+          <span class="badge fix">FIX</span>
+        </div>
+        <div class="feat-desc">
+          之前在 QQ 邮箱能正常改密码，但<b>网易 163、Outlook 等邮箱</b>点链接会跳回登录页。这次彻底修复，<b>兼容所有邮箱客户端</b>。
+        </div>
+        <div class="feat-tip">
+          🔧 根因：浏览器缓存把重置链接的验证信息弄丢了。已让重置链接<b>强制不走缓存</b>，并优化跳转逻辑，点链接立刻进入设置新密码页面。
+        </div>
+      </div>
+    </div>
+
+    <!-- 优化：中英文 -->
+    <div class="feat">
+      <div class="feat-icon imp">🌐</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          系统支持中英文切换
+          <span class="badge imp">i18n</span>
+        </div>
+        <div class="feat-desc">
+          房东管家主系统已全面支持<b>中文 / English</b> 双语。房型、性别、国籍、付款方式、收款方式等所有字段都做了翻译，缅甸、越南等外籍租户也能看懂。
+        </div>
+        <div class="feat-tip">
+          💡 在系统设置里切换语言，选择会自动记住，下次打开还是你选的语言。数据库里统一存中文，不影响报表和搜索。
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 更早的版本 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#94a3b8;">近期上线</span>
+      <span class="version-date">2026 年 8 月</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon new">📄</div>
+      <div class="feat-body">
+        <div class="feat-title">拍照转文档（OCR）<span class="badge new">NEW</span></div>
+        <div class="feat-desc">手机拍照身份证、合同、收据，自动识别文字，导出 PDF / Word / TXT。接入百度高精度 OCR，支持智能增强、原版式还原。</div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon new">🎂</div>
+      <div class="feat-body">
+        <div class="feat-title">生日台账管理<span class="badge new">NEW</span></div>
+        <div class="feat-desc">记录家人和租户生日，支持农历/公历，自动倒计时，每日提醒里会提示近期过生日的人。</div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">📧</div>
+      <div class="feat-body">
+        <div class="feat-title">每日缴费提醒<span class="badge imp">稳定运行</span></div>
+        <div class="feat-desc">每天早上 9 点自动发邮件 + 微信推送，逾期账单、即将到期账单、近期生日一次说清，不用再一个个翻账本。</div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">🛡️</div>
+      <div class="feat-body">
+        <div class="feat-title">全站国内部署 + 安全加固<span class="badge imp">合规</span></div>
+        <div class="feat-desc">数据全部存储在国内阿里云，已通过 ICP 备案；JWT 密钥轮换、文件上传鉴权、实时连接稳定性均已加固。</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="footer">
+  <a href="tools.html">返回工具箱</a> · <a href="index.html">回到首页</a><br><br>
+  <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">滇ICP备2026014743号</a>
+</div>
+
+</body>
+</html>
