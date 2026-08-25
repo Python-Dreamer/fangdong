@@ -63,3 +63,7 @@ ALTER TABLE rooms ADD COLUMN IF NOT EXISTS electricity_price NUMERIC(10,2);
 ALTER TABLE workspace_settings ADD COLUMN IF NOT EXISTS default_cold_water_price NUMERIC(10,2) DEFAULT 5;
 ALTER TABLE workspace_settings ADD COLUMN IF NOT EXISTS default_hot_water_price NUMERIC(10,2) DEFAULT 15;
 ALTER TABLE workspace_settings ADD COLUMN IF NOT EXISTS default_electricity_price NUMERIC(10,2) DEFAULT 1.2;
+
+-- 5. 授权（关键！否则前端anon角色写入会被拒绝）
+GRANT SELECT, INSERT, UPDATE, DELETE ON meter_readings TO anon, authenticated;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
