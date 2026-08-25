@@ -1442,7 +1442,7 @@ async function doMeterSave(tenantId){
       total_fee:total,paid:false,notes:notes
     };
     if(window._meterPhotoPath)row.photo_url=window._meterPhotoPath;
-    var r=await sb.from('meter_readings').insert(row).select();
+    var r=await sb.from('meter_readings').insert(row);
     console.log('meter insert result:',JSON.stringify(r));
     if(r.error){var errMsg=r.error.message||r.error.details||r.error.hint||'保存失败';if(r.error.code)errMsg='['+r.error.code+'] '+errMsg;console.error('meter insert error:',r.error);toast(errMsg,'e');btn.disabled=false;btn.textContent=i18n.t('meter.save');return}
     toast(i18n.t('meter.saveSuccess'));
