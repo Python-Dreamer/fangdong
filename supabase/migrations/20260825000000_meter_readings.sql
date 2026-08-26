@@ -67,3 +67,9 @@ ALTER TABLE workspace_settings ADD COLUMN IF NOT EXISTS default_electricity_pric
 -- 5. 授权（关键！否则前端anon角色写入会被拒绝）
 GRANT SELECT, INSERT, UPDATE, DELETE ON meter_readings TO anon, authenticated;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+
+-- 6. 更新已有记录的默认单价（冷5/热6/电1.5）
+UPDATE workspace_settings SET default_hot_water_price = 6 WHERE default_hot_water_price = 15;
+UPDATE workspace_settings SET default_electricity_price = 1.5 WHERE default_electricity_price = 1.2;
+-- 7. 修复已存在的照片路径（去掉重复的contract-photos/前缀）
+UPDATE meter_readings SET photo_url = SUBSTRING(photo_url FROM LENGTH('contract-photos/')+1) WHERE photo_url LIKE 'contract-photos/%';

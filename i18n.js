@@ -947,7 +947,15 @@
     "meter.electricityPrice": "电单价（元/度）",
     "meter.saveSuccess": "抄表已保存",
     "meter.needColdOrElec": "请至少填写冷水表和电表读数",
-    "meter.photoUploaded": "照片已上传"
+    "meter.photoUploaded": "照片已上传",
+    "auth.resetPwdTitle": "重置密码",
+    "auth.resetPwdSub": "输入注册邮箱，获取验证码后设置新密码",
+    "auth.verifyCode": "验证码",
+    "auth.sendCode": "发送验证码",
+    "auth.resendCode": "重新发送",
+    "auth.codeSent": "验证码已发送，请查收邮箱",
+    "auth.codeInvalid": "验证码错误或已过期",
+    "auth.fillCodeEmail": "请填写邮箱和验证码",
   },
   "en": {
     "common.appName": "Landlord Manager",
@@ -1896,7 +1904,16 @@
     "meter.electricityPrice": "Electricity price (¥/kWh)",
     "meter.saveSuccess": "Reading saved",
     "meter.needColdOrElec": "Please enter at least cold water and electricity readings",
-    "meter.photoUploaded": "Photo uploaded"
+    "meter.photoUploaded": "Photo uploaded",
+    "auth.resetPwdTitle": "Reset Password",
+    "auth.resetPwdSub": "Enter your email, get a code, then set a new password",
+    "auth.verifyCode": "Verify Code",
+    "auth.sendCode": "Send Code",
+    "auth.resendCode": "Resend",
+    "auth.codeSent": "Verification code sent, please check your email",
+    "auth.codeInvalid": "Invalid or expired code",
+    "auth.fillCodeEmail": "Please enter email and code",
+
   }
 };
 
