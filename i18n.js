@@ -956,6 +956,9 @@
     "auth.codeSent": "验证码已发送，请查收邮箱",
     "auth.codeInvalid": "验证码错误或已过期",
     "auth.fillCodeEmail": "请填写邮箱和验证码",
+    "auth.resetLinkSent": "重置链接和验证码已发送到您的邮箱，请查收",
+    "auth.setNewPwdSub": "请设置您的新密码",
+    "auth.codeHint": "如果邮件中的链接无法打开，请输入邮箱收到的6位验证码",
   },
   "en": {
     "common.appName": "Landlord Manager",
@@ -1913,6 +1916,9 @@
     "auth.codeSent": "Verification code sent, please check your email",
     "auth.codeInvalid": "Invalid or expired code",
     "auth.fillCodeEmail": "Please enter email and code",
+    "auth.resetLinkSent": "Reset link and code sent to your email, please check",
+    "auth.setNewPwdSub": "Please set your new password",
+    "auth.codeHint": "If the link in the email doesn't work, enter the 6-digit code",
 
   }
 };
