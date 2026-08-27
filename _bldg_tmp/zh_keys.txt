@@ -1,6 +1,0 @@
-    "building.floorN": "{n}楼",
-    "building.roomsCount": "{n}间房",
-    "building.noBuildings": "暂无公寓，点击上方按钮添加",
-    "building.addTitle": "添加第一栋公寓",
-    "building.utilities": "水电单价",
-    "building.createSuccess": "公寓已新建",

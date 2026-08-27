@@ -8,3 +8,4 @@ i18n_phase*.py
 __pycache__/
 *.pyc
 .DS_Store
+_bldg_tmp/
