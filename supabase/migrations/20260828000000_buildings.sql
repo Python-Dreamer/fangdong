@@ -15,10 +15,18 @@ CREATE TABLE IF NOT EXISTS buildings (
 ALTER TABLE buildings ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS buildings_owner_all ON buildings;
-CREATE POLICY buildings_owner_all ON buildings
-  FOR ALL
-  USING (owner_id = current_setting('app.owner_id', true)::uuid)
-  WITH CHECK (owner_id = current_setting('app.owner_id', true)::uuid);
+DROP POLICY IF EXISTS buildings_select_own ON buildings;
+CREATE POLICY buildings_select_own ON buildings
+  FOR SELECT USING (auth.uid() = owner_id);
+DROP POLICY IF EXISTS buildings_insert_own ON buildings;
+CREATE POLICY buildings_insert_own ON buildings
+  FOR INSERT WITH CHECK (auth.uid() = owner_id);
+DROP POLICY IF EXISTS buildings_update_own ON buildings;
+CREATE POLICY buildings_update_own ON buildings
+  FOR UPDATE USING (auth.uid() = owner_id);
+DROP POLICY IF EXISTS buildings_delete_own ON buildings;
+CREATE POLICY buildings_delete_own ON buildings
+  FOR DELETE USING (auth.uid() = owner_id);
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON buildings TO anon, authenticated;
 
