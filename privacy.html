@@ -70,9 +70,9 @@ li{font-size:14px;color:#334155;margin-bottom:6px}
 <h2>四、数据安全保护</h2>
 <p>我们采取以下措施保护您的数据安全：</p>
 <ul>
-<li><strong>敏感信息脱敏显示：</strong>身份证号码在界面中仅显示后4位</li>
+<li><strong>敏感信息加密存储：</strong>身份证号码在数据库中加密存储，即使数据库备份泄露也无法解密；界面中仅显示后4位</li>
 <li><strong>传输加密：</strong>所有数据传输均使用 HTTPS 加密</li>
-<li><strong>权限控制：</strong>只有登录用户才能访问数据，且房东之间数据互相隔离</li>
+<li><strong>权限控制：</strong>只有登录用户才能访问数据，且房东之间数据互相隔离；查看完整身份证号码需经过身份权限校验</li>
 <li><strong>文件保护：</strong>合同照片、文件的上传和访问均需登录校验</li>
 </ul>
 </div>
