@@ -172,7 +172,7 @@ BEGIN
     CASE
       WHEN t.id_number IS NULL THEN NULL
       WHEN left(t.id_number, 7) = 'enc:v1:'
-        THEN convert_from(pgp_sym_decrypt(decode(substr(t.id_number, 8), 'base64'), _read_enc_key()), 'UTF8')
+        THEN pgp_sym_decrypt(decode(substr(t.id_number, 8), 'base64'), _read_enc_key())
       ELSE t.id_number
     END AS id_number,
     (
@@ -184,7 +184,7 @@ BEGIN
           THEN jsonb_set(
                  elem,
                  '{id_number}',
-                 to_jsonb(convert_from(pgp_sym_decrypt(decode(substr(elem->>'id_number', 8), 'base64'), _read_enc_key()), 'UTF8'))
+                 to_jsonb(pgp_sym_decrypt(decode(substr(elem->>'id_number', 8), 'base64'), _read_enc_key()))
                )
           ELSE elem
         END
