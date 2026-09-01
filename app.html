@@ -231,7 +231,7 @@ select.fc{-webkit-appearance:none;appearance:none;background-image:url("data:ima
 <div class="ov" id="overlay"><div class="modal" id="modal"></div></div>
 <div class="sb-overlay" id="sbOverlay" onclick="closeSB()"></div>
 <div class="photo-viewer-overlay" id="photoViewer" onclick="closePhotoViewer(event)"><button class="photo-viewer-close" onclick="closePhotoViewer()">×</button><span class="photo-viewer-nav" id="photoViewerPrev" onclick="event.stopPropagation();photoViewerNav(-1)">‹</span><img class="photo-viewer-img" id="photoViewerImg" src="" alt=""><span class="photo-viewer-nav" id="photoViewerNext" onclick="event.stopPropagation();photoViewerNav(1)">›</span></div>
-<script src="i18n.js?v=56"></script>
+<script src="i18n.js?v=57"></script>
 <script>
 var sbUrl=localStorage.getItem('sb_url')||'https://ruilifangfong.site',sbKey=localStorage.getItem('sb_key')||'eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8',sb=null,sdkReady=false,currentUser=null,currentProfile=null,currentPage='dashboard';
 var DEFAULT_SB_URL='https://ruilifangfong.site',DEFAULT_SB_KEY='eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8';
@@ -681,7 +681,7 @@ var fac=fTenants.filter(function(t){return t.status==='active'}).length;
 var fmonthlyIncome=fRents.filter(function(r){return r.status==='paid'&&r.pay_date&&r.pay_date.slice(0,7)===curM}).reduce(function(a,r){return a+r.amount},0);
 var fto=fRents.filter(function(r){if(r.status==='paid')return false;var tn3=cache.tenants.find(function(x){return x.id===r.tenant_id});if(tn3&&tn3.status==='inactive')return false;var cd=r.period_start||r.due_date;return cd&&cd<today()}).reduce(function(a,r){return a+r.amount},0);
 var bldgBarRent='';if(cache.buildings&&cache.buildings.length){function bldgRentStats(bId){var ids=(bId==='__all__')?cache.rooms.map(function(r){return r.id}):cache.rooms.filter(function(r){return r.building_id===bId}).map(function(r){return r.id});var ts=cache.tenants.filter(function(t){return ids.indexOf(t.room_id)>=0});var rs2=cache.rents.filter(function(r){if(ids.indexOf(r.room_id)<0)return false;var tn=cache.tenants.find(function(x){return x.id===r.tenant_id});if(tn&&tn.status==='inactive')return false;return true});var mo=rs2.filter(function(r){return r.status==='paid'&&r.pay_date&&r.pay_date.slice(0,7)===curM}).reduce(function(a,r){return a+r.amount},0);var ov=rs2.filter(function(r){if(r.status==='paid')return false;var tn2=cache.tenants.find(function(x){return x.id===r.tenant_id});if(tn2&&tn2.status==='inactive')return false;var cd=r.period_start||r.due_date;return cd&&cd<today()}).reduce(function(a,r){return a+r.amount},0);return{active:ts.filter(function(t){return t.status==='active'}).length,monthly:mo,overdue:ov}}var allRS=bldgRentStats('__all__');bldgBarRent='<div class="bldg-bar"><div class="bldg-card'+(rBid==='__all__'?' on':'')+'" onclick="selectRentBuilding(\'__all__\')"><div class="bn">'+i18n.t('common.all')+'</div><div class="bs">'+allRS.active+' '+i18n.t('tenant.active')+' · ¥'+allRS.monthly.toLocaleString()+'</div></div>';cache.buildings.forEach(function(b){var s=bldgRentStats(b.id);bldgBarRent+='<div class="bldg-card'+(rBid===b.id?' on':'')+'" onclick="selectRentBuilding(\''+b.id+'\')"><div class="bn">'+esc(b.name)+'</div><div class="bs">'+s.active+' '+i18n.t('tenant.active')+' · ¥'+s.monthly.toLocaleString()+'</div></div>'});bldgBarRent+='</div>'}
-var isOv=st.tab==='overview';var tabsH='<div style="display:flex;border-bottom:2px solid var(--bd);margin-bottom:0"><button style="flex:1;padding:10px;border:none;background:none;font-size:14px;font-weight:600;cursor:pointer;border-bottom:2px solid '+(isOv?'var(--p)':'transparent')+';color:'+(isOv?'var(--p)':'var(--ts)')+';margin-bottom:-2px" onclick="pageState.rent.tab=\'overview\';pageState.rent.filter=\'all\';_fullRender=true;rRent()">'+i18n.t('rent.overview2')+'</button><button style="flex:1;padding:10px;border:none;background:none;font-size:14px;font-weight:600;cursor:pointer;border-bottom:2px solid '+(!isOv?'var(--p)':'transparent')+';color:'+(!isOv?'var(--p)':'var(--ts)')+';margin-bottom:-2px" onclick="pageState.rent.tab=\'detail\';pageState.rent.filter=\'all\';_fullRender=true;rRent()">'+i18n.t('rent.billDetails')+'</button></div>';var tbl='',toolbar='';if(isOv){var ts2=cache.tenants.filter(function(t){return t.move_in_date});if(rBid!=='__all__')ts2=ts2.filter(function(t){return rBIds.indexOf(t.room_id)>=0});if(st.filter==='active')ts2=ts2.filter(function(t){return t.status==='active'});else if(st.filter==='expired')ts2=ts2.filter(function(t){return t.status==='active'&&t.contract_end&&t.contract_end<today()});if(st.search){var k=st.search.toLowerCase();ts2=ts2.filter(function(t){var rm=cache.rooms.find(function(r){return r.id===t.room_id});return t.name.toLowerCase().includes(k)||(t.phone&&t.phone.includes(k))||(rm&&rm.name.toLowerCase().includes(k))})}ts2.sort(function(a,b){var na=getNextPayDate(a)||'9999',nb=getNextPayDate(b)||'9999';return na.localeCompare(nb)});tbl=ts2.length?'<div class="tbl-wrap"><table><thead><tr><th>'+i18n.t('set.tenants')+'</th><th>'+i18n.t('tenant.room')+'</th><th>'+i18n.t('room.payMethod')+'</th><th>'+i18n.t('rent.nextPayment')+'</th><th>'+i18n.t('common.countdown')+'</th>'+(ce?'<th>'+i18n.t('common.operation')+'</th>':'')+'</tr></thead><tbody>'+ts2.map(function(t){var rm=cache.rooms.find(function(x){return x.id===t.room_id});var nextPay=getNextPayDate(t);var payLabel=_trPay(t.pay_method);var d=nextPay?daysDiff(today(),nextPay):null;var dx,dc;if(t.status!=='active'){dx='-';dc=''}else if(!nextPay){if(t.contract_end&&t.contract_end<today()){dx=''+i18n.t('tenant.pendingRenewal')+'';dc='color:var(--d)'}else if(t.contract_end){dx=''+i18n.t('tenant.pendingRenewal')+'';dc='color:var(--w)'}else{dx='-';dc=''}}else if(d<0){dx=i18n.t('common.overdueNDays',{n:Math.abs(d)});dc='color:var(--d)'}else if(d===0){dx=i18n.t('common.today');dc='color:var(--d)'}else if(d<=7){dx=i18n.t('common.afterNDays',{n:d});dc='color:var(--w)'}else{dx=i18n.t('common.afterNDays',{n:d});dc=''}var overdueCount=cache.rents.filter(function(r){if(r.tenant_id!==t.id||r.status==='paid')return false;if(t.status==='inactive')return false;var cd=r.period_start||r.due_date;return cd&&cd<today()}).length;var payBtn=ce&&t.status==='active'?' <button class="btn btn-sm btn-g" onclick="doQuickPay(\''+t.id+'\')">'+i18n.t('rent.payment')+'</button>'+(overdueCount>=2?' <button class="btn btn-sm btn-o" onclick="batchPay(\''+t.id+'\')">'+i18n.t('common.batchCollect')+'</button>':'')+(nextPay&&nextPay<=today()?' <button class="btn btn-sm btn-gh" style="color:var(--p)" onclick="copyTenantReminder(\''+t.id+'\')">'+i18n.t('rent.remind')+'</button>':''):'';return'<tr><td style="font-weight:600">'+esc(t.name)+'</td><td>'+esc(rm?rm.name:'-')+'</td><td><span class="tag t-blue">'+esc(payLabel)+'</span></td><td>'+(nextPay?fmtDate(nextPay):'-')+'</td><td style="font-weight:600;'+dc+'">'+dx+'</td>'+(ce?'<td><button class="btn btn-sm btn-gh" onclick="showEditTenant(\''+t.id+'\')">'+i18n.t('common.edit')+'</button>'+payBtn+'</td>':'')+'</tr>'}).join('')+'</tbody></table></div>':'<div class="empty"><div class="ei">📋</div><h3>'+i18n.t('tenant.noContract')+'</h3></div>';toolbar='<div class="toolbar"><div class="sbox"><span>🔍</span><input type="text" placeholder="'+i18n.t('rent.searchPh')+'" value="'+esc(st.search)+'" oninput="pageState.rent.search=this.value;debounceRent()" oncompositionstart="_composing=true" oncompositionend="_composing=false;debounceRent()"></div><select class="fsel" onchange="pageState.rent.filter=this.value;_fullRender=true;rRent()" autocomplete="off" data-lpignore="true"><option value="all"'+(st.filter==='all'?' selected':'')+'>'+i18n.t('common.all')+'</option><option value="active"'+(st.filter==='active'?' selected':'')+'>'+i18n.t('tenant.active')+'</option><option value="expired"'+(st.filter==='expired'?' selected':'')+'>'+i18n.t('common.expired')+'</option></select></div>'}else{var rs=cache.rents.slice().filter(function(r){var tn=cache.tenants.find(function(x){return x.id===r.tenant_id});if(tn&&tn.status==='inactive')return false;if(rBid!=='__all__'&&rBIds.indexOf(r.room_id)<0)return false;return true;});if(st.filter==='paid')rs=rs.filter(function(r){return r.status==='paid'});else if(st.filter==='pending')rs=rs.filter(function(r){return r.status==='pending'});else if(st.filter==='overdue')rs=rs.filter(function(r){return r.status==='overdue'});if(st.search){var k=st.search.toLowerCase();rs=rs.filter(function(r){var t=cache.tenants.find(function(x){return x.id===r.tenant_id});var rm=cache.rooms.find(function(x){return x.id===r.room_id});return(t&&t.name.toLowerCase().includes(k))||(rm&&rm.name.toLowerCase().includes(k))})}rs.sort(function(a,b){return(b.due_date||'').localeCompare(a.due_date||'')});tbl=rs.length?'<div class="tbl-wrap"><table><thead><tr><th>'+i18n.t('set.tenants')+'</th><th>'+i18n.t('tenant.room')+'</th><th>'+i18n.t('rent.paymentPeriod')+'</th><th>'+i18n.t('rent.amount')+'</th><th>'+i18n.t('common.status')+'</th><th>'+i18n.t('dash.payDate')+'</th><th>'+i18n.t('rent.payMethod')+'</th>'+(ce?'<th>'+i18n.t('common.operation')+'</th>':'')+'</tr></thead><tbody>'+rs.map(function(r){var t=cache.tenants.find(function(x){return x.id===r.tenant_id}),rm=cache.rooms.find(function(x){return x.id===r.room_id});var periodLabel=t?fmtPayPeriod(r.due_date,t,r):fmtDate(r.due_date);var sg=r.status==='paid'?'t-green':r.status==='overdue'?'t-red':'t-yellow',sx=r.status==='paid'?i18n.t('rent.paid'):r.status==='overdue'?i18n.t('dash.overdue'):i18n.t('rent.pending');var dueInfo=r.status!=='paid'?fmtDueLabel(r.due_date,r):'';var actionBtns='';if(ce){if(r.status==='paid'){actionBtns+='<button class="btn btn-sm btn-gh" onclick="cancelPaid(\''+r.id+'\')">'+i18n.t('rent.cancel')+'</button> '}else{if((r.period_start||r.due_date)<=today())actionBtns+='<button class="btn btn-sm btn-gh" style="color:var(--p)" onclick="copyRentReminder(\''+r.id+'\')">'+i18n.t('rent.remind')+'</button> '}actionBtns+='<button class="btn btn-sm btn-gh" style="color:var(--d)" onclick="delRent(\''+r.id+'\')">'+i18n.t('common.del')+'</button>'}return'<tr><td style="font-weight:600">'+esc(t?t.name:'-')+'</td><td>'+esc(rm?rm.name:'-')+'</td><td><div style="font-size:12px">'+esc(periodLabel)+'</div>'+(dueInfo?'<div style="font-size:11px;color:'+(r.status==='overdue'?'var(--d)':'var(--w)')+'">'+esc(dueInfo)+'</div>':'')+'</td><td style="font-weight:600">¥'+r.amount.toLocaleString()+'</td><td><span class="tag '+sg+'">'+sx+'</span></td><td>'+(r.pay_date?fmtDate(r.pay_date):'-')+'</td><td>'+(r.pay_method||'-')+'</td>'+(ce?'<td>'+actionBtns+'</td>':'')+'</tr>'}).join('')+'</tbody></table></div>':'<div class="empty"><div class="ei">💰</div><h3>'+i18n.t('rent.empty')+'</h3><p>'+i18n.t('rent.autoGenHint')+'</p></div>';toolbar='<div class="toolbar"><div class="sbox"><span>🔍</span><input type="text" placeholder="'+i18n.t('rent.searchPh')+'" value="'+esc(st.search)+'" oninput="pageState.rent.search=this.value;debounceRent()" oncompositionstart="_composing=true" oncompositionend="_composing=false;debounceRent()"></div><select class="fsel" id="selRent" onchange="filterRent()" autocomplete="off" data-lpignore="true"><option value="all"'+(st.filter==='all'?' selected':'')+'>'+i18n.t('common.all')+'</option><option value="paid"'+(st.filter==='paid'?' selected':'')+'>'+i18n.t('rent.paid')+'</option><option value="pending"'+(st.filter==='pending'?' selected':'')+'>'+i18n.t('rent.pending')+'</option><option value="overdue"'+(st.filter==='overdue'?' selected':'')+'>'+i18n.t('dash.overdue')+'</option></select></div>'}var tc=document.getElementById('tblRent');if(tc&&!_fullRender){tc.innerHTML=tbl;return}document.getElementById('mainContent').innerHTML='<div class="page-hd"><h2>'+i18n.t('rent.title')+'</h2><div class="hd-actions">'+(ce?'<button class="btn btn-o" onclick="generateBills()">'+i18n.t('rent.genBillsBtn')+'</button><button class="btn btn-p" onclick="showAddRent()">'+i18n.t('rent.manualBtn')+'</button>':'')+'</div></div><div id="statsRent">'+statsH+'</div>'+bldgBarRent+'<div class="card">'+tabsH+'<div style="padding:0 0 14px 0">'+toolbar+'<div id="tblRent">'+tbl+'</div></div></div>'}
+var isOv=st.tab==='overview';var tabsH='<div style="display:flex;border-bottom:2px solid var(--bd);margin-bottom:0"><button style="flex:1;padding:10px;border:none;background:none;font-size:14px;font-weight:600;cursor:pointer;border-bottom:2px solid '+(isOv?'var(--p)':'transparent')+';color:'+(isOv?'var(--p)':'var(--ts)')+';margin-bottom:-2px" onclick="pageState.rent.tab=\'overview\';pageState.rent.filter=\'all\';_fullRender=true;rRent()">'+i18n.t('rent.overview2')+'</button><button style="flex:1;padding:10px;border:none;background:none;font-size:14px;font-weight:600;cursor:pointer;border-bottom:2px solid '+(!isOv?'var(--p)':'transparent')+';color:'+(!isOv?'var(--p)':'var(--ts)')+';margin-bottom:-2px" onclick="pageState.rent.tab=\'detail\';pageState.rent.filter=\'all\';_fullRender=true;rRent()">'+i18n.t('rent.billDetails')+'</button></div>';var tbl='',toolbar='';if(isOv){var ts2=cache.tenants.filter(function(t){return t.move_in_date});if(rBid!=='__all__')ts2=ts2.filter(function(t){return rBIds.indexOf(t.room_id)>=0});if(st.filter==='active')ts2=ts2.filter(function(t){return t.status==='active'});else if(st.filter==='expired')ts2=ts2.filter(function(t){return t.status==='active'&&t.contract_end&&t.contract_end<today()});if(st.search){var k=st.search.toLowerCase();ts2=ts2.filter(function(t){var rm=cache.rooms.find(function(r){return r.id===t.room_id});return t.name.toLowerCase().includes(k)||(t.phone&&t.phone.includes(k))||(rm&&rm.name.toLowerCase().includes(k))})}ts2.sort(function(a,b){var na=getNextPayDate(a)||'9999',nb=getNextPayDate(b)||'9999';return na.localeCompare(nb)});tbl=ts2.length?'<div class="tbl-wrap"><table><thead><tr><th>'+i18n.t('set.tenants')+'</th><th>'+i18n.t('tenant.room')+'</th><th>'+i18n.t('room.payMethod')+'</th><th>'+i18n.t('rent.nextPayment')+'</th><th>'+i18n.t('common.countdown')+'</th>'+(ce?'<th>'+i18n.t('common.operation')+'</th>':'')+'</tr></thead><tbody>'+ts2.map(function(t){var rm=cache.rooms.find(function(x){return x.id===t.room_id});var nextPay=getNextPayDate(t);var payLabel=_trPay(t.pay_method);var d=nextPay?daysDiff(today(),nextPay):null;var dx,dc;if(t.status!=='active'){dx='-';dc=''}else if(!nextPay){if(t.contract_end&&t.contract_end<today()){dx=''+i18n.t('tenant.pendingRenewal')+'';dc='color:var(--d)'}else if(t.contract_end){dx=''+i18n.t('tenant.pendingRenewal')+'';dc='color:var(--w)'}else{dx='-';dc=''}}else if(d<0){dx=i18n.t('common.overdueNDays',{n:Math.abs(d)});dc='color:var(--d)'}else if(d===0){dx=i18n.t('common.today');dc='color:var(--d)'}else if(d<=7){dx=i18n.t('common.afterNDays',{n:d});dc='color:var(--w)'}else{dx=i18n.t('common.afterNDays',{n:d});dc=''}var overdueCount=cache.rents.filter(function(r){if(r.tenant_id!==t.id||r.status==='paid')return false;if(t.status==='inactive')return false;var cd=r.period_start||r.due_date;return cd&&cd<today()}).length;var payBtn=ce&&t.status==='active'?' <button class="btn btn-sm btn-g" onclick="doQuickPay(\''+t.id+'\')">'+i18n.t('rent.payment')+'</button>'+(overdueCount>=2?' <button class="btn btn-sm btn-o" onclick="batchPay(\''+t.id+'\')">'+i18n.t('common.batchCollect')+'</button>':'')+(nextPay&&nextPay<=today()?' <button class="btn btn-sm btn-gh" style="color:var(--p)" onclick="showBillModal(\'tenant\',\''+t.id+'\')">'+i18n.t('rent.remind')+'</button>':''):'';return'<tr><td style="font-weight:600">'+esc(t.name)+'</td><td>'+esc(rm?rm.name:'-')+'</td><td><span class="tag t-blue">'+esc(payLabel)+'</span></td><td>'+(nextPay?fmtDate(nextPay):'-')+'</td><td style="font-weight:600;'+dc+'">'+dx+'</td>'+(ce?'<td><button class="btn btn-sm btn-gh" onclick="showEditTenant(\''+t.id+'\')">'+i18n.t('common.edit')+'</button>'+payBtn+'</td>':'')+'</tr>'}).join('')+'</tbody></table></div>':'<div class="empty"><div class="ei">📋</div><h3>'+i18n.t('tenant.noContract')+'</h3></div>';toolbar='<div class="toolbar"><div class="sbox"><span>🔍</span><input type="text" placeholder="'+i18n.t('rent.searchPh')+'" value="'+esc(st.search)+'" oninput="pageState.rent.search=this.value;debounceRent()" oncompositionstart="_composing=true" oncompositionend="_composing=false;debounceRent()"></div><select class="fsel" onchange="pageState.rent.filter=this.value;_fullRender=true;rRent()" autocomplete="off" data-lpignore="true"><option value="all"'+(st.filter==='all'?' selected':'')+'>'+i18n.t('common.all')+'</option><option value="active"'+(st.filter==='active'?' selected':'')+'>'+i18n.t('tenant.active')+'</option><option value="expired"'+(st.filter==='expired'?' selected':'')+'>'+i18n.t('common.expired')+'</option></select></div>'}else{var rs=cache.rents.slice().filter(function(r){var tn=cache.tenants.find(function(x){return x.id===r.tenant_id});if(tn&&tn.status==='inactive')return false;if(rBid!=='__all__'&&rBIds.indexOf(r.room_id)<0)return false;return true;});if(st.filter==='paid')rs=rs.filter(function(r){return r.status==='paid'});else if(st.filter==='pending')rs=rs.filter(function(r){return r.status==='pending'});else if(st.filter==='overdue')rs=rs.filter(function(r){return r.status==='overdue'});if(st.search){var k=st.search.toLowerCase();rs=rs.filter(function(r){var t=cache.tenants.find(function(x){return x.id===r.tenant_id});var rm=cache.rooms.find(function(x){return x.id===r.room_id});return(t&&t.name.toLowerCase().includes(k))||(rm&&rm.name.toLowerCase().includes(k))})}rs.sort(function(a,b){return(b.due_date||'').localeCompare(a.due_date||'')});tbl=rs.length?'<div class="tbl-wrap"><table><thead><tr><th>'+i18n.t('set.tenants')+'</th><th>'+i18n.t('tenant.room')+'</th><th>'+i18n.t('rent.paymentPeriod')+'</th><th>'+i18n.t('rent.amount')+'</th><th>'+i18n.t('common.status')+'</th><th>'+i18n.t('dash.payDate')+'</th><th>'+i18n.t('rent.payMethod')+'</th>'+(ce?'<th>'+i18n.t('common.operation')+'</th>':'')+'</tr></thead><tbody>'+rs.map(function(r){var t=cache.tenants.find(function(x){return x.id===r.tenant_id}),rm=cache.rooms.find(function(x){return x.id===r.room_id});var periodLabel=t?fmtPayPeriod(r.due_date,t,r):fmtDate(r.due_date);var sg=r.status==='paid'?'t-green':r.status==='overdue'?'t-red':'t-yellow',sx=r.status==='paid'?i18n.t('rent.paid'):r.status==='overdue'?i18n.t('dash.overdue'):i18n.t('rent.pending');var dueInfo=r.status!=='paid'?fmtDueLabel(r.due_date,r):'';var actionBtns='';if(ce){if(r.status==='paid'){actionBtns+='<button class="btn btn-sm btn-gh" onclick="cancelPaid(\''+r.id+'\')">'+i18n.t('rent.cancel')+'</button> '}else{if((r.period_start||r.due_date)<=today())actionBtns+='<button class="btn btn-sm btn-gh" style="color:var(--p)" onclick="showBillModal(\'rent\',\''+r.id+'\')">'+i18n.t('rent.remind')+'</button> '}actionBtns+='<button class="btn btn-sm btn-gh" style="color:var(--d)" onclick="delRent(\''+r.id+'\')">'+i18n.t('common.del')+'</button>'}return'<tr><td style="font-weight:600">'+esc(t?t.name:'-')+'</td><td>'+esc(rm?rm.name:'-')+'</td><td><div style="font-size:12px">'+esc(periodLabel)+'</div>'+(dueInfo?'<div style="font-size:11px;color:'+(r.status==='overdue'?'var(--d)':'var(--w)')+'">'+esc(dueInfo)+'</div>':'')+'</td><td style="font-weight:600">¥'+r.amount.toLocaleString()+'</td><td><span class="tag '+sg+'">'+sx+'</span></td><td>'+(r.pay_date?fmtDate(r.pay_date):'-')+'</td><td>'+(r.pay_method||'-')+'</td>'+(ce?'<td>'+actionBtns+'</td>':'')+'</tr>'}).join('')+'</tbody></table></div>':'<div class="empty"><div class="ei">💰</div><h3>'+i18n.t('rent.empty')+'</h3><p>'+i18n.t('rent.autoGenHint')+'</p></div>';toolbar='<div class="toolbar"><div class="sbox"><span>🔍</span><input type="text" placeholder="'+i18n.t('rent.searchPh')+'" value="'+esc(st.search)+'" oninput="pageState.rent.search=this.value;debounceRent()" oncompositionstart="_composing=true" oncompositionend="_composing=false;debounceRent()"></div><select class="fsel" id="selRent" onchange="filterRent()" autocomplete="off" data-lpignore="true"><option value="all"'+(st.filter==='all'?' selected':'')+'>'+i18n.t('common.all')+'</option><option value="paid"'+(st.filter==='paid'?' selected':'')+'>'+i18n.t('rent.paid')+'</option><option value="pending"'+(st.filter==='pending'?' selected':'')+'>'+i18n.t('rent.pending')+'</option><option value="overdue"'+(st.filter==='overdue'?' selected':'')+'>'+i18n.t('dash.overdue')+'</option></select></div>'}var tc=document.getElementById('tblRent');if(tc&&!_fullRender){tc.innerHTML=tbl;return}document.getElementById('mainContent').innerHTML='<div class="page-hd"><h2>'+i18n.t('rent.title')+'</h2><div class="hd-actions">'+(ce?'<button class="btn btn-o" onclick="generateBills()">'+i18n.t('rent.genBillsBtn')+'</button><button class="btn btn-p" onclick="showAddRent()">'+i18n.t('rent.manualBtn')+'</button>':'')+'</div></div><div id="statsRent">'+statsH+'</div>'+bldgBarRent+'<div class="card">'+tabsH+'<div style="padding:0 0 14px 0">'+toolbar+'<div id="tblRent">'+tbl+'</div></div></div>'}
 
 
 function showAddRent(){if(!canEdit()){toast(i18n.t('common.readOnly'),'w');return}var at=cache.tenants.filter(function(t){return t.status==='active'});if(!at.length){toast(i18n.t('rent.noActiveTenants'),'w');return}openModal('<div class="m-hd"><h3>'+i18n.t('rent.addTitle')+'</h3><button class="m-x" onclick="closeModal()">×</button></div><div class="m-bd"><div class="fg"><label>'+i18n.t('set.tenants')+'<span class="req">*</span></label><select class="fc" id="fRT" onchange="autoRent()" autocomplete="off" data-lpignore="true"><option value="">'+i18n.t('tenant.selectTenant')+'</option>'+at.map(function(t){var rm=cache.rooms.find(function(r){return r.id===t.room_id});return'<option value="'+t.id+'" data-rent="'+(t.rent_amount||'')+'" data-room="'+(t.room_id||'')+'">'+esc(t.name)+(rm?' - '+rm.name:'')+'</option>'}).join('')+'</select></div><div class="fr"><div class="fg"><label>'+i18n.t('rent.amountLabel')+'<span class="req">*</span></label><input class="fc" id="fRA" type="number" placeholder="'+i18n.t('rent.amount')+'"></div><div class="fg"><label>'+i18n.t('rent.dueDateLabel')+'<span class="req">*</span></label><input class="fc" id="fRDD" type="date"><div class="hint">'+i18n.t('rent.dueDateHint')+'</div></div></div><div class="fr"><div class="fg"><label>'+i18n.t('rent.payDate')+'</label><input class="fc" id="fRPD" type="date"><div class="hint">'+i18n.t('rent.leaveEmptyUnpaid')+'</div><div class="fg"><label>'+i18n.t('rent.payMethod')+'</label><select class="fc" id="fRPM" autocomplete="off" data-lpignore="true"><option value="">'+i18n.t('common.select')+'</option><option>'+i18n.t('rent.methodWechat')+'</option><option>'+i18n.t('rent.methodAlipay')+'</option><option>'+i18n.t('rent.methodBank')+'</option><option>'+i18n.t('rent.methodCash')+'</option><option>'+i18n.t('common.other')+'</option></select></div></div></div><div class="fg"><label>'+i18n.t('rent.startDate')+'</label><input class="fc" id="fRPS" type="date"><div class="hint">'+i18n.t('rent.startDateHint')+'</div></div><div class="fg"><label>'+i18n.t('common.notes')+'</label><input class="fc" id="fRNo" placeholder="'+i18n.t('common.notesPh')+'"></div></div><div class="m-ft"><button class="btn btn-gh" onclick="closeModal()">'+i18n.t('common.cancel')+'</button><button class="btn btn-p" id="saveRentBtn" onclick="doAddRent()">'+i18n.t('common.save')+'</button></div>')}
@@ -809,7 +809,7 @@ async function doEditName(){var name=document.getElementById('fEditName').value.
 
 // ========== 日期工具补充 ==========
 function addMonths(dateStr,months){var parts=dateStr.split('-');var y=parseInt(parts[0]);var m=parseInt(parts[1])-1+months;var d=parseInt(parts[2]);y+=Math.floor(m/12);m=m%12;if(m<0){m+=12;y-=1}var lastDay=new Date(y,m+1,0).getDate();if(d>lastDay)d=lastDay;return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0')}
-function getNextPayDate(tenant){if(!tenant.move_in_date||!tenant.status||tenant.status!=='active')return null;var tenantRents=cache.rents.filter(function(r){return r.tenant_id===tenant.id&&r.status!=='paid'});if(tenantRents.length>0){tenantRents.sort(function(a,b){return(a.due_date||'').localeCompare(b.due_date||'')});var earliest=tenantRents[0];if(earliest.period_start&&earliest.period_start!==earliest.due_date)return earliest.period_start;var iv2=_payInterval(tenant.pay_method);return addMonths(earliest.due_date,-iv2)}var paidRents=cache.rents.filter(function(r){return r.tenant_id===tenant.id&&r.status==='paid'&&r.due_date});if(paidRents.length===0){return tenant.move_in_date}paidRents.sort(function(a,b){return(b.due_date||'').localeCompare(a.due_date||'')});var lastDue=paidRents[0].due_date;return addMonths(lastDue,_payInterval(tenant.pay_method))}
+function getNextPayDate(tenant){if(!tenant.move_in_date||!tenant.status||tenant.status!=='active')return null;var tenantRents=cache.rents.filter(function(r){return r.tenant_id===tenant.id&&r.status!=='paid'});if(tenantRents.length>0){tenantRents.sort(function(a,b){return(a.due_date||'').localeCompare(b.due_date||'')});var earliest=tenantRents[0];if(earliest.period_start&&earliest.period_start!==earliest.due_date){if(!tenant.contract_end||earliest.period_start<=tenant.contract_end)return earliest.period_start;return null}var iv2=_payInterval(tenant.pay_method);var _np1=addMonths(earliest.due_date,-iv2);if(tenant.contract_end&&_np1>tenant.contract_end)return null;return _np1}var paidRents=cache.rents.filter(function(r){return r.tenant_id===tenant.id&&r.status==='paid'&&r.due_date});if(paidRents.length===0){if(tenant.contract_end&&tenant.move_in_date>tenant.contract_end)return null;return tenant.move_in_date}paidRents.sort(function(a,b){return(b.due_date||'').localeCompare(a.due_date||'')});var lastDue=paidRents[0].due_date;var _np2=addMonths(lastDue,_payInterval(tenant.pay_method));if(tenant.contract_end&&_np2>tenant.contract_end)return null;return _np2}
 function fmtPayPeriod(dueDate,tenant,rent){if(!dueDate||!tenant)return'-';var startDate=rent&&rent.period_start||null;if(!startDate){var interval=_payInterval(tenant.pay_method);var startIdx=0;for(var i=0;i<200;i++){var d=addMonths(tenant.move_in_date,(i+1)*interval);if(d===dueDate){startIdx=i;break}if(d>dueDate){startIdx=i;break}}var startDate=addMonths(tenant.move_in_date,startIdx*interval);if(startDate>dueDate&&startIdx>0){startDate=addMonths(tenant.move_in_date,(startIdx-1)*interval)}}var s=String(startDate).split('-');var e=String(dueDate).split('-');return i18n.t('date.fmtPayPeriod',{sy:s[0],sm:parseInt(s[1],10),sd:parseInt(s[2],10),ey:e[0],em:parseInt(e[1],10),ed:parseInt(e[2],10)})}
 function fmtDueLabel(dueDate,rent){if(!rent)return'';var payDay=rent.period_start||dueDate;var d=daysDiff(today(),payDay);if(d<0)return i18n.t('dash.overdue')+Math.abs(d)+i18n.t('common.day');if(d===0)return''+i18n.t('common.dueToday')+'';if(d<=7)return i18n.t('common.nDaysLater',{n:d});return''}
 function fmtShortPeriod(rent,tenant){if(!rent||!tenant)return'-';var interval=_payInterval(tenant.pay_method);var s=rent.period_start||addMonths(rent.due_date,-interval);var e=rent.due_date;if(!s||!e)return'-';var ss=String(s).split('-'),es=String(e).split('-');var sy=ss[0],sm=parseInt(ss[1],10),sd=parseInt(ss[2],10),ey=es[0],em=parseInt(es[1],10),ed=parseInt(es[2],10);if(sy===ey){return sm+'/'+sd+' ~ '+em+'/'+ed}else{return sy.slice(2)+'/'+sm+'/'+sd+' ~ '+ey.slice(2)+'/'+em+'/'+ed}}
@@ -1680,6 +1680,250 @@ function _copyFallback(txt){var ta=document.createElement('textarea');ta.value=t
 function _remindMsg(name,roomName,month,amount,overdueDays,lines){var lang=localStorage.getItem('lang')||'zh-CN';if(lang==='en'){var s='Hi '+name+', this is a reminder that your rent'+(roomName?' for '+roomName:'')+' for '+month+' is due. Amount: ¥'+amount+'. Please arrange payment. Thank you!';if(overdueDays&&overdueDays>0)s='Hi '+name+', your rent'+(roomName?' for '+roomName:'')+' for '+month+' ('+'¥'+amount+') is '+overdueDays+' days overdue. Please settle the payment as soon as possible. Thank you!';return s}var s='你好'+name+'，'+(roomName?roomName+' ':'')+month+'房租已到缴费日期，金额 ¥'+amount+'，请安排时间缴纳，谢谢！';if(overdueDays&&overdueDays>0)s='你好'+name+'，'+(roomName?roomName+' ':'')+month+'房租 ¥'+amount+' 已逾期'+overdueDays+'天，请尽快安排缴纳，谢谢！';if(lines&&lines.length>1){s='你好'+name+'，提醒你还有多期房租未缴纳：\n'+lines.join('\n')+'\n合计 ¥'+month+'，请安排时间缴纳，谢谢！'}return s}
 function copyRentReminder(rentId){var r=cache.rents.find(function(x){return x.id===rentId});if(!r)return;var _ps=r.period_start||r.due_date;if(!_ps||_ps>today()){toast(i18n.t('rent.noDueBills'),'i');return}var t=cache.tenants.find(function(x){return x.id===r.tenant_id});var rm=cache.rooms.find(function(x){return x.id===r.room_id});var month=_monthLabel(_ps);var od=_ps<today()?Math.max(1,Math.ceil((new Date(today())-new Date(_ps))/86400000)):0;var msg=_remindMsg(t?t.name:'',rm?rm.name:'',month,r.amount,od,[]);_copyText(msg)}
 function copyTenantReminder(tenantId){var t=cache.tenants.find(function(x){return x.id===tenantId});if(!t)return;var rm=cache.rooms.find(function(x){return x.id===t.room_id});var td=today();var bills=cache.rents.filter(function(r){var _ps=r.period_start||r.due_date;return r.tenant_id===tenantId&&r.status!=='paid'&&_ps&&_ps<=td}).sort(function(a,b){return((a.period_start||a.due_date)||'').localeCompare((b.period_start||b.due_date)||'')});if(!bills.length){toast(i18n.t('rent.noDueBills'),'i');return}var lang=localStorage.getItem('lang')||'zh-CN';var _od=function(r){var _ps=r.period_start||r.due_date;return _ps<td?Math.max(1,Math.ceil((new Date(td)-new Date(_ps))/86400000)):0};if(bills.length===1){var r0=bills[0];_copyText(_remindMsg(t.name,rm?rm.name:'',_monthLabel(r0.period_start||r0.due_date),r0.amount,_od(r0),[]));return}var total=0,lines=[];bills.forEach(function(b){total+=b.amount;var od=_od(b);var line=_monthLabel(b.period_start||b.due_date)+'房租 ¥'+b.amount.toLocaleString()+(od?'（逾期'+od+'天）':'');lines.push(line)});if(lang==='en'){var ms='Hi '+t.name+(rm?', '+rm.name:'')+', you have '+bills.length+' rent bill(s) due, totaling ¥'+total.toLocaleString()+':\n'+bills.map(function(b){var od=_od(b);return _monthLabel(b.period_start||b.due_date)+' rent: ¥'+b.amount.toLocaleString()+(od?' ('+od+' days overdue)':'')}).join('\n')+'\nPlease arrange payment as soon as possible. Thank you!';_copyText(ms);return}var ms2='你好'+t.name+'，提醒你还有'+bills.length+'期房租已到缴费期：\n'+lines.join('\n')+'\n合计 ¥'+total.toLocaleString()+'，请尽快安排缴纳，谢谢！';_copyText(ms2)}
+// ========== 催租账单（明细可编辑 + 图片导出） ==========
+function _billMeterData(tenantId){
+  var list=(cache.meters||[]).filter(function(m){return m.tenant_id===tenantId&&!m.paid})
+    .sort(function(a,b){return(b.reading_date||'').localeCompare(a.reading_date||'')||(b.created_at||'').localeCompare(a.created_at||'')});
+  if(!list.length)return null;
+  var m=list[0];
+  var prev=(cache.meters||[]).filter(function(x){return x.tenant_id===tenantId&&x.id!==m.id})
+    .sort(function(a,b){return(b.reading_date||'').localeCompare(a.reading_date||'')})[0]||null;
+  var p=meterGetPrices(tenantId,null);
+  function val(x){if(x===null||x===undefined||x==='')return null;var n=parseFloat(x);return isNaN(n)?null:n}
+  return{
+    cold:{cur:val(m.cold_water),prev:prev?val(prev.cold_water):null,usage:val(m.cold_water_usage),price:(val(m.cold_water_price)!=null?val(m.cold_water_price):p.cold),fee:val(m.cold_water_fee)},
+    hot:{cur:val(m.hot_water),prev:prev?val(prev.hot_water):null,usage:val(m.hot_water_usage),price:(val(m.hot_water_price)!=null?val(m.hot_water_price):p.hot),fee:val(m.hot_water_fee)},
+    elec:{cur:val(m.electricity),prev:prev?val(prev.electricity):null,usage:val(m.electricity_usage),price:(val(m.electricity_price)!=null?val(m.electricity_price):p.elec),fee:val(m.electricity_fee)}
+  };
+}
+function _billNum(v){var n=parseFloat(v);return isNaN(n)||!isFinite(n)?0:n}
+function _billFmt(n){return _billNum(n).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function _mRow(label,sym,prefix,item){
+  if(!item)return '';
+  var usage=item.usage!=null?item.usage:'';
+  var price=item.price!=null?item.price:'';
+  var fee=item.fee!=null?item.fee:'';
+  var rd=item.cur!=null?('<span style="font-size:11px;color:var(--ts)">'+i18n.t('bill.readingThis')+':'+Number(item.cur).toFixed(2)+(item.prev!=null?' / '+i18n.t('bill.readingLast')+':'+Number(item.prev).toFixed(2):'')+'</span>'):'';
+  return '<div style="display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px dashed var(--bd)">'
+    +'<span style="flex:0 0 118px;font-size:13px;font-weight:600">'+sym+' '+label+'</span>'
+    +'<input type="number" step="0.01" inputmode="decimal" id="b_'+prefix+'_u" value="'+usage+'" oninput="_billCalc();_billAutoFee(\''+prefix+'\')" style="width:64px;padding:5px 6px;border:1px solid var(--bd);border-radius:6px;font-size:12px" placeholder="0">'
+    +'<span style="font-size:11px;color:var(--ts)">×</span>'
+    +'<input type="number" step="0.01" inputmode="decimal" id="b_'+prefix+'_p" value="'+price+'" oninput="_billCalc();_billAutoFee(\''+prefix+'\')" style="width:64px;padding:5px 6px;border:1px solid var(--bd);border-radius:6px;font-size:12px" placeholder="0">'
+    +'<span style="margin-left:auto;font-size:11px;color:var(--ts)">¥</span>'
+    +'<input type="number" step="0.01" inputmode="decimal" id="b_'+prefix+'_f" value="'+fee+'" oninput="_billCalc()" style="width:86px;padding:5px 6px;border:1px solid var(--bd);border-radius:6px;font-size:13px;font-weight:700;color:var(--d)">'
+    +rd+'</div>';
+}
+function showBillModal(targetType,targetId){
+  if(!canEdit()){toast(i18n.t('common.readOnly'),'w');return}
+  var t,rm;
+  if(targetType==='rent'){
+    var r0=cache.rents.find(function(x){return x.id===targetId});
+    if(!r0)return;
+    t=cache.tenants.find(function(x){return x.id===r0.tenant_id});
+    if(t)rm=cache.rooms.find(function(x){return x.id===t.room_id});
+  }else{
+    t=cache.tenants.find(function(x){return x.id===targetId});
+    if(t)rm=cache.rooms.find(function(x){return x.id===t.room_id});
+  }
+  if(!t)return;
+  var td=today();
+  var bills=cache.rents.filter(function(r){
+    var _ps=r.period_start||r.due_date;
+    return r.tenant_id===t.id&&r.status!=='paid'&&_ps&&_ps<=td;
+  }).sort(function(a,b){return((a.period_start||a.due_date)||'').localeCompare((b.period_start||b.due_date)||'')});
+  var rentTotal=0,periods=[];
+  bills.forEach(function(b){
+    rentTotal+=_billNum(b.amount);
+    periods.push(_monthLabel(b.period_start||b.due_date)+(b.notes?('('+b.notes+')'):''));
+  });
+  var md=_billMeterData(t.id);
+  if(!md){var _dp=meterGetPrices(t.id,null);md={
+    cold:{cur:null,prev:null,usage:null,price:_dp.cold,fee:null},
+    hot:{cur:null,prev:null,usage:null,price:_dp.hot,fee:null},
+    elec:{cur:null,prev:null,usage:null,price:_dp.elec,fee:null}
+  };}
+  window._billCtx={type:targetType,id:targetId,tenant:t,room:rm,bills:bills};
+  var meterSection='<div style="font-size:11px;color:var(--ts);margin:8px 0 2px">💧 '+i18n.t('bill.meterHint')+'</div>'
+    +_mRow(i18n.t('meter.coldWater'),'🧊','cw',md.cold)
+    +_mRow(i18n.t('meter.hotWater'),'♨️','hw',md.hot)
+    +_mRow(i18n.t('meter.electricity'),'⚡','el',md.elec);
+  var html2='<div class="m-hd"><h3>🧾 '+i18n.t('bill.title')+'</h3><button class="m-x" onclick="closeModal()">×</button></div>'
+    +'<div class="m-bd" style="max-height:62vh;overflow-y:auto;-webkit-overflow-scrolling:touch">'
+    +'<div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:13px;line-height:1.8">'
+    +'<b>'+esc(t.name)+'</b>　'+esc(rm?rm.name:'-')+'<br>'
+    +'<span style="color:var(--ts);font-size:12px">'+i18n.t('bill.period')+'：'+esc(periods.length?periods.join('、'):'-')+'</span>'
+    +'</div>'
+    +'<div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px dashed var(--bd)">'
+    +'<span style="flex:0 0 118px;font-size:13px;font-weight:600">🏠 '+i18n.t('bill.rent')+(bills.length>1?'('+bills.length+i18n.t('bill.periodCount')+')':'')+'</span>'
+    +'<span style="margin-left:auto;font-size:11px;color:var(--ts)">¥</span>'
+    +'<input type="number" step="0.01" inputmode="decimal" id="b_rent" value="'+rentTotal.toFixed(2)+'" oninput="_billCalc()" style="width:86px;padding:5px 6px;border:1px solid var(--bd);border-radius:6px;font-size:13px;font-weight:700;color:var(--d)">'
+    +'</div>'
+    +(meterSection?'<div style="font-size:11px;color:var(--ts);margin:8px 0 -2px">💧 '+i18n.t('bill.meterHint')+'</div>':'')
+    +meterSection
+    +'<div id="b_other_rows"></div>'
+    +'<button class="btn btn-sm btn-gh" style="margin:8px 0 2px;width:100%" onclick="_billAddOther()">➕ '+i18n.t('bill.addOther')+'</button>'
+    +'<div class="fg" style="margin-top:8px"><label>'+i18n.t('bill.note')+'</label><input class="fc" id="b_note" placeholder="'+i18n.t('bill.notePh')+'"></div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;background:var(--p);color:#fff;border-radius:10px;padding:12px 16px;margin-top:12px">'
+    +'<span style="font-size:14px;font-weight:600">'+i18n.t('bill.total')+'</span>'
+    +'<b id="b_total" style="font-size:22px">¥'+_billFmt(rentTotal)+'</b>'
+    +'</div>'
+    +'</div>'
+    +'<div class="m-ft"><button class="btn btn-gh" onclick="_billCopyText()">📋 '+i18n.t('bill.copyText')+'</button>'
+    +'<button class="btn btn-p" onclick="_billGenImage()">🖼️ '+i18n.t('bill.saveImage')+'</button></div>';
+  openModal(html2);
+  _billCalc();
+}
+function _billAddOther(){
+  var wrap=document.getElementById('b_other_rows');if(!wrap)return;
+  var idx=wrap.children.length;
+  var row=document.createElement('div');
+  row.style.cssText='display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px dashed var(--bd)';
+  row.innerHTML='<input type="text" id="b_o_n_'+idx+'" placeholder="'+i18n.t('bill.otherName')+'" style="flex:1;min-width:0;padding:5px 6px;border:1px solid var(--bd);border-radius:6px;font-size:12px">'
+    +'<span style="font-size:11px;color:var(--ts)">¥</span>'
+    +'<input type="number" step="0.01" inputmode="decimal" id="b_o_a_'+idx+'" value="" oninput="_billCalc()" style="width:86px;padding:5px 6px;border:1px solid var(--bd);border-radius:6px;font-size:13px;font-weight:700;color:var(--d)" placeholder="0">'
+    +'<span style="color:var(--d);font-size:16px;cursor:pointer;padding:0 4px" onclick="this.parentNode.remove();_billCalc()">×</span>';
+  wrap.appendChild(row);
+}
+function _billAutoFee(prefix){
+  var u=document.getElementById('b_'+prefix+'_u'),p=document.getElementById('b_'+prefix+'_p'),f=document.getElementById('b_'+prefix+'_f');
+  if(!u||!p||!f)return;
+  if(u.value!==''&&p.value!==''){var n=_billNum(u.value)*_billNum(p.value);f.value=n.toFixed(2)}
+}
+function _billCollect(){
+  function gv(id){var el=document.getElementById(id);return el?_billNum(el.value):0}
+  var rent=gv('b_rent'),cw=gv('b_cw_f'),hw=gv('b_hw_f'),el=gv('b_el_f');
+  var others=[];
+  var wrap=document.getElementById('b_other_rows');
+  if(wrap){Array.prototype.forEach.call(wrap.children,function(row){
+    var ins=row.querySelectorAll('input');
+    var nm=ins.length>0?ins[0].value.trim():'',amt=ins.length>1?_billNum(ins[1].value):0;
+    if(amt>0)others.push({name:nm||i18n.t('bill.otherFee'),amount:amt});
+  })}
+  var noteEl=document.getElementById('b_note');
+  var total=rent+cw+hw+el+others.reduce(function(s,o){return s+o.amount},0);
+  return{rent:rent,cw:cw,hw:hw,el:el,others:others,note:noteEl?noteEl.value:'',total:total};
+}
+function _billCalc(){var el=document.getElementById('b_total');if(el){var d=_billCollect();el.textContent='¥'+_billFmt(d.total)}}
+function _billCopyText(){
+  var d=_billCollect(),ctx=window._billCtx;if(!ctx)return;
+  var t=ctx.tenant,rm=ctx.room;
+  var lang=localStorage.getItem('lang')||'zh-CN';
+  var lines=[];
+  if(d.rent>0)lines.push(i18n.t('bill.rent')+' ¥'+_billFmt(d.rent));
+  if(d.cw>0)lines.push(i18n.t('meter.coldWater')+' ¥'+_billFmt(d.cw));
+  if(d.hw>0)lines.push(i18n.t('meter.hotWater')+' ¥'+_billFmt(d.hw));
+  if(d.el>0)lines.push(i18n.t('meter.electricity')+' ¥'+_billFmt(d.el));
+  d.others.forEach(function(o){lines.push(o.name+' ¥'+_billFmt(o.amount))});
+  if(lang==='en'){
+    var s='Hi '+t.name+(rm?(' ('+rm.name+')'):'')+', payment notice:\n'+lines.join('\n')+'\n'+i18n.t('bill.total')+': ¥'+_billFmt(d.total)+'. '+i18n.t('bill.thanksEn');
+    if(d.note)s+='\n'+d.note;
+    _copyText(s);
+  }else{
+    var s2='你好'+t.name+(rm?('（'+rm.name+'）'):'')+'，本期缴费明细：\n'+lines.join('\n')+'\n'+i18n.t('bill.total')+'：¥'+_billFmt(d.total)+'，请安排时间缴纳，谢谢！';
+    if(d.note)s2+='\n备注：'+d.note;
+    _copyText(s2);
+  }
+}
+function _billDrawCanvas(scale){
+  var d=_billCollect(),ctx0=window._billCtx;
+  var t=ctx0.tenant,rm=ctx0.room;
+  var W=750;
+  function gv(id){var el=document.getElementById(id);return el?_billNum(el.value):0}
+  var rows=[];
+  if(d.rent>0)rows.push({sym:'🏠',label:i18n.t('bill.rent'),fee:d.rent});
+  if(d.cw>0)rows.push({sym:'🧊',label:i18n.t('meter.coldWater'),fee:d.cw,detail:_billDetail('cw')});
+  if(d.hw>0)rows.push({sym:'♨️',label:i18n.t('meter.hotWater'),fee:d.hw,detail:_billDetail('hw')});
+  if(d.el>0)rows.push({sym:'⚡',label:i18n.t('meter.electricity'),fee:d.el,detail:_billDetail('el')});
+  d.others.forEach(function(o){rows.push({sym:'📌',label:o.name,fee:o.amount})});
+  if(!rows.length)rows.push({sym:'🏠',label:i18n.t('bill.rent'),fee:0});
+  var noteLines=[];
+  if(d.note){
+    var maxChars=23;
+    for(var i=0;i<d.note.length;i+=maxChars)noteLines.push(d.note.slice(i,i+maxChars));
+  }
+  var _detailN=rows.filter(function(r){return r.detail}).length;
+  var _rowH=(rows.length-_detailN)*54+_detailN*64;
+  var H=438+_rowH+noteLines.length*34;
+  var cv=document.createElement('canvas');
+  cv.width=W*scale;cv.height=H*scale;
+  var c=cv.getContext('2d');
+  c.scale(scale,scale);
+  c.fillStyle='#ffffff';c.fillRect(0,0,W,H);
+  // 顶部色条
+  c.fillStyle='#4F46E5';c.fillRect(0,0,W,10);
+  // 标题
+  c.fillStyle='#1f2937';c.font='bold 34px sans-serif';c.textAlign='center';
+  c.fillText(i18n.t('bill.imgTitle'),W/2,78);
+  c.fillStyle='#9ca3af';c.font='16px sans-serif';
+  c.fillText(i18n.t('bill.dateLabel')+' '+today(),W/2,108);
+  // 租客信息
+  c.textAlign='left';c.fillStyle='#374151';c.font='22px sans-serif';
+  var infoY=160;
+  c.fillText(i18n.t('bill.tenantLabel')+'：'+(t.name||'')+(rm?('　'+rm.name):''),44,infoY);
+  if(t.phone)c.fillText(i18n.t('common.phone')+'：'+t.phone,44,infoY+34);
+  // 表头
+  var ty=infoY+78;
+  c.strokeStyle='#e5e7eb';c.lineWidth=1;
+  c.beginPath();c.moveTo(44,ty-14);c.lineTo(W-44,ty-14);c.stroke();
+  c.fillStyle='#6b7280';c.font='17px sans-serif';
+  c.fillText(i18n.t('bill.itemLabel'),44,ty);
+  c.textAlign='right';c.fillText(i18n.t('bill.amountLabel'),W-44,ty);
+  c.beginPath();c.moveTo(44,ty+14);c.lineTo(W-44,ty+14);c.stroke();
+  // 明细行
+  var y=ty+56;
+  c.textAlign='left';
+  rows.forEach(function(r){
+    c.fillStyle='#1f2937';c.font='21px sans-serif';
+    c.fillText(r.sym+' '+r.label,44,y);
+    c.textAlign='right';c.fillStyle='#1f2937';c.font='bold 22px sans-serif';
+    c.fillText('¥'+_billFmt(r.fee),W-44,y);
+    c.textAlign='left';
+    if(r.detail){c.fillStyle='#9ca3af';c.font='15px sans-serif';c.fillText(r.detail,44,y+24)}
+    y+=r.detail?64:54;
+    c.strokeStyle='#f3f4f6';c.beginPath();c.moveTo(44,y-20);c.lineTo(W-44,y-20);c.stroke();
+  });
+  // 合计
+  y+=8;
+  c.fillStyle='#4F46E5';
+  c.fillRect(44,y,W-88,66);
+  c.fillStyle='#ffffff';c.font='bold 24px sans-serif';c.textAlign='left';
+  c.fillText(i18n.t('bill.total'),68,y+43);
+  c.textAlign='right';c.font='bold 34px sans-serif';
+  c.fillText('¥'+_billFmt(d.total),W-68,y+46);
+  // 备注
+  y+=40;
+  if(noteLines.length){
+    c.fillStyle='#6b7280';c.font='17px sans-serif';c.textAlign='left';
+    noteLines.forEach(function(ln){c.fillText(i18n.t('bill.note')+'：'+ln,44,y);y+=34});
+    y+=10;
+  }
+  // 底部
+  c.fillStyle='#9ca3af';c.font='15px sans-serif';c.textAlign='center';
+  c.fillText(i18n.t('bill.imgFooter'),W/2,H-44);
+  c.fillStyle='#4F46E5';c.fillRect(W/2-40,H-30,80,4);
+  return cv;
+}
+function _billDetail(prefix){
+  function gv2(id){var el=document.getElementById(id);return el.value}
+  var u=gv2('b_'+prefix+'_u'),p=gv2('b_'+prefix+'_p');
+  if(u!==''&&p!=='')return Number(u).toFixed(2)+' × ¥'+Number(p).toFixed(2);
+  return '';
+}
+function _billGenImage(){
+  var d=_billCollect();
+  if(d.total<=0&&d.rent<=0){toast(i18n.t('bill.noAmount'),'w');return}
+  try{
+    var cv=_billDrawCanvas(2);
+    var url=cv.toDataURL('image/png');
+    openModal('<div class="m-hd"><h3>🖼️ '+i18n.t('bill.imgPreview')+'</h3><button class="m-x" onclick="closeModal()">×</button></div>'
+      +'<div class="m-bd" style="text-align:center">'
+      +'<img src="'+url+'" style="max-width:100%;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.12)">'
+      +'<p style="font-size:12px;color:var(--ts);margin:12px 0 4px">'+i18n.t('bill.longPressTip')+'</p>'
+      +'</div>'
+      +'<div class="m-ft"><a class="btn btn-p" href="'+url+'" download="bill_'+(window._billCtx&&window._billCtx.tenant?window._billCtx.tenant.name:'')+'_'+today()+'.png" style="text-decoration:none;text-align:center">⬇️ '+i18n.t('bill.download')+'</a><button class="btn btn-gh" onclick="closeModal()">'+i18n.t('common.close')+'</button></div>');
+  }catch(e){console.error('bill image error:',e);toast(i18n.t('bill.imgFailed')+' '+e.message,'e')}
+}
+
 async function saveMeterDefaults(){
   var cp=parseFloat(document.getElementById('defCP').value);
   var hp=parseFloat(document.getElementById('defHP').value);
