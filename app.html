@@ -231,7 +231,7 @@ select.fc{-webkit-appearance:none;appearance:none;background-image:url("data:ima
 <div class="ov" id="overlay"><div class="modal" id="modal"></div></div>
 <div class="sb-overlay" id="sbOverlay" onclick="closeSB()"></div>
 <div class="photo-viewer-overlay" id="photoViewer" onclick="closePhotoViewer(event)"><button class="photo-viewer-close" onclick="closePhotoViewer()">×</button><span class="photo-viewer-nav" id="photoViewerPrev" onclick="event.stopPropagation();photoViewerNav(-1)">‹</span><img class="photo-viewer-img" id="photoViewerImg" src="" alt=""><span class="photo-viewer-nav" id="photoViewerNext" onclick="event.stopPropagation();photoViewerNav(1)">›</span></div>
-<script src="i18n.js?v=61"></script>
+<script src="i18n.js?v=63"></script>
 <script>
 var sbUrl=localStorage.getItem('sb_url')||'https://ruilifangfong.site',sbKey=localStorage.getItem('sb_key')||'eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8',sb=null,sdkReady=false,currentUser=null,currentProfile=null,currentPage='dashboard';
 var DEFAULT_SB_URL='https://ruilifangfong.site',DEFAULT_SB_KEY='eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8';
@@ -859,7 +859,8 @@ function _renderTenantAdjustments(tenantId){
 }
 
 // ========== 收支管理（支出 + 调租提醒） ==========
-var finTab='inc';
+var finTab='book';//v63:收支合并为记账本视图
+var finYear='';var finFilter='all';//v63:记账本年份/类型筛选
 function rFinance(){
   var cm=today().slice(0,7);
   var monExp=cache.expenses.filter(function(e){return (e.expense_date||'').slice(0,7)===cm});
@@ -874,13 +875,125 @@ function rFinance(){
   html+='<div class="card" style="flex:1;min-width:140px;padding:14px"><div style="font-size:12px;color:var(--ts)">'+i18n.t('fin.netIncome')+'</div><div style="font-size:20px;font-weight:700;margin-top:4px;color:#4F46E5">¥'+(monInc-monExpTotal).toLocaleString()+'</div></div>';
   html+='</div>';
   html+='<div style="display:flex;gap:8px;margin-bottom:12px;border-bottom:2px solid var(--bd);padding-bottom:0">';
-  html+='<button class="btn '+(finTab==='inc'?'btn-p':'btn-gh')+'" style="border-radius:8px 8px 0 0" onclick="finTab=\'inc\';rFinance()">💰 '+i18n.t('fin.incomeRecords')+'</button>';
-  html+='<button class="btn '+(finTab==='exp'?'btn-p':'btn-gh')+'" style="border-radius:8px 8px 0 0" onclick="finTab=\'exp\';rFinance()">🧾 '+i18n.t('fin.expenseRecords')+'</button>';
+  html+='<button class="btn '+(finTab==='book'?'btn-p':'btn-gh')+'" style="border-radius:8px 8px 0 0" onclick="finTab=\'book\';rFinance()">📒 '+i18n.t('fin.ledger')+'</button>';
   html+='<button class="btn '+(finTab==='adj'?'btn-p':'btn-gh')+'" style="border-radius:8px 8px 0 0" onclick="finTab=\'adj\';rFinance()">⏰ '+i18n.t('fin.rentAdjustments')+(dueAdj?' <span style="background:#dc2626;color:#fff;border-radius:10px;padding:0 6px;font-size:11px">'+dueAdj+'</span>':'')+'</button>';
   html+='</div>';
-  html+=finTab==='exp'?rFinanceExpenses():finTab==='inc'?rFinanceIncomes():rFinanceAdjustments();
+  html+=finTab==='adj'?rFinanceAdjustments():rFinanceBook();//v63:记账本为默认视图，原收入/支出表格函数保留备用
   html+='</div>';
   document.getElementById('mainContent').innerHTML=html;
+}
+// ========== v63 记账本：收入支出合并流水，按年月分组汇总 ==========
+function _ledgerEntries(){
+  var out=[];
+  cache.rents.forEach(function(r){
+    if(r.status==='paid'&&r.pay_date){
+      var t=cache.tenants.find(function(x){return x.id===r.tenant_id});
+      var rm=cache.rooms.find(function(x){return x.id===r.room_id});
+      out.push({type:'in',date:r.pay_date,amount:r.amount||0,kind:'rent',
+        title:i18n.t('fin.ledgerRent')+(t?esc(t.name):''),
+        sub:rm?esc(rm.name):'',editable:false});
+    }
+  });
+  (cache.incomes||[]).forEach(function(x){
+    if(!x.occur_date)return;
+    var t=_incTenantName(x.tenant_id),rm=x.room_id?_roomName(x.room_id):'';
+    var sub=t||rm||'';
+    if(x.source==='meter')sub=i18n.t('fin.autoTag')+(sub?' · '+sub:'');
+    out.push({type:'in',date:x.occur_date,amount:x.amount||0,kind:x.category||'other',
+      title:_incCategoryIcon(x.category)+' '+_incCategoryLabel(x.category),
+      sub:sub+(x.note?' · '+esc(x.note):''),editable:x.source!=='meter',id:x.id,
+      catIcon:_incCategoryIcon(x.category)});
+  });
+  cache.expenses.forEach(function(e){
+    if(!e.expense_date)return;
+    var rm=e.room_id?_roomName(e.room_id):'';
+    out.push({type:'out',date:e.expense_date,amount:e.amount||0,kind:e.category||'maintenance',
+      title:_expCategoryIcon(e.category)+' '+_expCategoryLabel(e.category),
+      sub:(rm||i18n.t('fin.commonArea'))+(e.note?' · '+esc(e.note):''),editable:true,id:e.id,
+      catIcon:_expCategoryIcon(e.category)});
+  });
+  out.sort(function(a,b){return (b.date||'').localeCompare(a.date||'')});
+  return out;
+}
+function rFinanceBook(){
+  var canE=canEdit();
+  var entries=_ledgerEntries();
+  if(!finYear)finYear=today().slice(0,4);
+  var years={};
+  entries.forEach(function(e){var y=(e.date||'').slice(0,4);if(y)years[y]=true});
+  var yearKeys=Object.keys(years).sort().reverse();
+  if(yearKeys.indexOf(finYear)<0)finYear=yearKeys[0]||today().slice(0,4);
+  var yearEntries=entries.filter(function(e){return (e.date||'').slice(0,4)===finYear});
+  var yIn=yearEntries.filter(function(e){return e.type==='in'}).reduce(function(a,e){return a+e.amount},0);
+  var yOut=yearEntries.filter(function(e){return e.type==='out'}).reduce(function(a,e){return a+e.amount},0);
+  var lang=i18n.getLang?i18n.getLang():'zh-CN';
+  function ymLabel(ym){var p=ym.split('-');return lang==='en'?(parseInt(p[1],10)+'/'+p[0]):(p[0]+i18n.t('common.yearUnit')+parseInt(p[1],10)+i18n.t('common.monthUnit'))}
+  var html='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">';
+  if(canE){
+    html+='<button class="btn btn-p" onclick="showIncomeModal()">💰 '+i18n.t('fin.addIncome')+'</button>';
+    html+='<button class="btn btn-gh" onclick="showExpenseModal()">🧾 '+i18n.t('fin.addExpense')+'</button>';
+  }
+  html+='<select class="fc" style="width:auto;font-size:13px;padding:6px 10px" onchange="finYear=this.value;rFinance()">';
+  yearKeys.forEach(function(y){html+='<option value="'+y+'"'+(y===finYear?' selected':'')+'>'+y+i18n.t('common.yearUnit')+'</option>'});
+  if(yearKeys.indexOf(finYear)<0)html+='<option value="'+finYear+'" selected>'+finYear+i18n.t('common.yearUnit')+'</option>';
+  html+='</select>';
+  html+='<select class="fc" style="width:auto;font-size:13px;padding:6px 10px" onchange="finFilter=this.value;rFinance()">';
+  html+='<option value="all"'+(finFilter==='all'?' selected':'')+'>'+i18n.t('fin.filterAll')+'</option>';
+  html+='<option value="in"'+(finFilter==='in'?' selected':'')+'>'+i18n.t('fin.filterIncome')+'</option>';
+  html+='<option value="out"'+(finFilter==='out'?' selected':'')+'>'+i18n.t('fin.filterExpense')+'</option>';
+  html+='</select></div>';
+  html+='<div class="card" style="padding:12px 14px;margin-bottom:12px;display:flex;gap:14px;flex-wrap:wrap;font-size:13px;align-items:center">';
+  html+='<b style="font-size:15px">'+finYear+i18n.t('common.yearUnit')+i18n.t('fin.yearSummary')+'</b>';
+  html+='<span style="color:var(--g,#16a34a)">'+i18n.t('fin.shortIncome')+' ¥'+yIn.toLocaleString()+'</span>';
+  html+='<span style="color:var(--d,#dc2626)">'+i18n.t('fin.shortExpense')+' ¥'+yOut.toLocaleString()+'</span>';
+  html+='<span style="font-weight:700;color:'+(yIn-yOut>=0?'#4F46E5':'var(--d,#dc2626)')+'">'+i18n.t('fin.shortBalance')+' ¥'+(yIn-yOut).toLocaleString()+'</span>';
+  html+='</div>';
+  if(!yearEntries.length){
+    html+='<div class="card" style="padding:30px;text-align:center;color:var(--ts)">'+i18n.t('fin.noLedgerData')+'</div>';
+    return html;
+  }
+  var months={};
+  yearEntries.forEach(function(e){
+    if(finFilter!=='all'&&e.type!==finFilter)return;
+    var ym=(e.date||'').slice(0,7);
+    if(!months[ym])months[ym]={in:0,out:0,items:[]};
+    months[ym][e.type==='in'?'in':'out']+=e.amount;
+    months[ym].items.push(e);
+  });
+  var ymKeys=Object.keys(months).sort().reverse();
+  ymKeys.forEach(function(ym){
+    var mo=months[ym];
+    html+='<div class="card" style="padding:0;margin-bottom:12px;overflow:hidden">';
+    html+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:var(--bg);font-size:13px">';
+    html+='<b style="font-size:14px">'+ymLabel(ym)+'</b>';
+    html+='<span style="color:var(--g,#16a34a);margin-left:auto">'+i18n.t('fin.shortIncome')+' ¥'+mo.in.toLocaleString()+'</span>';
+    html+='<span style="color:var(--d,#dc2626)">'+i18n.t('fin.shortExpense')+' ¥'+mo.out.toLocaleString()+'</span>';
+    html+='<b style="color:'+(mo.in-mo.out>=0?'#4F46E5':'var(--d,#dc2626)')+'">'+i18n.t('fin.shortBalance')+' ¥'+(mo.in-mo.out).toLocaleString()+'</b>';
+    html+='</div>';
+    mo.items.forEach(function(e){
+      var day=(e.date||'').slice(8,10);
+      var sign=e.type==='in'?'+':'-';
+      var color=e.type==='in'?'var(--g,#16a34a)':'var(--d,#dc2626)';
+      var ops='';
+      if(canE&&e.editable){
+        if(e.type==='in')ops='<button class="btn btn-sm btn-gh" style="font-size:11px;padding:2px 8px" onclick="showIncomeModal('+SQ+e.id+SQ+')">'+i18n.t('common.edit')+'</button> <button class="btn btn-sm btn-o" style="font-size:11px;padding:2px 8px;color:var(--d)" onclick="delIncome('+SQ+e.id+SQ+')">'+i18n.t('common.delete')+'</button>';
+        else ops='<button class="btn btn-sm btn-gh" style="font-size:11px;padding:2px 8px" onclick="showExpenseModal('+SQ+e.id+SQ+')">'+i18n.t('common.edit')+'</button> <button class="btn btn-sm btn-o" style="font-size:11px;padding:2px 8px;color:var(--d)" onclick="delExpense('+SQ+e.id+SQ+')">'+i18n.t('common.delete')+'</button>';
+      }else if(canE&&e.type==='in'&&e.kind==='rent'){
+        ops='<span style="font-size:10px;color:var(--ts)">'+i18n.t('fin.rentSysTag')+'</span>';
+      }
+      html+='<div style="display:flex;gap:8px;align-items:center;padding:9px 14px;border-top:1px solid var(--bd)">';
+      html+='<div style="width:30px;flex:0 0 30px;font-size:15px;font-weight:700;color:var(--ts);text-align:center">'+parseInt(day,10)+'</div>';
+      html+='<div style="flex:1;min-width:0">';
+      html+='<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.title+'</div>';
+      if(e.sub)html+='<div style="font-size:11px;color:var(--ts);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.sub+'</div>';
+      html+='</div>';
+      html+='<b style="font-size:13px;color:'+color+';white-space:nowrap">'+sign+'¥'+e.amount.toLocaleString()+'</b>';
+      if(ops)html+='<div style="flex:0 0 auto">'+ops+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  });
+  return html;
 }
 function _incCategoryLabel(c){return c==='utility'?i18n.t('fin.catUtility'):c==='deposit'?i18n.t('fin.catDeposit'):c==='other'?i18n.t('fin.catOther'):i18n.t('fin.catRent')}
 function _incCategoryIcon(c){return c==='utility'?'💧':c==='deposit'?'🔒':c==='other'?'📦':'💰'}
