@@ -114,10 +114,71 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-03 版本 -->
+  <!-- 2026-09-03 v59 版本 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 3 日 · V59</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon fix">🔧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修复：导出表格按钮无反应
+          <span class="badge fix">FIX</span>
+        </div>
+        <div class="feat-desc">
+          导出 Excel 用的组件之前从外部网络加载，部分手机网络（尤其微信内）加载失败导致点击没反应。现在组件<b>直接放在本站服务器上</b>，不再依赖外部网络，点「导出表格」即可正常下载；即使主源异常也会自动切换备用源。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon fix">📱</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修复：更新后手机上仍显示旧页面
+          <span class="badge fix">FIX</span>
+        </div>
+        <div class="feat-desc">
+          之前新版本上线后，微信/浏览器可能一直缓存旧页面，新功能看不到。本次优化了缓存机制，<b>每次打开自动获取最新版</b>，离线时才使用缓存。若仍看到旧界面，把页面<b>完全关闭后重新打开</b>即可（微信里建议退出微信重新进，或用浏览器打开）。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">🔝</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          租金管理页：待续约租户排最前
+          <span class="badge imp">优化</span>
+        </div>
+        <div class="feat-desc">
+          租金管理（按租客视图）中，<b>合同已过期、临期待续约的租客自动排在最前面</b>，姓名旁带红色「已过期」/黄色「待续约」标记，避免遗漏续约。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon new">🧾</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          历史已收水电费自动补计入收入
+          <span class="badge new">NEW</span>
+        </div>
+        <div class="feat-desc">
+          本次更新前已经标记「已收取」的抄表账单，系统会<b>自动补记一笔水电收入</b>（发生日期为收款日期），和新抄表入账逻辑保持一致，收入统计更完整。
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 2026-09-03 版本 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag">V58</span>
       <span class="version-date">2026 年 9 月 3 日</span>
     </div>
 

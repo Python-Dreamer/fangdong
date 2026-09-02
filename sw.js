@@ -1,4 +1,4 @@
-var CACHE_NAME='fangdong-v58';
+var CACHE_NAME='fangdong-v59';
 var CACHE_URLS=[
   './',
   './index.html',
@@ -39,6 +39,10 @@ function _isAuthRequest(url){
 }
 self.addEventListener('fetch',function(e){
   if(e.request.method!=='GET')return;
+  if(e.request.mode==='navigate'){
+    e.respondWith(fetch(e.request,{cache:'no-store'}).then(function(r){if(r&&r.status===200){var rc=r.clone();caches.open(CACHE_NAME).then(function(c){c.put('./app.html',rc)})}return r;}).catch(function(){return caches.match('./app.html').then(function(c){return c||caches.match('./')})}));
+    return;
+  }
   var reqUrl=e.request.url||'';
   if(_isAuthRequest(reqUrl)){
     e.respondWith(fetch(e.request,{cache:'no-store'}).catch(function(){
