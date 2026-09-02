@@ -231,7 +231,7 @@ select.fc{-webkit-appearance:none;appearance:none;background-image:url("data:ima
 <div class="ov" id="overlay"><div class="modal" id="modal"></div></div>
 <div class="sb-overlay" id="sbOverlay" onclick="closeSB()"></div>
 <div class="photo-viewer-overlay" id="photoViewer" onclick="closePhotoViewer(event)"><button class="photo-viewer-close" onclick="closePhotoViewer()">×</button><span class="photo-viewer-nav" id="photoViewerPrev" onclick="event.stopPropagation();photoViewerNav(-1)">‹</span><img class="photo-viewer-img" id="photoViewerImg" src="" alt=""><span class="photo-viewer-nav" id="photoViewerNext" onclick="event.stopPropagation();photoViewerNav(1)">›</span></div>
-<script src="i18n.js?v=59"></script>
+<script src="i18n.js?v=61"></script>
 <script>
 var sbUrl=localStorage.getItem('sb_url')||'https://ruilifangfong.site',sbKey=localStorage.getItem('sb_key')||'eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8',sb=null,sdkReady=false,currentUser=null,currentProfile=null,currentPage='dashboard';
 var DEFAULT_SB_URL='https://ruilifangfong.site',DEFAULT_SB_KEY='eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8';
@@ -1802,9 +1802,10 @@ async function doMeterSave(tenantId){
       total_fee:total,paid:false,notes:notes
     };
     if(window._meterPhotoPath)row.photo_url=window._meterPhotoPath;
-    var r=await sb.from('meter_readings').insert(row);
+    var r=await sb.from('meter_readings').insert(row).select();//v61:.select()确保返回新行id(自托管PostgREST默认不返回)
     if(r.error){var errMsg=r.error.message||r.error.details||r.error.hint||i18n.t('common.saveFailed');if(r.error.code)errMsg='['+r.error.code+'] '+errMsg;toast(errMsg,'e');btn.disabled=false;btn.textContent=i18n.t('meter.save');return}
     var readingId=r.data&&r.data[0]?r.data[0].id:null;
+    var detailOk=true;//v61:明细子表保存成功标记，失败要明确提示，不再静默
     // 写明细子表
     if(readingId){
       var subRows=[];var order=0;
@@ -1817,11 +1818,18 @@ async function doMeterSave(tenantId){
           amount:(x.amount===null||isNaN(x.amount))?0:x.amount,sort_order:order++});
       });
       if(subRows.length){
-        var r2=await sb.from('meter_items').insert(subRows);
-        if(r2.error)console.warn('meter_items insert warning:',r2.error.message||r2.error);
+        var r2=await sb.from('meter_items').insert(subRows).select();//v61:.select()
+        if(r2.error){
+          detailOk=false;var dMsg=r2.error.message||r2.error.details||'';
+          console.warn('meter_items insert error:',dMsg,r2.error);
+          toast(i18n.t('meter.detailSaveFailed')+(dMsg?' ['+dMsg+']':''),'e');
+        }
       }
+    }else{
+      detailOk=false;
+      toast(i18n.t('meter.detailSaveFailed'),'e');
     }
-    toast(i18n.t('meter.saveSuccess'));
+    if(detailOk)toast(i18n.t('meter.saveSuccess'));
     closeModal();
     await loadAllData();
     showTenantDetail(tenantId);

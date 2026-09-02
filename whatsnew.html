@@ -114,10 +114,44 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-03 v60 热修复 -->
+  <!-- 2026-09-03 v61 热修复 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 3 日 · V61</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon fix">🔧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修复：新加的水表/电表/其他费用，保存后下次打开就没了
+          <span class="badge fix">FIX</span>
+        </div>
+        <div class="feat-desc">
+          上一版支持一块区域加<b>多块水表、多块电表和其他费用</b>后，保存时明细没有真正写入数据库——所以<b>「2号水表」这类新加的表填了度数，下次打开只剩默认的冷水/热水/电三行</b>。本次修复后，加多少块表、多少项其他费用都会完整保存、永久显示。<b>更新前已填的那两笔 9 月 3 日首次抄表请删除后重新抄一遍</b>（那几笔是 0 元底表，重抄不影响任何账目）。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">✅</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          保存失败现在会明确提示
+          <span class="badge imp">质量</span>
+        </div>
+        <div class="feat-desc">
+          以前明细保存万一失败只在后台悄悄记一笔、界面上还提示"保存成功"，问题完全看不见；现在任何一步失败都会<b>弹出明确提示</b>，告诉你该删除重抄，不会再出现"看着存上了其实没存"的情况。交付前自动检测也已升级到 <b>53 项全链路测试</b>，模拟真实保存过程核对每块表都落库。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2026-09-03 v60 热修复 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#bbb">V60</span>
       <span class="version-date">2026 年 9 月 3 日 · V60</span>
     </div>
 
