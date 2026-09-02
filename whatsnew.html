@@ -114,10 +114,44 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-03 v61 热修复 -->
+  <!-- 2026-09-03 v62 热修复 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 3 日 · V62</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon fix">🔧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修复：2号水表第二次抄表时又要重新添加
+          <span class="badge fix">FIX</span>
+        </div>
+        <div class="feat-desc">
+          上一版修好保存后，<b>新加的 2 号表虽然能存住了，但每次点「+抄表」弹窗里又只剩冷水/热水/电三块</b>，2号表还得重新加、读数重新填。现在打开抄表弹窗会<b>自动带出上次抄过的全部表（含 2 号表、3 号表……），上期读数和单价自动填好</b>，其他费用项（网费、垃圾费等）名称也会自动带出，直接填本期度数就行。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">✅</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          抄表三个数字框加了标签，不再填错位置
+          <span class="badge imp">易用</span>
+        </div>
+        <div class="feat-desc">
+          每块表的三个框现在分别标着<b>「上期读数」「本期读数」「单价」</b>，不会再把表底数填到单价框里导致用量算不出来。手动再新加一块同类表时，上期读数会留空，避免错填成上一块表的度数。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2026-09-03 v61 热修复 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#bbb">V61</span>
       <span class="version-date">2026 年 9 月 3 日 · V61</span>
     </div>
 

@@ -1633,13 +1633,47 @@ function _mkPrevVal(kindKey,last){
   var v=last[col];
   return (v===null||v===undefined)?'':v;
 }
+// v62: 取租户最近一次抄表的全部子表项（多表+其他费用），用于打开弹窗时自动带出
+function _meterLastItems(tenantId,last){
+  if(!last)return [];
+  var items=(cache.meterItems||[]).filter(function(x){return x.reading_id===last.id}).sort(function(a,b){return (a.sort_order||0)-(b.sort_order||0)});
+  if(items.length){
+    return items.map(function(it){
+      if(it.kind==='other')return {type:'other',kind:'other',label:it.label||'',cur:null,prev:null,usage:null,price:null,amount:''};
+      var def=_meterKindDef(it.kind);
+      return {type:'meter',kind:it.kind,label:it.label||def.label,
+        cur:'',prev:(it.cur_reading===null||it.cur_reading===undefined)?'':it.cur_reading,
+        usage:'',price:(it.price===null||it.price===undefined)?null:it.price,amount:''};
+    });
+  }
+  // 老记录（无子表）：主表三字段兜底
+  var out=[];
+  [['cold_water','cold_water'],['hot_water','hot_water'],['electricity','electricity']].forEach(function(pair){
+    var v=last[pair[1]];
+    if(v!==null&&v!==undefined&&v!==''){
+      var def=_meterKindDef(pair[0]);
+      out.push({type:'meter',kind:pair[0],label:def.label,cur:'',prev:v,usage:'',price:null,amount:''});
+    }
+  });
+  return out;
+}
 function showMeterAddModal(tenantId){
   if(!canEdit()){toast(i18n.t('common.readOnly'),'w');return}
   var t=cache.tenants.find(function(x){return x.id===tenantId});if(!t)return;
   var last=meterGetLast(tenantId);
   var p=meterGetPrices(tenantId,t.room_id);
   window._meterCtx={tenantId:tenantId,prices:p,seq:0,items:[]};
-  var lastHtml=last?'<div style="font-size:11px;color:var(--ts);background:var(--bg);padding:8px;border-radius:6px;margin-bottom:10px">'+i18n.t('meter.lastReading')+'：'+i18n.t('meter.coldWater')+' '+(last.cold_water!==null&&last.cold_water!==undefined?Number(last.cold_water).toFixed(2):'-')+' / '+i18n.t('meter.hotWater')+' '+(last.hot_water!==null&&last.hot_water!==undefined?Number(last.hot_water).toFixed(2):'-')+' / '+i18n.t('meter.electricity')+' '+(last.electricity!==null&&last.electricity!==undefined?Number(last.electricity).toFixed(2):'-')+'</div>':'<div style="font-size:11px;color:var(--p);background:var(--bg);padding:8px;border-radius:6px;margin-bottom:10px">'+i18n.t('meter.firstReading')+'</div>';
+  var lastItems=_meterLastItems(tenantId,last);//v62:最近一次抄表的全部表/费用项
+  var lastHtml;
+  if(lastItems.length){
+    var parts=lastItems.filter(function(x){return x.type==='meter'&&x.prev!==''&&x.prev!==null}).map(function(x){
+      var def=_meterKindDef(x.kind);
+      return def.sym+' '+(x.label||def.label)+' '+Number(x.prev).toFixed(2);
+    });
+    lastHtml='<div style="font-size:11px;color:var(--ts);background:var(--bg);padding:8px;border-radius:6px;margin-bottom:10px">'+i18n.t('meter.lastReading')+'：'+(parts.length?parts.join(' / '):'-')+'</div>';
+  }else{
+    lastHtml='<div style="font-size:11px;color:var(--p);background:var(--bg);padding:8px;border-radius:6px;margin-bottom:10px">'+i18n.t('meter.firstReading')+'</div>';
+  }
   var kindBtns=_M_KINDS.map(function(k){
     return '<button class="btn btn-sm btn-gh" style="font-size:12px" onclick="meterAddRow('+Q+k.k+Q+')">➕ '+k.sym+' '+i18n.t('meter.addMeter',{name:k.label})+'</button>';
   }).join(' ');
@@ -1661,8 +1695,21 @@ function showMeterAddModal(tenantId){
     '</div><div class="m-ft"><button class="btn btn-p" id="mSaveBtn" onclick="doMeterSave('+Q+tenantId+Q+')">'+i18n.t('meter.save')+'</button><button class="btn btn-gh" onclick="closeModal()">'+i18n.t('common.cancel')+'</button></div>';
   openModal(html);
   window._meterPhotoPath=null;
-  // 默认三行：冷水1块、热水1块、电表1块
-  meterAddRow('cold_water');meterAddRow('hot_water');meterAddRow('electricity');
+  // v62: 自动带出上次抄过的全部表（含2号表）和其他费用项；首次抄表默认三行
+  if(lastItems.length){
+    var seq=0;
+    lastItems.forEach(function(li){
+      seq++;
+      var it={id:seq,type:li.type,kind:li.kind,label:li.label,cur:'',prev:li.prev,usage:'',
+        price:(li.price!==null&&li.price!==undefined)?li.price:((li.type==='meter')?_meterKindDef(li.kind).defPrice:null),
+        amount:li.amount||''};
+      window._meterCtx.items.push(it);
+    });
+    window._meterCtx.seq=seq;
+    meterRenderRows();
+  }else{
+    meterAddRow('cold_water');meterAddRow('hot_water');meterAddRow('electricity');
+  }
   meterPreview();
 }
 function _meterKindDef(kindKey){for(var i=0;i<_M_KINDS.length;i++)if(_M_KINDS[i].k===kindKey)return _M_KINDS[i];return _M_KINDS[2]}
@@ -1671,7 +1718,8 @@ function meterAddRow(kindKey){
   var def=_meterKindDef(kindKey);
   var seq=++ctx.seq;
   var sameCount=ctx.items.filter(function(x){return x.kind===kindKey&&x.type==='meter'}).length;
-  var item={id:seq,type:'meter',kind:kindKey,label:def.label+(sameCount>0?(' '+(sameCount+1)+i18n.t('meter.numSuffix')):''),cur:'',prev:_mkPrevVal(kindKey,meterGetLast(ctx.tenantId)),usage:'',price:ctx.prices[def.priceKey],amount:''};
+  var prevVal=sameCount>0?'':_mkPrevVal(kindKey,meterGetLast(ctx.tenantId));//v62:同类已有表时留空，防止新表错填上块表读数
+  var item={id:seq,type:'meter',kind:kindKey,label:def.label+(sameCount>0?(' '+(sameCount+1)+i18n.t('meter.numSuffix')):''),cur:'',prev:prevVal,usage:'',price:ctx.prices[def.priceKey],amount:''};
   ctx.items.push(item);
   meterRenderRows();
 }
@@ -1719,9 +1767,9 @@ function meterRenderRows(){
           '<button class="btn btn-sm btn-o" style="color:var(--d);font-size:11px;padding:2px 8px" onclick="meterDelRow('+it.id+')">✕</button>'+
         '</div>'+
         '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
-          '<input type="number" step="0.01" inputmode="decimal" class="fc" style="width:31%;font-size:12px" id="mi_prev_'+it.id+'" value="'+(it.prev===''?'':it.prev)+'" placeholder="'+i18n.t('meter.prevReading')+'" oninput="meterRowChanged('+it.id+')">'+
-          '<input type="number" step="0.01" inputmode="decimal" class="fc" style="width:31%;font-size:12px" id="mi_cur_'+it.id+'" value="'+(it.cur===''?'':it.cur)+'" placeholder="'+i18n.t('meter.curReading')+'" oninput="meterRowChanged('+it.id+')">'+
-          '<input type="number" step="0.01" inputmode="decimal" class="fc" style="width:31%;font-size:12px" id="mi_price_'+it.id+'" value="'+(it.price===''?'':it.price)+'" placeholder="'+i18n.t('meter.pricePh')+'" oninput="meterRowChanged('+it.id+')">'+
+          '<div style="width:31%"><div style="font-size:10px;color:var(--ts);margin-bottom:2px">'+i18n.t('meter.prevReading')+'</div><input type="number" step="0.01" inputmode="decimal" class="fc" style="width:100%;font-size:12px" id="mi_prev_'+it.id+'" value="'+(it.prev===''?'':it.prev)+'" placeholder="0" oninput="meterRowChanged('+it.id+')"></div>'+
+          '<div style="width:31%"><div style="font-size:10px;color:var(--ts);margin-bottom:2px">'+i18n.t('meter.curReading')+'</div><input type="number" step="0.01" inputmode="decimal" class="fc" style="width:100%;font-size:12px" id="mi_cur_'+it.id+'" value="'+(it.cur===''?'':it.cur)+'" placeholder="0" oninput="meterRowChanged('+it.id+')"></div>'+
+          '<div style="width:31%"><div style="font-size:10px;color:var(--ts);margin-bottom:2px">'+i18n.t('meter.pricePh')+'</div><input type="number" step="0.01" inputmode="decimal" class="fc" style="width:100%;font-size:12px" id="mi_price_'+it.id+'" value="'+(it.price===''?'':it.price)+'" placeholder="0" oninput="meterRowChanged('+it.id+')"></div>'+
         '</div>'+
         '<div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap">'+
           '<span style="font-size:11px;color:var(--ts)">'+i18n.t('meter.usage')+'：<b id="mi_usage_'+it.id+'">-</b> '+def.unit+'</span>'+
