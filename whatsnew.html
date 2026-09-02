@@ -114,10 +114,91 @@ body {
 
 <div class="container">
 
-  <!-- 2026-08-28 版本 -->
+  <!-- 2026-09-03 版本 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 3 日</span>
+    </div>
+
+    <!-- 新功能：多表抄表 -->
+    <div class="feat">
+      <div class="feat-icon new">💧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          抄表支持多块水电表 + 其他费用
+          <span class="badge new">NEW</span>
+        </div>
+        <div class="feat-desc">
+          一套房有多块电表、水表也能记了！抄表时可以<b>随时添加任意数量的水表、电表</b>（每块表可改名称，如「2号电表」「商铺电表」），还能<b>添加其他费用</b>（网费、垃圾费、卫生费等），金额自动汇总。抄表账单点「<b>标记已收取</b>」后，水电费和其他杂费<b>自动计入当月收入</b>；待收取状态只记应收欠款，不计入收入。
+        </div>
+        <div class="howto">
+          <h4>📱 怎么用</h4>
+          <ol>
+            <li>租客详情页「水电抄表」点「<b>+ 抄表</b>」</li>
+            <li>默认有冷水、热水、电表各一块，点上方「➕加电表/加水表」可继续加表，表名可改</li>
+            <li>填上期读数、本期读数、单价，用量和金额自动算；也可以直接改金额</li>
+            <li>点「➕加其他费用」填网费、垃圾费等杂费</li>
+            <li>保存后在抄表记录上点「<b>标记已收取</b>」，这笔钱自动进入收入统计</li>
+          </ol>
+        </div>
+        <div class="feat-tip green">
+          💡 以前的抄表记录和显示方式完全不变；催租账单会自动汇总所有表的用量和其他费用。
+        </div>
+      </div>
+    </div>
+
+    <!-- 新功能：补录收入 -->
+    <div class="feat">
+      <div class="feat-icon new">💰</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          收支页新增「收入记录」，可补录历史账目
+          <span class="badge new">NEW</span>
+        </div>
+        <div class="feat-desc">
+          系统上线前的老账也能补了！进入「<b>收支管理</b>」默认就是「收入记录」页，点「<b>补录收入</b>」可登记房租、水电、押金或其他收入：选类型、填日期、金额、备注，<b>房间和租客可以不选</b>，直接记账。补录的数据和租金页收款、抄表收费<b>自动合并</b>，一起参与首页收入统计和年度收入报表。
+        </div>
+        <div class="feat-tip green">
+          💡 抄表标记「已收取」的水电杂费会自动出现在这里（来源显示「抄表收取」），不用重复登记。
+        </div>
+      </div>
+    </div>
+
+    <!-- 新功能：续约提醒 -->
+    <div class="feat">
+      <div class="feat-icon new">📝</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          每日提醒新增「续约提醒」+ 租客列表置顶
+          <span class="badge new">NEW</span>
+        </div>
+        <div class="feat-desc">
+          合同快到期的租客不会再漏掉了：每日微信/邮件提醒中新增<b>续约提醒板块</b>（到期前30天开始提示，已过期的红色标注）；<b>租客列表里待续约/已过期的租客自动排到最前面</b>，名字旁带「待续约」「已过期」标签。同时提醒服务增加了运行心跳和异常自动告警，万一推送出问题会第一时间发系统通知。
+        </div>
+      </div>
+    </div>
+
+    <!-- 修复：导出 -->
+    <div class="feat">
+      <div class="feat-icon fix">🔧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修复「导出表格」点击无反应
+          <span class="badge fix">修复</span>
+        </div>
+        <div class="feat-desc">
+          导出Excel依赖的表格组件之前从国外节点加载，手机网络不好时会加载失败导致按钮点了没反应。现已<b>切换到国内高速节点并增加备用线路</b>，加载异常时也会明确提示，不再静默无反应。
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 2026-08-28 版本 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#94a3b8;">近期更新</span>
       <span class="version-date">2026 年 8 月 28 日</span>
     </div>
 
