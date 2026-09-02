@@ -114,10 +114,44 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-03 v59 版本 -->
+  <!-- 2026-09-03 v60 热修复 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 3 日 · V60</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon fix">🔧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修复：点击「收支」和「抄表」没反应
+          <span class="badge fix">FIX</span>
+        </div>
+        <div class="feat-desc">
+          上一版新增功能中引用了一个未声明的内部变量，导致<b>点「收支」菜单不跳转、点「+抄表」按钮弹窗打不开、水电记录列表空白</b>。本次已修复，上述功能全部恢复正常；同时修复了多表抄表弹窗中费用金额留空时预览可能报错的问题。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">✅</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          交付前新增运行时自动检测
+          <span class="badge imp">质量</span>
+        </div>
+        <div class="feat-desc">
+          以后每次更新前，系统会把<b>所有页面、所有弹窗按钮在模拟环境中完整点一遍</b>，这类"点了没反应"的问题在交付前就会被拦截，不再让你当测试员。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2026-09-03 v59 版本 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#94a3b8">V59</span>
       <span class="version-date">2026 年 9 月 3 日 · V59</span>
     </div>
 
