@@ -181,6 +181,38 @@ def send_pushplus(token, title, content, max_retries=3, retry_delay=5):
             return False, str(e)
 
 # ========== 生日数据获取 ==========
+CONTRACT_REMIND_DAYS = 30  # 合同到期前N天开始提醒续约
+
+def fetch_renewals(owner_id, room_map, today_dt):
+    """查询待续约/已过期租户：active且合同到期日在提醒窗口内或已过期"""
+    try:
+        tenants = http_get(f"{SB_URL}/rest/v1/tenants", {
+            "select": "id,name,room_id,contract_end,status",
+            "owner_id": f"eq.{owner_id}", "status": "eq.active"
+        })
+    except Exception as e:
+        print(f"WARNING: renewals query failed: {e}")
+        return []
+    result = []
+    for t in (tenants or []):
+        ce = t.get("contract_end")
+        if not ce:
+            continue
+        try:
+            ce_dt = datetime.strptime(ce, "%Y-%m-%d").date()
+        except Exception:
+            continue
+        days = (ce_dt - today_dt).days
+        if days <= CONTRACT_REMIND_DAYS:
+            result.append({
+                "tenant_name": t.get("name", "未知租客"),
+                "room_name": room_map.get(t.get("room_id"), "-"),
+                "contract_end": ce,
+                "days_until": days
+            })
+    result.sort(key=lambda x: x["days_until"])
+    return result
+
 def fetch_birthdays(owner_id):
     """从国内数据库birthday_book表获取用户的生日数据"""
     try:
@@ -228,8 +260,9 @@ def get_upcoming_birthdays(owner_id, today, remind_days=BIRTHDAY_REMIND_DAYS):
     return upcoming
 
 # ========== 构建提醒内容 ==========
-def build_wechat_html(owner_name, overdue, upcoming, birthdays, adjustments=None):
+def build_wechat_html(owner_name, overdue, upcoming, birthdays, adjustments=None, renewals=None):
     adjustments = adjustments or []
+    renewals = renewals or []
     today = today_str()
     parts = []
     parts.append(f'<div style="font-size:14px;line-height:1.6;">')
@@ -292,12 +325,31 @@ def build_wechat_html(owner_name, overdue, upcoming, birthdays, adjustments=None
             parts.append(f'<p style="margin:3px 0;">{a["tenant_name"]} · {a.get("room_name","-")} · <span style="color:{color};font-weight:bold;">{amt}</span> · {a["adjust_date"]} · {stat}{note}</p>')
         parts.append('</div>')
 
+    # 续约提醒部分
+    if renewals:
+        parts.append(f'<hr style="border:none;border-top:1px solid #eee;margin:10px 0;">')
+        parts.append(f'<h4 style="color:#e67e22;margin:0 0 8px 0;">📝 续约提醒</h4>')
+        parts.append('<div style="background:#fef6ec;padding:8px;border-radius:4px;">')
+        for x in renewals:
+            d = x['days_until']
+            if d < 0:
+                stat = f'<span style="color:#e74c3c;font-weight:bold;">已过期{abs(d)}天</span>'
+            elif d == 0:
+                stat = '<span style="color:#e74c3c;font-weight:bold;">今天到期</span>'
+            elif d <= 7:
+                stat = f'<span style="color:#e67e22;font-weight:bold;">还有{d}天</span>'
+            else:
+                stat = f'还有{d}天'
+            parts.append(f'<p style="margin:3px 0;">{x["tenant_name"]} · {x.get("room_name","-")} · 合同至 {x["contract_end"]} · {stat}</p>')
+        parts.append('</div>')
+
     parts.append('<p style="color:#999;font-size:12px;margin-top:15px;">瑞丽租房管理系统</p>')
     parts.append('</div>')
     return ''.join(parts)
 
-def build_email_html(owner_name, overdue, upcoming, birthdays, adjustments=None):
+def build_email_html(owner_name, overdue, upcoming, birthdays, adjustments=None, renewals=None):
     adjustments = adjustments or []
+    renewals = renewals or []
     today = today_str()
     parts = []
     parts.append(f'<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">')
@@ -359,6 +411,24 @@ def build_email_html(owner_name, overdue, upcoming, birthdays, adjustments=None)
             parts.append(f'<tr><td style="border:1px solid #ddd;padding:8px;">{a["tenant_name"]}</td><td style="border:1px solid #ddd;padding:8px;">{a.get("room_name","-")}</td><td style="border:1px solid #ddd;padding:8px;color:{color};font-weight:bold;">{amt}</td><td style="border:1px solid #ddd;padding:8px;">{a["adjust_date"]}</td><td style="border:1px solid #ddd;padding:8px;">{stat}</td><td style="border:1px solid #ddd;padding:8px;">{a.get("note") or "-"}</td></tr>')
         parts.append('</table><br>')
 
+    # 续约提醒部分
+    if renewals:
+        parts.append('<h3 style="color:#e67e22;border-bottom:2px solid #e67e22;padding-bottom:5px;">📝 续约提醒</h3>')
+        parts.append('<table style="width:100%;border-collapse:collapse;">')
+        parts.append('<tr style="background:#fef6ec;"><th style="border:1px solid #ddd;padding:8px;">租客</th><th style="border:1px solid #ddd;padding:8px;">房间</th><th style="border:1px solid #ddd;padding:8px;">合同到期</th><th style="border:1px solid #ddd;padding:8px;">状态</th></tr>')
+        for x in renewals:
+            d = x['days_until']
+            if d < 0:
+                stat = f'<span style="color:#e74c3c;font-weight:bold;">已过期{abs(d)}天</span>'
+            elif d == 0:
+                stat = '<span style="color:#e74c3c;font-weight:bold;">今天到期</span>'
+            elif d <= 7:
+                stat = f'<span style="color:#e67e22;font-weight:bold;">还有{d}天</span>'
+            else:
+                stat = f'还有{d}天'
+            parts.append(f'<tr><td style="border:1px solid #ddd;padding:8px;">{x["tenant_name"]}</td><td style="border:1px solid #ddd;padding:8px;">{x.get("room_name","-")}</td><td style="border:1px solid #ddd;padding:8px;">{x["contract_end"]}</td><td style="border:1px solid #ddd;padding:8px;">{stat}</td></tr>')
+        parts.append('</table><br>')
+
     parts.append('<p style="color:#666;font-size:12px;">此邮件由瑞丽租房管理系统自动发送</p></div>')
     return ''.join(parts)
 
@@ -414,7 +484,38 @@ def check_pushplus_column():
         return False
 
 # ========== 主流程 ==========
+def _heartbeat(status, detail=""):
+    try:
+        output_path = os.environ.get("OUTPUT_PATH", "./codeact/output")
+        os.makedirs(output_path, exist_ok=True)
+        hb = os.path.join(output_path, "reminder_heartbeat.log")
+        with open(hb, "a") as f:
+            f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {status} {detail}\n")
+    except Exception:
+        pass
+
+def _alert_fatal(today, err):
+    # 脚本整体异常时，给已配置邮箱的房东发告警，避免静默失败
+    try:
+        settings = http_get(f"{SB_URL}/rest/v1/workspace_settings", {
+            "select": "owner_id,notification_email,pushplus_token",
+            "notification_email": "not.is.null"
+        })
+        msg = f"每日提醒脚本运行异常：{type(err).__name__}: {err}。请联系技术支持检查。"
+        for s0 in (settings or []):
+            email = s0.get("notification_email")
+            if email:
+                send_reminder_email(email, f"【系统告警】每日提醒 {today} 运行异常",
+                    f'<div style="font-family:Arial,sans-serif"><h3>每日提醒运行异常</h3><p style="color:#e74c3c">{msg}</p><p>数据查询或推送环节出错，今日自动提醒可能未发送。</p></div>')
+            tok = s0.get("pushplus_token")
+            if tok:
+                send_pushplus(tok, f"【系统告警】每日提醒{today}异常",
+                    f'<div style="font-size:14px;line-height:1.6"><h3>每日提醒运行异常</h3><p style="color:#e74c3c">{msg}</p></div>')
+    except Exception as e2:
+        print(f"FATAL alert failed too: {e2}")
+
 def main():
+    _heartbeat("START")
     today = today_str()
     today_dt = datetime.strptime(today, "%Y-%m-%d").date()
     remind_days = 15
@@ -512,8 +613,15 @@ def main():
             print(f"WARNING: fetch_adjustments failed: {e}")
             adjustments = []
 
+        # === 续约提醒数据 ===
+        try:
+            renewals = fetch_renewals(owner_id, room_map, today_dt)
+        except Exception as e:
+            print(f"WARNING: fetch_renewals failed: {e}")
+            renewals = []
+
         # 有任何提醒才发送
-        if overdue or upcoming or birthdays or adjustments:
+        if overdue or upcoming or birthdays or adjustments or renewals:
             any_sent = True
 
             # 微信推送标题
@@ -522,11 +630,15 @@ def main():
             if upcoming: wx_title_parts.append(f"{len(upcoming)}笔到期")
             if birthdays: wx_title_parts.append(f"{len(birthdays)}个生日")
             if adjustments: wx_title_parts.append(f"{len(adjustments)}个调租")
+            expired_n = len([x for x in renewals if x['days_until'] < 0])
+            renew_n = len(renewals) - expired_n
+            if expired_n: wx_title_parts.append(f"{expired_n}个合同已过期")
+            if renew_n: wx_title_parts.append(f"{renew_n}个待续约")
             wx_title = f"每日提醒 {today} - " + "，".join(wx_title_parts)
 
             # 构建内容
-            wx_html = build_wechat_html(owner_name, overdue, upcoming, birthdays, adjustments)
-            email_html = build_email_html(owner_name, overdue, upcoming, birthdays, adjustments)
+            wx_html = build_wechat_html(owner_name, overdue, upcoming, birthdays, adjustments, renewals)
+            email_html = build_email_html(owner_name, overdue, upcoming, birthdays, adjustments, renewals)
 
             # 发邮件
             email_subject = f"【每日提醒】{today} - " + "，".join(wx_title_parts)
@@ -535,7 +647,8 @@ def main():
                 "to": email, "owner_id": owner_id, "owner_name": owner_name,
                 "subject": email_subject, "success": ok, "msg": msg,
                 "overdue_count": len(overdue), "upcoming_count": len(upcoming),
-                "birthday_count": len(birthdays), "adjust_count": len(adjustments)
+                "birthday_count": len(birthdays), "adjust_count": len(adjustments),
+                "renew_count": len(renewals)
             })
 
             # PushPlus微信推送
@@ -551,7 +664,7 @@ def main():
             results.append({
                 "email": email, "owner_id": owner_id,
                 "overdue": overdue, "upcoming": upcoming, "birthdays": birthdays,
-                "adjustments": adjustments
+                "adjustments": adjustments, "renewals": renewals
             })
 
     if any_sent:
@@ -562,8 +675,20 @@ def main():
         with open(os.path.join(output_path, fname), "w") as f:
             json.dump(output, f, ensure_ascii=False, indent=2, default=str)
         print(f"REMINDER_DATA:{fname}")
+        _heartbeat("SENT", f"owners={len(results)}")
     else:
         print("NO_REMINDERS")
+        _heartbeat("OK", "no reminders due")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        _heartbeat("FATAL", f"{type(e).__name__}: {e}")
+        try:
+            _alert_fatal(today_str(), e)
+        except Exception:
+            pass
+        sys.exit(1)
