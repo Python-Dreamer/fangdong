@@ -114,10 +114,57 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-03 v68 周期显示修复 -->
+  <!-- 2026-09-04 v69 批量收款选月份+记账本楼栋明细+水电拆分 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 4 日 · V69</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon new">📅</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          批量收款可以选记账方式，补欠租各归各月
+          <span class="badge new">新功能</span>
+        </div>
+        <div class="feat-desc">
+          一次勾选多笔欠租点「确认收款」时，默认<b>按账单月份分别记账</b>：比如今天补收 1~6 月的欠租，记账本里每笔都会记到<b>对应账单的月份</b>，月度收支不再全堆在收款当天。也可以切换成「统一记到指定日期」，和以前一样全部记在同一天。收款金额、账单状态等收租流程都没有变动。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon new">🏢</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          记账本新增楼栋筛选、月份下拉和楼栋明细
+          <span class="badge new">新功能</span>
+        </div>
+        <div class="feat-desc">
+          收支（记账本）页工具栏新增<b>楼栋</b>和<b>月份</b>两个下拉：可以只看某一栋楼、某一个月的收支；年度汇总卡里新增<b>累计收入、累计结余</b>（按当前筛选统计全部年份），下面还有<b>楼栋明细</b>——每栋楼一年收了多少、支了多少、结余多少，一目了然，没有归属楼栋的支出归在「公共/其他」。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">🚰</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          补录收入的类型：水费、电费分成两个独立选项
+          <span class="badge imp">优化</span>
+        </div>
+        <div class="feat-desc">
+          补录收入时类型里原来的「水电」拆成了<b>水费 🚰</b>和<b>电费 ⚡</b>两个独立选项，记账和导出时能分开统计。以前记的「水电」老数据照常显示、不受影响。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2026-09-03 v68 周期显示修复 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#bbb">V68</span>
       <span class="version-date">2026 年 9 月 3 日 · V68</span>
     </div>
 
