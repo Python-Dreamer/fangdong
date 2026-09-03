@@ -231,7 +231,7 @@ select.fc{-webkit-appearance:none;appearance:none;background-image:url("data:ima
 <div class="ov" id="overlay"><div class="modal" id="modal"></div></div>
 <div class="sb-overlay" id="sbOverlay" onclick="closeSB()"></div>
 <div class="photo-viewer-overlay" id="photoViewer" onclick="closePhotoViewer(event)"><button class="photo-viewer-close" onclick="closePhotoViewer()">×</button><span class="photo-viewer-nav" id="photoViewerPrev" onclick="event.stopPropagation();photoViewerNav(-1)">‹</span><img class="photo-viewer-img" id="photoViewerImg" src="" alt=""><span class="photo-viewer-nav" id="photoViewerNext" onclick="event.stopPropagation();photoViewerNav(1)">›</span></div>
-<script src="i18n.js?v=65"></script>
+<script src="i18n.js?v=66"></script>
 <script>
 var sbUrl=localStorage.getItem('sb_url')||'https://ruilifangfong.site',sbKey=localStorage.getItem('sb_key')||'eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8',sb=null,sdkReady=false,currentUser=null,currentProfile=null,currentPage='dashboard';
 var DEFAULT_SB_URL='https://ruilifangfong.site',DEFAULT_SB_KEY='eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8';
@@ -1188,30 +1188,103 @@ function getLocalBackupInfo(){var raw=localStorage.getItem('fangdong_backup');if
 
 async function exportBackup(){if(typeof XLSX==="undefined"){toast(i18n.t("common.exportLibLoading"),"i");var _xok=await window._xlsxReady();if(!_xok){toast(i18n.t("common.exportLibFailed"),"e");return}}
   try{var dm=await decryptTenants(cache.tenants.map(function(t){return t.id}));cache.tenants.forEach(function(t){if(dm[t.id]){t.id_number=dm[t.id].id_number;t.occupants=dm[t.id].occupants||t.occupants}})}catch(e){console.warn('decrypt for export failed:',e)}
-  var roomMap={};
+  var roomMap={},tenantMap={},buildingMap={},meterMap={};
   cache.rooms.forEach(function(r){roomMap[r.id]=r.name||i18n.t('tenant.unknownRoom')});
-  var tenantMap={};
   cache.tenants.forEach(function(t){tenantMap[t.id]=t.name||i18n.t('tenant.unknownTenant')});
-  
-  var statusMapRoom={vacant:i18n.t('bk.statusVacant'),occupied:i18n.t('bk.statusOccupied'),maintenance:i18n.t('bk.statusMaintenance')};
-  var statusMapTenant={active:i18n.t('bk.statusActive'),inactive:i18n.t('bk.statusInactive')};
-  var statusMapRent={pending:i18n.t('bk.statusPending'),paid:i18n.t('bk.statusPaid'),overdue:i18n.t('bk.statusOverdue')};
-  
-  var ws1=XLSX.utils.json_to_sheet(cache.rooms.map(function(r){
-    var _o={};_o[i18n.t('bk.colRoomName')]=r.name||'';_o[i18n.t('bk.colAddress')]=r.address||'';_o[i18n.t('bk.colType')]=r.type||'';_o[i18n.t('bk.colArea')]=r.area||'';_o[i18n.t('bk.colMonthlyRent')]=r.rent_amount||0;_o[i18n.t('bk.colStatus')]=statusMapRoom[r.status]||r.status||'';_o[i18n.t('bk.colNotes')]=r.notes||'';return _o
-  }));
-  var ws2=XLSX.utils.json_to_sheet(cache.tenants.map(function(t){
-    var _o={};_o[i18n.t('bk.colName')]=t.name||'';_o[i18n.t('bk.colPhone')]=t.phone||'';_o[i18n.t('bk.colIdNumber')]=t.id_number||'';_o[i18n.t('bk.colEmergency')]=t.emergency_contact||'';_o[i18n.t('bk.colRoomName')]=roomMap[t.room_id]||'';_o[i18n.t('bk.colMonthlyRent')]=t.rent_amount||0;_o[i18n.t('bk.colMoveIn')]=t.move_in_date||'';_o[i18n.t('bk.colContractEnd')]=t.contract_end||'';_o[i18n.t('bk.colDeposit')]=t.deposit||0;_o[i18n.t('bk.colPayMethod')]=t.pay_method||'';_o[i18n.t('bk.colNationality')]=t.nationality||'';_o[i18n.t('bk.colGender')]=t.gender||'';_o[i18n.t('bk.colStatus')]=statusMapTenant[t.status]||t.status||'';_o[i18n.t('bk.colNotes')]=t.notes||'';return _o
-  }));
-  var ws3=XLSX.utils.json_to_sheet(cache.rents.map(function(r){
-    var _o={};_o[i18n.t('bk.colTenantName')]=tenantMap[r.tenant_id]||'';_o[i18n.t('bk.colRoomName')]=roomMap[r.room_id]||'';_o[i18n.t('bk.colAmount')]=r.amount||0;_o[i18n.t('bk.colDueDate')]=r.due_date||'';_o[i18n.t('bk.colPayDate')]=r.pay_date||'';_o[i18n.t('bk.colStatus')]=statusMapRent[r.status]||r.status||'';_o[i18n.t('bk.colPayMethod')]=r.pay_method||'';_o[i18n.t('bk.colNotes')]=r.notes||'';return _o
-  }));
-  
+  (cache.buildings||[]).forEach(function(b){buildingMap[b.id]=b.name||''});
+  cache.meters.forEach(function(m){meterMap[m.id]=i18n.t('bk.meterSheet')+' '+(m.reading_date||'')});
+  var T=function(k){return i18n.t(k)};
+  function v(x){return (x===null||x===undefined)?'':x}
+  function yn(b){return b?T('bk.boolYes'):T('bk.boolNo')}
+  var statusMapRoom={vacant:T('bk.statusVacant'),occupied:T('bk.statusOccupied'),maintenance:T('bk.statusMaintenance')};
+  var statusMapTenant={active:T('bk.statusActive'),inactive:T('bk.statusInactive')};
+  var statusMapRent={pending:T('bk.statusPending'),paid:T('bk.statusPaid'),overdue:T('bk.statusOverdue')};
+  var statusMapPaid={true:T('bk.statusPaid'),false:T('bk.statusPending')};
+  var incCatMap={rent:T('fin.catRent'),utility:T('fin.catUtility'),deposit:T('fin.catDeposit'),other:T('fin.catOther')};
+  var expCatMap={maintenance:T('fin.catMaintenance'),utility:T('fin.catUtility'),other:T('fin.catOther')};
+  var dirMap={increase:T('bk.dirIncrease'),decrease:T('bk.dirDecrease')};
+  var adjStatusMap={pending:T('bk.adjPending'),done:T('bk.adjDone')};
+  var srcMap={meter:T('bk.srcMeter'),manual:T('bk.srcManual')};
+  var kindMap={cold_water:T('bk.kindCold'),hot_water:T('bk.kindHot'),electricity:T('bk.kindElec'),other:T('bk.kindOther')};
+  function sheet(rows){var a=rows&&rows.length?rows:[{}];return XLSX.utils.json_to_sheet(a)}
+  // ① 楼栋
+  var wsb=sheet((cache.buildings||[]).map(function(b){
+    var _o={};_o[T('bk.colBldgName')]=v(b.name);_o[T('bk.colAddress')]=v(b.address);
+    _o[T('bk.colColdPrice')]=v(b.cold_water_price);_o[T('bk.colHotPrice')]=v(b.hot_water_price);_o[T('bk.colElecPrice')]=v(b.electricity_price);
+    _o[T('bk.colNotes')]=v(b.notes);return _o}));
+  // ② 房间
+  var ws1=sheet(cache.rooms.map(function(r){
+    var _o={};_o[T('bk.colRoomName')]=v(r.name);_o[T('bk.colBuilding')]=v(buildingMap[r.building_id]);_o[T('bk.colAddress')]=v(r.address);
+    _o[T('bk.colType')]=v(r.type);_o[T('bk.colArea')]=v(r.area);_o[T('bk.colMonthlyRent')]=v(r.rent_amount);
+    _o[T('bk.colStatus')]=statusMapRoom[r.status]||v(r.status);_o[T('bk.colNotes')]=v(r.notes);return _o}));
+  // ③ 租户（含同住人展开文本）
+  var ws2=sheet(cache.tenants.map(function(t){
+    var occ=(t.occupants&&t.occupants.length)?t.occupants.map(function(o,i){
+      return (i+1)+'.'+v(o.name)+(o.phone?'/'+v(o.phone):'')+(o.nationality?'/'+v(o.nationality):'')+(o.gender?'/'+v(o.gender):'')+(o.id_number?'/'+v(o.id_number):'')}).join('；'):'';
+    var _o={};_o[T('bk.colName')]=v(t.name);_o[T('bk.colPhone')]=v(t.phone);_o[T('bk.colIdNumber')]=v(t.id_number);
+    _o[T('bk.colEmergency')]=v(t.emergency_contact);_o[T('bk.colRoomName')]=v(roomMap[t.room_id]);_o[T('bk.colMonthlyRent')]=v(t.rent_amount);
+    _o[T('bk.colMoveIn')]=v(t.move_in_date);_o[T('bk.colContractEnd')]=v(t.contract_end);_o[T('bk.colDeposit')]=v(t.deposit);
+    _o[T('bk.colPayMethod')]=v(t.pay_method);_o[T('bk.colNationality')]=v(t.nationality);_o[T('bk.colGender')]=v(t.gender);
+    _o[T('bk.colOccupants')]=occ;_o[T('bk.colStatus')]=statusMapTenant[t.status]||v(t.status);_o[T('bk.colNotes')]=v(t.notes);return _o}));
+  // ④ 收租记录（补账单周期）
+  var ws3=sheet(cache.rents.map(function(r){
+    var _o={};_o[T('bk.colTenantName')]=v(tenantMap[r.tenant_id]);_o[T('bk.colRoomName')]=v(roomMap[r.room_id]);
+    _o[T('bk.colAmount')]=v(r.amount);_o[T('bk.colPeriodStart')]=v(r.period_start);_o[T('bk.colDueDate')]=v(r.due_date);
+    _o[T('bk.colPayDate')]=v(r.pay_date);_o[T('bk.colStatus')]=statusMapRent[r.status]||v(r.status);
+    _o[T('bk.colPayMethod')]=v(r.pay_method);_o[T('bk.colNotes')]=v(r.notes);return _o}));
+  // ⑤ 抄表记录
+  var wsM=sheet(cache.meters.map(function(m){
+    var _o={};_o[T('bk.colTenantName')]=v(tenantMap[m.tenant_id]);_o[T('bk.colRoomName')]=v(roomMap[m.room_id]);
+    _o[T('bk.colReadingDate')]=v(m.reading_date);
+    _o[T('bk.colColdReading')]=v(m.cold_water);_o[T('bk.colColdUsage')]=v(m.cold_water_usage);_o[T('bk.colColdPrice')]=v(m.cold_water_price);_o[T('bk.colColdFee')]=v(m.cold_water_fee);
+    _o[T('bk.colHotReading')]=v(m.hot_water);_o[T('bk.colHotUsage')]=v(m.hot_water_usage);_o[T('bk.colHotPrice')]=v(m.hot_water_price);_o[T('bk.colHotFee')]=v(m.hot_water_fee);
+    _o[T('bk.colElecReading')]=v(m.electricity);_o[T('bk.colElecUsage')]=v(m.electricity_usage);_o[T('bk.colElecPrice')]=v(m.electricity_price);_o[T('bk.colElecFee')]=v(m.electricity_fee);
+    _o[T('bk.colOtherFee')]=v(m.other_fee);_o[T('bk.colTotalFee')]=v(m.total_fee);_o[T('bk.colPaid')]=statusMapPaid[m.paid?'true':'false']||yn(!!m.paid);
+    _o[T('bk.colPhoto')]=v(m.photo_url);_o[T('bk.colNotes')]=v(m.notes);return _o}));
+  // ⑥ 抄表明细（多表/其他费用子表）
+  var wsMI=sheet((cache.meterItems||[]).map(function(it){
+    var mr=cache.meters.find(function(x){return x.id===it.reading_id});
+    var _o={};_o[T('bk.colTenantName')]=v(tenantMap[it.tenant_id]);_o[T('bk.colRoomName')]=v(roomMap[mr?mr.room_id:null]);
+    _o[T('bk.colReadingDate')]=mr?v(mr.reading_date):'';_o[T('bk.colItemKind')]=kindMap[it.kind]||v(it.kind);_o[T('bk.colItemLabel')]=v(it.label);
+    _o[T('bk.colCurReading')]=v(it.cur_reading);_o[T('bk.colPrevReading')]=v(it.prev_reading);_o[T('bk.colUsage')]=v(it.usage);
+    _o[T('bk.colPrice')]=v(it.price);_o[T('bk.colAmount')]=v(it.amount);return _o}));
+  // ⑦ 收入记录
+  var wsI=sheet(_validIncomes().map(function(x){
+    var _o={};_o[T('bk.colOccurDate')]=v(x.occur_date);_o[T('bk.colAmount')]=v(x.amount);
+    _o[T('bk.colCategory')]=incCatMap[x.category]||v(x.category);_o[T('bk.colTenantName')]=v(tenantMap[x.tenant_id]);
+    _o[T('bk.colRoomName')]=v(roomMap[x.room_id]);_o[T('bk.colSource')]=srcMap[x.source]||v(x.source);_o[T('bk.colNotes')]=v(x.note);return _o}));
+  // ⑧ 支出记录
+  var wsE=sheet(cache.expenses.map(function(x){
+    var _o={};_o[T('bk.colExpenseDate')]=v(x.expense_date);_o[T('bk.colAmount')]=v(x.amount);
+    _o[T('bk.colCategory')]=expCatMap[x.category]||v(x.category);_o[T('bk.colRoomName')]=v(roomMap[x.room_id]);_o[T('bk.colNotes')]=v(x.note);return _o}));
+  // ⑨ 租金调整
+  var wsA=sheet((cache.adjustments||[]).map(function(x){
+    var _o={};_o[T('bk.colTenantName')]=v(tenantMap[x.tenant_id]);_o[T('bk.colEffectDate')]=v(x.adjust_date);
+    _o[T('bk.colDirection')]=dirMap[x.direction]||v(x.direction);_o[T('bk.colAmount')]=v(x.amount);
+    _o[T('bk.colAdjStatus')]=adjStatusMap[x.status]||v(x.status);_o[T('bk.colNotes')]=v(x.note);return _o}));
+  // ⑩ 设置（键值两列，不含 PushPlus Token 等凭据）
+  var stRows=[];
+  var s=cache.settings||{};
+  function stRow(k,val){stRows.push((function(){var _o={};_o[T('bk.colSettingItem')]=k;_o[T('bk.colSettingValue')]=val;return _o})())}
+  stRow(T('set.enableReminders'),yn(s.enable_reminders!==false));
+  stRow(T('set.contractDays'),v(s.contract_remind_days||30));
+  stRow(T('set.rentDays'),v(s.rent_remind_days||5));
+  stRow(T('set.notifyEmail'),v(s.notification_email));
+  stRow(T('bk.exportTime'),new Date().toLocaleString());
+  var wsS=sheet(stRows);
+
   var wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws1,i18n.t('bk.roomsSheet'));
-  XLSX.utils.book_append_sheet(wb,ws2,i18n.t('bk.tenantsSheet'));
-  XLSX.utils.book_append_sheet(wb,ws3,i18n.t('set.rentRecords'));
-  
+  XLSX.utils.book_append_sheet(wb,wsb,T('bk.bldgSheet'));
+  XLSX.utils.book_append_sheet(wb,ws1,T('bk.roomsSheet'));
+  XLSX.utils.book_append_sheet(wb,ws2,T('bk.tenantsSheet'));
+  XLSX.utils.book_append_sheet(wb,ws3,T('bk.rentSheet'));
+  XLSX.utils.book_append_sheet(wb,wsM,T('bk.meterSheet'));
+  XLSX.utils.book_append_sheet(wb,wsMI,T('bk.meterItemSheet'));
+  XLSX.utils.book_append_sheet(wb,wsI,T('bk.incomeSheet'));
+  XLSX.utils.book_append_sheet(wb,wsE,T('bk.expenseSheet'));
+  XLSX.utils.book_append_sheet(wb,wsA,T('bk.adjustSheet'));
+  XLSX.utils.book_append_sheet(wb,wsS,T('bk.settingsSheet'));
+
   var d=new Date();
   var fname=i18n.t('bk.fileName',{date:d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0'),time:String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0')});
   XLSX.writeFile(wb,fname);

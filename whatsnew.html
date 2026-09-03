@@ -114,10 +114,57 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-03 v65 热修复 -->
+  <!-- 2026-09-03 v66 全量导出 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 3 日 · V66</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">📊</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          导出 Excel 升级为全量数据（10 张表）
+          <span class="badge imp">优化</span>
+        </div>
+        <div class="feat-desc">
+          设置页「导出 Excel」以前只有房间、租户、收租 <b>3 张表</b>，楼栋、抄表、收入、支出、调租全都没导出来。现在一次导出 <b>10 张表</b>：楼栋、房间、租户（含同住人）、收租记录、抄表记录、抄表明细、收入、支出、调租记录、设置。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon new">💧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          抄表数据逐表逐行都在表里
+        </div>
+        <div class="feat-desc">
+          抄表记录含冷水/热水/电表的读数、用量、单价、分项金额、合计、是否已收、照片；2 号表、3 号表和物业费等其他费用，在「抄表明细」表里<b>每一行都单独列出</b>，对账不怕对不上。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon new">💰</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          收入支出调租全导出，字段更全
+        </div>
+        <div class="feat-desc">
+          收入表自动标注来源（水电收取/手动录入）和分类（房租/水电/押金/其他）；收租记录补了账单周期起始日；租户表带同住人（姓名/电话/国籍/性别/证件）。设置表只含提醒开关和提醒天数，<b>不含任何密码、Token 等敏感凭据</b>。
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- 2026-09-03 v65 热修复 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#bbb">V65</span>
       <span class="version-date">2026 年 9 月 3 日 · V65</span>
     </div>
 
