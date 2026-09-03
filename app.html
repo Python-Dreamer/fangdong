@@ -231,7 +231,7 @@ select.fc{-webkit-appearance:none;appearance:none;background-image:url("data:ima
 <div class="ov" id="overlay"><div class="modal" id="modal"></div></div>
 <div class="sb-overlay" id="sbOverlay" onclick="closeSB()"></div>
 <div class="photo-viewer-overlay" id="photoViewer" onclick="closePhotoViewer(event)"><button class="photo-viewer-close" onclick="closePhotoViewer()">×</button><span class="photo-viewer-nav" id="photoViewerPrev" onclick="event.stopPropagation();photoViewerNav(-1)">‹</span><img class="photo-viewer-img" id="photoViewerImg" src="" alt=""><span class="photo-viewer-nav" id="photoViewerNext" onclick="event.stopPropagation();photoViewerNav(1)">›</span></div>
-<script src="i18n.js?v=64"></script>
+<script src="i18n.js?v=65"></script>
 <script>
 var sbUrl=localStorage.getItem('sb_url')||'https://ruilifangfong.site',sbKey=localStorage.getItem('sb_key')||'eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8',sb=null,sdkReady=false,currentUser=null,currentProfile=null,currentPage='dashboard';
 var DEFAULT_SB_URL='https://ruilifangfong.site',DEFAULT_SB_KEY='eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8';
@@ -810,9 +810,17 @@ async function doEditName(){var name=document.getElementById('fEditName').value.
 
 // ========== 日期工具补充 ==========
 function addMonths(dateStr,months){var parts=dateStr.split('-');var y=parseInt(parts[0]);var m=parseInt(parts[1])-1+months;var d=parseInt(parts[2]);y+=Math.floor(m/12);m=m%12;if(m<0){m+=12;y-=1}var lastDay=new Date(y,m+1,0).getDate();if(d>lastDay)d=lastDay;return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0')}
+// v65: 有效收入——meter来源的收入必须能找到对应抄表记录，否则视为已删记录的孤儿收入，不计入账面
+function _validIncomes(){
+  var meterIds={};(cache.meters||[]).forEach(function(m){meterIds[m.id]=true});
+  return (cache.incomes||[]).filter(function(x){
+    if(x.source==='meter'&&x.ref_id)return !!meterIds[x.ref_id];
+    return true;
+  });
+}
 function monthIncome(ym){
   var fromRents=cache.rents.filter(function(r){return r.status==='paid'&&r.pay_date&&r.pay_date.slice(0,7)===ym}).reduce(function(a,r){return a+(r.amount||0)},0);
-  var fromInc=(cache.incomes||[]).filter(function(x){return (x.occur_date||'').slice(0,7)===ym}).reduce(function(a,x){return a+(x.amount||0)},0);
+  var fromInc=_validIncomes().filter(function(x){return (x.occur_date||'').slice(0,7)===ym}).reduce(function(a,x){return a+(x.amount||0)},0);
   return fromRents+fromInc;
 }
 function _renewalRank(t){
@@ -894,7 +902,7 @@ function _ledgerEntries(){
         sub:rm?esc(rm.name):'',editable:false});
     }
   });
-  (cache.incomes||[]).forEach(function(x){
+  _validIncomes().forEach(function(x){
     if(!x.occur_date)return;
     var t=_incTenantName(x.tenant_id),rm=x.room_id?_roomName(x.room_id):'';
     var sub=t||rm||'';
@@ -972,6 +980,7 @@ function rFinanceBook(){
     html+='</div>';
     mo.items.forEach(function(e){
       var day=(e.date||'').slice(8,10);
+      var daySub=lang==='en'?['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt((e.date||'').slice(5,7),10)-1]||'':i18n.t('common.dayUnit');//v65
       var sign=e.type==='in'?'+':'-';
       var color=e.type==='in'?'var(--g,#16a34a)':'var(--d,#dc2626)';
       var ops='';
@@ -982,7 +991,7 @@ function rFinanceBook(){
         ops='<span style="font-size:10px;color:var(--ts)">'+i18n.t('fin.rentSysTag')+'</span>';
       }
       html+='<div style="display:flex;gap:8px;align-items:center;padding:9px 14px;border-top:1px solid var(--bd)">';
-      html+='<div style="width:30px;flex:0 0 30px;font-size:15px;font-weight:700;color:var(--ts);text-align:center">'+parseInt(day,10)+'</div>';
+      html+='<div style="width:34px;flex:0 0 34px;text-align:center;line-height:1.15"><div style="font-size:16px;font-weight:700;color:var(--t)">'+parseInt(day,10)+'</div><div style="font-size:10px;color:var(--ts)">'+daySub+'</div></div>';//v65
       html+='<div style="flex:1;min-width:0">';
       html+='<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.title+'</div>';
       if(e.sub)html+='<div style="font-size:11px;color:var(--ts);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.sub+'</div>';
@@ -999,7 +1008,7 @@ function _incCategoryLabel(c){return c==='utility'?i18n.t('fin.catUtility'):c===
 function _incCategoryIcon(c){return c==='utility'?'💧':c==='deposit'?'🔒':c==='other'?'📦':'💰'}
 function _incTenantName(tid){var t=cache.tenants.find(function(x){return x.id===tid});return t?t.name:''}
 function rFinanceIncomes(){
-  var list=(cache.incomes||[]).slice().sort(function(a,b){return (b.occur_date||'').localeCompare(a.occur_date||'')});
+  var list=_validIncomes().slice().sort(function(a,b){return (b.occur_date||'').localeCompare(a.occur_date||'')});
   var ym=today().slice(0,7);
   var monList=list.filter(function(x){return (x.occur_date||'').slice(0,7)===ym});
   var monTotal=monList.reduce(function(a,x){return a+(x.amount||0)},0);
@@ -2038,11 +2047,19 @@ function delMeter(id){
   if(!canEdit()){toast(i18n.t('common.readOnly'),'w');return}
   confirmDialog(i18n.t('meter.confirmDel'),'',async function(){
     var m=(cache.meters||[]).find(function(x){return x.id===id});
+    // v65: 已收抄表先连带删除其自动入账的水电收入，避免删了记录收入还挂在账本上
+    if(m&&m.paid){
+      var ri=await sb.from('income_records').delete().eq('ref_id',id).eq('source','meter');
+      if(ri.error){toast(i18n.t('meter.delIncomeFailed'),'e');return}
+    }
+    // v65: 连带删除多表/其他费用子表（失败仅警告，不阻断）
+    var rs=await sb.from('meter_items').delete().eq('reading_id',id);
+    if(rs.error)console.warn('meter_items delete failed:',rs.error.message);
     var r=await sb.from('meter_readings').delete().eq('id',id);
     if(r.error){toast(r.error.message,'e');return}
-    cache.meters=(cache.meters||[]).filter(function(x){return x.id!==id});
+    await loadAllData();
     if(m)meterRefreshList(m.tenant_id);
-    toast(i18n.t('common.deleteSuccess'));
+    toast(m&&m.paid?i18n.t('meter.delWithIncomeHint'):i18n.t('common.deleteSuccess'),'i');
   });
 }
 function _monthLabel(d){if(!d)return'';var p=String(d).split('-');return p[0]+'年'+parseInt(p[1],10)+'月'}

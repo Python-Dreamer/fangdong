@@ -114,10 +114,44 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-03 v64 热修复 -->
+  <!-- 2026-09-03 v65 热修复 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 3 日 · V65</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">📅</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          记账本每笔账显示具体日期
+          <span class="badge imp">优化</span>
+        </div>
+        <div class="feat-desc">
+          每一笔收入、支出前面的日期现在<b>大号显示几号、下面标「日」</b>，配合月份卡片，哪一天收的房租、哪天交的费用一眼看清，不再像看不懂的序号。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon fix">🔧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          删除抄表记录会连带删掉对应收入
+          <span class="badge fix">FIX</span>
+        </div>
+        <div class="feat-desc">
+          以前把抄错后<b>已收取</b>的抄表记录删掉，那笔水电费收入还挂在账本上。现在删除已收抄表记录时，系统会<b>一并删除自动入账的那笔水电收入</b>和多表明细，并提示「记录和收入已一并删除」；收入删除失败会明确报错、不会让账对不上。以前删错留下的几笔孤儿收入，也会自动从账本和统计里消失。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2026-09-03 v64 热修复 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#bbb">V64</span>
       <span class="version-date">2026 年 9 月 3 日 · V64</span>
     </div>
 
