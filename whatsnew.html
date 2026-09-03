@@ -114,10 +114,31 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-03 v67 批量删账单+记账本合并 -->
+  <!-- 2026-09-03 v68 周期显示修复 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 3 日 · V68</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">🐛</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修复：补录房租时周期显示成「1月1日~1月1日」的怪样子
+          <span class="badge imp">修复</span>
+        </div>
+        <div class="feat-desc">
+          手工补录一笔已收房租、没有填「周期开始日」时，账单明细偶尔会把周期显示成<b>起止同一天</b>（比如 2026年1月1日 ~ 2026年1月1日），看着像系统出错。现在会<b>自动按月倒推补出完整周期</b>，显示和正常月账单一致。收租、补录、自动生成账单的流程都没有变动。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2026-09-03 v67 批量删账单+记账本合并 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#bbb">V67</span>
       <span class="version-date">2026 年 9 月 3 日 · V67</span>
     </div>
 
