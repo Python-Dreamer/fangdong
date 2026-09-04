@@ -114,10 +114,31 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-04 v71 弹窗异常全面加固 -->
+  <!-- 2026-09-04 v72 批量收款报错彻底修复 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 4 日 · V72</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon fix">🔧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修改账单后点批量收款报错，彻底修复
+          <span class="badge fix">修复</span>
+        </div>
+        <div class="feat-desc">
+          点过一次「缴费」后再点「批量收款」会弹出红色报错、按钮点不动，刷新页面后又恢复——这是缴费弹窗的一个临时变量<b>覆盖了系统计算账单周期的核心函数</b>导致的。已把该变量改名隔离，<b>无论操作顺序如何，批量收款、缴费、催租都能正常打开</b>，无需再刷新页面。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2026-09-04 v71 弹窗异常全面加固 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#bbb">V71</span>
       <span class="version-date">2026 年 9 月 4 日 · V71</span>
     </div>
 
