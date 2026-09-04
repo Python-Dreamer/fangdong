@@ -114,10 +114,44 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-04 v70 卡死修复+水电房号 -->
+  <!-- 2026-09-04 v71 弹窗异常全面加固 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 4 日 · V71</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon fix">🔧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修改账单后批量收款没反应，彻底修复
+          <span class="badge fix">修复</span>
+        </div>
+        <div class="feat-desc">
+          缴费、补录账单、删除账单、编辑租户、续约等操作如果遇到<b>网络抖动或断网</b>，弹窗可能残留，导致之后点按钮第一次没反应。现在<b>所有账单相关操作都加上了网络异常保护</b>：失败会自动收起弹窗、明确提示失败，不会再有残留遮罩拦截操作；并新增<b>全局异常兜底</b>，任何未预料的错误都会自动关闭弹窗恢复操作。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon fix">🎯</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          批量收款按钮与可选账单保持一致
+          <span class="badge fix">修复</span>
+        </div>
+        <div class="feat-desc">
+          个别手动补录的账单在批量收款时可能遗漏，现在批量收款的账单范围与按钮显示规则完全对齐，到期应收的账单都能勾选到。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2026-09-04 v70 卡死修复+水电房号 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#bbb">V70</span>
       <span class="version-date">2026 年 9 月 4 日 · V70</span>
     </div>
 
