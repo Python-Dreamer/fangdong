@@ -114,10 +114,44 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-04 v69 批量收款选月份+记账本楼栋明细+水电拆分 -->
+  <!-- 2026-09-04 v70 卡死修复+水电房号 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 4 日 · V70</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon fix">🔧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          缴费操作后按键失灵、页面卡死，已修复
+          <span class="badge fix">修复</span>
+        </div>
+        <div class="feat-desc">
+          批量收款或单笔缴费时如果遇到<b>网络波动、服务器报错</b>，弹窗可能关不掉、整页点不动、标签页切不了，只能退出重进。现在所有异常路径都会<b>自动收起弹窗并恢复按钮</b>；另外新增兜底操作：<b>点击弹窗外的空白处</b>，或按键盘 <b>ESC</b>，都能关闭弹窗。正常收款流程没有任何变化。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">🏠</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          记账本水电费等收入条目补上房号
+          <span class="badge imp">优化</span>
+        </div>
+        <div class="feat-desc">
+          收支记录里水费 🚰、电费 ⚡ 等收入条目，之前副标题只显示租户名、<b>不显示房号</b>。现在统一显示为「<b>租户名 · 房号</b>」（例如「陈成龙 · 沿-商铺」），房租收入和支出记录不受影响。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2026-09-04 v69 批量收款选月份+记账本楼栋明细+水电拆分 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#bbb">V69</span>
       <span class="version-date">2026 年 9 月 4 日 · V69</span>
     </div>
 
