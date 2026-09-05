@@ -283,11 +283,56 @@ html[data-th="dark"] .tbl-wrap thead th:first-child{background:#16213A}
 html[data-th="dark"] .tbl-wrap tbody td:first-child{background:#1E293B}
 html[data-th="dark"] .tbl-wrap tbody tr:hover td:first-child{background:#243349}
 }
+/* ===== 高端质感(桌面+移动, 纯视觉) ===== */
+.sidebar{background:linear-gradient(180deg,#1E293B 0%,#0F172A 100%)}
+.nav-item.on{border-radius:0 10px 10px 0;margin-right:8px}
+.nav-item{margin:1px 0}
+.card{border-radius:14px}
+.sc{border-radius:14px}
+.sc-i{border-radius:12px}
+.modal{border-radius:18px}
+.auth-card{border-radius:20px}
+.btn{border-radius:10px}
+.fc,.fsel{border-radius:10px}
+.tag{border-radius:6px;padding:3px 9px}
+.page-hd h2{font-size:20px;letter-spacing:.3px}
+.btn-p{background:linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,0)),var(--p);box-shadow:0 2px 8px var(--pf)}
+.btn-g{background:linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,0)),var(--g)}
+.btn-w{background:linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,0)),var(--w)}
+.btn-d{background:linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,0)),var(--d)}
+.btn-i{background:linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,0)),var(--i)}
+.sc-i.blue{background:linear-gradient(135deg,#EEF2FF,#E0E7FF)}
+.sc-i.green{background:linear-gradient(135deg,#ECFDF5,#D1FAE5)}
+.sc-i.yellow{background:linear-gradient(135deg,#FFFBEB,#FEF3C7)}
+.sc-i.red{background:linear-gradient(135deg,#FEF2F2,#FEE2E2)}
+html[data-th="green"] .sc-i.blue{background:linear-gradient(135deg,#CCFBF1,#99F6E4)}
+html[data-th="orange"] .sc-i.blue{background:linear-gradient(135deg,#FFEDD5,#FED7AA)}
+.bldg-card.on{box-shadow:0 4px 14px var(--pf)}
+.qa-btn{border-radius:14px}
+.qa-btn:hover{box-shadow:0 8px 20px rgba(15,23,42,.1)}
+.modal{box-shadow:0 24px 70px rgba(15,23,42,.28)}
 .th-switch{display:flex;gap:8px;justify-content:center;padding:6px 0 8px}
 .th-dot{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;transition:all .15s}
 .th-dot.on{border-color:#fff;background:rgba(255,255,255,.2);box-shadow:0 0 0 2px rgba(255,255,255,.15)}
 .th-label{text-align:center;font-size:10px;color:#94A3B8;padding-top:8px}
 .preview-badge{position:fixed;top:6px;right:8px;z-index:3000;background:rgba(239,68,68,.92);color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;pointer-events:none}
+/* ===== 手机端表格卡片化(768px以下, 业务表格在.tbl-wrap内) ===== */
+@media(max-width:768px){
+.tbl-wrap thead th:first-child,.tbl-wrap tbody td:first-child{position:static;box-shadow:none}
+.m-bd table,.tbl-wrap table{min-width:0!important;border-collapse:separate;border-spacing:0 10px;background:transparent}
+.tbl-wrap thead,.m-bd thead{display:none}
+.tbl-wrap tbody tr,.m-bd tbody tr{display:block;background:var(--c);border-radius:12px;box-shadow:0 1px 4px rgba(15,23,42,.07);margin-bottom:10px;padding:6px 12px;border:1px solid var(--bd)}
+.tbl-wrap tbody tr:hover,.m-bd tbody tr:hover{background:var(--c)}
+.tbl-wrap tbody td,.m-bd tbody td{display:flex;justify-content:space-between;align-items:center;gap:12px;border:none;padding:7px 2px;font-size:13px;white-space:normal;word-break:break-word;min-height:30px}
+.tbl-wrap tbody td::before,.m-bd tbody td::before{content:attr(data-label);font-size:11px;color:var(--ts);font-weight:600;flex-shrink:0;margin-right:10px}
+.tbl-wrap tbody td:not([data-label]),.m-bd tbody td:not([data-label]){justify-content:flex-start;padding-left:2px}
+.tbl-wrap tbody td:not([data-label])::before,.m-bd tbody td:not([data-label])::before{content:''}
+/* 操作列: 按钮组整行排开不挤压 */
+.tbl-wrap tbody td:last-child,.m-bd tbody td:last-child{flex-wrap:wrap;justify-content:flex-end;gap:6px;padding-top:9px;border-top:1px dashed var(--bd);margin-top:3px}
+/* 夜间模式卡片底 */
+html[data-th="dark"] .tbl-wrap tbody tr,html[data-th="dark"] .m-bd tbody tr{background:#1E293B;border-color:#334155}
+html[data-th="dark"] .tbl-wrap tbody td:last-child,html[data-th="dark"] .m-bd tbody td:last-child{border-top-color:#334155}
+}
 @media(max-width:768px){
 .toast-box{top:64px}
 .modal .btn:not(.btn-sm),.page-hd .btn:not(.btn-sm){min-height:38px}
@@ -2545,6 +2590,7 @@ async function saveMeterDefaults(){
 </script>
 <script>/* v73预览版:禁用SW,避免缓存干扰看效果 */</script>
 <script>window.setTheme=function(t){try{if(t==='blue'){localStorage.removeItem('app-theme');document.documentElement.removeAttribute('data-th')}else{localStorage.setItem('app-theme',t);document.documentElement.setAttribute('data-th',t)}var mc={green:'#0D9488',orange:'#EA580C',dark:'#0F172A'};var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',mc[t]||'#4F46E5');var dots=document.querySelectorAll('.th-dot');for(var i=0;i<dots.length;i++){dots[i].classList.toggle('on',dots[i].getAttribute('data-thv')===t)}}catch(e){}};</script>
+<script>/* v73预览版增强: 手机卡片化列名标签(纯DOM只读增强,零业务改动) */(function(){function tagTables(root){try{var tables=root.querySelectorAll('table');for(var i=0;i<tables.length;i++){var t=tables[i];if(t.getAttribute('data-th-tagged'))continue;var th=t.querySelectorAll('thead th');if(!th.length)continue;t.setAttribute('data-th-tagged','1');var labels=[];for(var j=0;j<th.length;j++){labels.push((th[j].textContent||'').trim().slice(0,8))}var rows=t.querySelectorAll('tbody tr');for(var r=0;r<rows.length;r++){var tds=rows[r].querySelectorAll('td');for(var c=0;c<tds.length;c++){if(labels[c]&&!tds[c].hasAttribute('data-label'))tds[c].setAttribute('data-label',labels[c])}}}}catch(e){}}function scan(){tagTables(document.body)}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',scan)}else{scan()}try{var mo=new MutationObserver(function(){schedule()});var tmr=null;function schedule(){if(tmr)clearTimeout(tmr);tmr=setTimeout(scan,30)}mo.observe(document.body,{childList:true,subtree:true});setTimeout(scan,500);setTimeout(scan,1500)}catch(e){}})();</script>
 <div id="mselBar" class="msel-bar"><span class="msel-info" id="mselInfo">已选0项</span><div><button class="msel-btn msel-cancel" onclick="mselCancel()">取消</button> <button class="msel-btn msel-del" onclick="mselDelete()" disabled>删除选中</button></div></div><div style="text-align:center;padding:12px;font-size:11px;color:#999;line-height:2;clear:both"><a href="https://beian.mps.gov.cn/#/query/webSearch?code=53310202533297" target="_blank" rel="noopener" style="color:#999;text-decoration:none;display:inline-flex;align-items:center;gap:3px"><img src="../beian_icon.png" alt="公安备案" style="width:14px;height:16px;vertical-align:middle">滇公网安备53310202533297号</a>&nbsp;&nbsp;<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener" style="color:#999;text-decoration:none">滇ICP备2026014743号</a>&nbsp;&nbsp;© 2026 ruilifangfong.site&nbsp;&nbsp;<a href="../privacy.html" target="_blank" style="color:#999;text-decoration:none">隐私说明</a></div>
 </body>
 </html>
