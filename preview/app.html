@@ -338,6 +338,35 @@ html[data-th="dark"] .tbl-wrap tbody td:last-child,html[data-th="dark"] .m-bd tb
 .modal .btn:not(.btn-sm),.page-hd .btn:not(.btn-sm){min-height:38px}
 .btn-block{min-height:44px}
 }
+
+/* ===== v73-preview p3: 桌面端质感升级(纯CSS, 不影响手机卡片化) ===== */
+/* 统计卡图标: 扁平浅底 -> 渐变光晕 */
+.sc-i.blue{background:linear-gradient(135deg,#EEF2FF,#E0E7FF)}
+.sc-i.green{background:linear-gradient(135deg,#ECFDF5,#D1FAE5)}
+.sc-i.yellow{background:linear-gradient(135deg,#FFFBEB,#FEF3C7)}
+.sc-i.red{background:linear-gradient(135deg,#FEF2F2,#FEE2E2)}
+html[data-th="dark"] .sc-i.blue{background:linear-gradient(135deg,rgba(99,102,241,.22),rgba(99,102,241,.10))}
+html[data-th="dark"] .sc-i.green{background:linear-gradient(135deg,rgba(16,185,129,.22),rgba(16,185,129,.10))}
+html[data-th="dark"] .sc-i.yellow{background:linear-gradient(135deg,rgba(245,158,11,.22),rgba(245,158,11,.10))}
+html[data-th="dark"] .sc-i.red{background:linear-gradient(135deg,rgba(239,68,68,.22),rgba(239,68,68,.10))}
+@media(min-width:769px){
+ .sc{padding:18px 20px;border-radius:14px}
+ .sc h3{font-size:24px;letter-spacing:.2px}
+ .sc-i{width:48px;height:48px;border-radius:12px;font-size:22px}
+ .stats{gap:16px}
+ /* 表格: 行hover从浅灰升级为主题色淡晕 + 过渡 */
+ .tbl-wrap tbody tr{transition:background .15s ease}
+ .tbl-wrap tbody tr:nth-of-type(even){background:rgba(15,23,42,.018)}
+ .tbl-wrap tbody tr:hover{background:var(--pf)}
+ /* 长表格滚动时表头吸顶 */
+ .tbl-wrap thead th{position:sticky;top:0;z-index:5}
+ /* 卡片hover轻浮 */
+ .card{transition:box-shadow .2s ease,transform .2s ease}
+ .main .card:hover{box-shadow:0 2px 6px rgba(15,23,42,.06),0 12px 28px rgba(15,23,42,.09)}
+ /* 页面标题加重 */
+ .page-hd h2{font-size:22px;letter-spacing:.3px}
+}
+html[data-th="dark"] .tbl-wrap tbody tr:nth-of-type(even){background:rgba(226,232,240,.03)}
 </style>
 </head>
 <body><div class="preview-badge">预览版 · 主题切换测试</div>
