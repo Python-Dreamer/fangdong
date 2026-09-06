@@ -270,15 +270,39 @@ class FileHandler(BaseHTTPRequestHandler):
             # 文件类型白名单（只允许图片和PDF，防止上传HTML/JS等可执行文件）
             import re as _re
             ext = os.path.splitext(parts[-1])[1].lower()
-            ALLOWED_EXT = {'.jpg','.jpeg','.png','.gif','.webp','.bmp','.pdf','.heic','.heif'}
+            DOC_EXT = {'.pdf','.doc','.docx'}
+            ALLOWED_EXT = {'.jpg','.jpeg','.png','.gif','.webp','.bmp','.heic','.heif'} | DOC_EXT
             if ext not in ALLOWED_EXT:
-                self._json(400, {"error": "不支持的文件类型，仅允许图片和PDF"}); return
+                self._json(400, {"error": "不支持的文件类型，仅允许图片、PDF、Word"}); return
+            # 合同文档(PDF/Word)单文件限3MB；图片等保持20MB不变
+            size_limit = 3 * 1024 * 1024 if ext in DOC_EXT else 20 * 1024 * 1024
+            # 合同类文件路径必须以本人用户ID开头(防越权写入他人目录;管理员不限)
+            if parts[0] in ('contract-files','contract-photos'):
+                owner_ok = (user["email"] in ADMIN_EMAILS) or (len(parts) >= 3 and parts[1] == user["uid"])
+                if not owner_ok:
+                    self._json(403, {"error": "forbidden"}); return
             length = int(self.headers.get("Content-Length", 0))
-            if length > 20 * 1024 * 1024:
-                self._json(413, {"error": "too large"}); return
-            data = self.rfile.read(length)
-            with open(target, "wb") as f:
-                f.write(data)
+            if length > size_limit:
+                self._json(413, {"error": "文件过大，合同文档请压缩到3MB以内"}); return
+            # 分块流式写盘，避免整个文件读入内存
+            remaining = length
+            tmp_target = target + ".tmp"
+            try:
+                with open(tmp_target, "wb") as f:
+                    while remaining > 0:
+                        chunk = self.rfile.read(min(65536, remaining))
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        remaining -= len(chunk)
+                os.replace(tmp_target, target)
+            except Exception:
+                try:
+                    if os.path.exists(tmp_target):
+                        os.remove(tmp_target)
+                except Exception:
+                    pass
+                self._json(500, {"error": "save failed"}); return
             rel_path = "/".join(parts)
             self._json(200, {"path": rel_path, "Key": rel_path})
             return
@@ -321,6 +345,12 @@ class FileHandler(BaseHTTPRequestHandler):
             fp = os.path.normpath(os.path.join(UPLOAD_DIR, rel))
             if not fp.startswith(UPLOAD_DIR):
                 self._json(403, {"error": "forbidden"}); return
+            # 合同类文件仅本人或管理员可删除(房间图片为全房东共用路径,维持登录可删)
+            segs = [s for s in rel.split("/") if s]
+            if segs and segs[0] in ("contract-files", "contract-photos"):
+                is_owner = len(segs) >= 2 and segs[1] == user["uid"]
+                if not is_owner and user["email"] not in ADMIN_EMAILS:
+                    self._json(403, {"error": "无权删除他人文件"}); return
             try:
                 os.remove(fp)
                 self._json(200, {"deleted": True})
