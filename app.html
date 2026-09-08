@@ -1742,7 +1742,8 @@ function commExport(){
 async function tglCommission(){
   var cur=!!(cache.settings&&cache.settings.commission_enabled);
   var nv=!cur;
-  var r=await sb.from('workspace_settings').upsert({owner_id:getOwnerId(),commission_enabled:nv},{onConflict:'owner_id'});
+  var s0=cache.settings||{};
+  var r=await sb.from('workspace_settings').upsert({owner_id:getOwnerId(),enable_reminders:s0.enable_reminders!==undefined?s0.enable_reminders:true,contract_remind_days:s0.contract_remind_days||30,rent_remind_days:s0.rent_remind_days||5,notification_email:s0.notification_email||'',pushplus_token:s0.pushplus_token||'',commission_enabled:nv},{onConflict:'owner_id'});
   if(r.error){toast(r.error.message,'e');return}
   cache.settings.commission_enabled=nv;
   var tg=document.getElementById('tglCommission');
