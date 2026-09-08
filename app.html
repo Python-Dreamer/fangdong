@@ -231,7 +231,7 @@ select.fc{-webkit-appearance:none;appearance:none;background-image:url("data:ima
 <div class="ov" id="overlay" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal" onclick="event.stopPropagation()"></div></div>
 <div class="sb-overlay" id="sbOverlay" onclick="closeSB()"></div>
 <div class="photo-viewer-overlay" id="photoViewer" onclick="closePhotoViewer(event)"><button class="photo-viewer-close" onclick="closePhotoViewer()">×</button><span class="photo-viewer-nav" id="photoViewerPrev" onclick="event.stopPropagation();photoViewerNav(-1)">‹</span><img class="photo-viewer-img" id="photoViewerImg" src="" alt=""><span class="photo-viewer-nav" id="photoViewerNext" onclick="event.stopPropagation();photoViewerNav(1)">›</span></div>
-<script src="i18n.js?v=77"></script>
+<script src="i18n.js?v=78"></script>
 <script>
 var sbUrl=localStorage.getItem('sb_url')||'https://ruilifangfong.site',sbKey=localStorage.getItem('sb_key')||'eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8',sb=null,sdkReady=false,currentUser=null,currentProfile=null,currentPage='dashboard';
 var DEFAULT_SB_URL='https://ruilifangfong.site',DEFAULT_SB_KEY='eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8';
@@ -1501,7 +1501,7 @@ function _commCalc(base,cfg){
   return Math.round(base*(cfg.rate||0)/100*100)/100;
 }
 async function commGenerate(){
-  if(!_commOn())return 0;
+  if(!_commOn())return{a:0,r:0,u:0};
   var oid=getOwnerId();var d=await _commLoadAll();
   var staff=d.staff,cfg=d.cfg,rec=d.rec;
   var exist={};
@@ -1517,9 +1517,14 @@ async function commGenerate(){
       var om=(t.move_in_date||today()).slice(0,7);var key=t.id+'|'+om+'|onetime';
       if(!exist[key]){toAdd.push({owner_id:oid,staff_id:c.staff_id,tenant_id:t.id,month:om,amount:_commCalc(rent,c),base_amount:rent,mode:'onetime',basis:c.basis||'effective',settled:false,note:i18n.t('comm.oneTimeNote')});exist[key]=true}
     }else if(c.basis==='received'){
+      // 按实收租金：按「收款月份」汇总当月所有已收租金（含补缴），计提提成
+      var byMonth={};
       cache.rents.filter(function(r){return r.tenant_id===t.id&&r.status==='paid'&&r.pay_date}).forEach(function(r){
-        var pm=String(r.pay_date).slice(0,7);var key=t.id+'|'+pm+'|monthly';
-        if(!exist[key]){toAdd.push({owner_id:oid,staff_id:c.staff_id,tenant_id:t.id,month:pm,amount:_commCalc(r.amount,c),base_amount:r.amount||0,mode:'monthly',basis:'received',settled:false,note:i18n.t('comm.recvNote')});exist[key]=true}
+        var pm=String(r.pay_date).slice(0,7);byMonth[pm]=(byMonth[pm]||0)+(r.amount||0);
+      });
+      Object.keys(byMonth).forEach(function(pm){
+        var base=byMonth[pm];var key2=t.id+'|'+pm+'|monthly';
+        if(!exist[key2]){toAdd.push({owner_id:oid,staff_id:c.staff_id,tenant_id:t.id,month:pm,amount:_commCalc(base,c),base_amount:base,mode:'monthly',basis:'received',settled:false,note:i18n.t('comm.recvNote')});exist[key2]=true}
       });
     }else{
       var months=_commMonthRange(t);
@@ -1529,13 +1534,39 @@ async function commGenerate(){
     }
   }
   if(toAdd.length){for(var k=0;k<toAdd.length;k+=100){try{await sb.from('commission_records').insert(toAdd.slice(k,k+100))}catch(e){}}}
-  return toAdd.length;
+  // ===== 反向对账（仅「按月·按实收租金」）：撤销收款/删账单/金额改收 → 自动校正未结算提成；已结算不动 =====
+  var removed=0,updated=0;
+  for(var ci=0;ci<cfg.length;ci++){
+    var cc=cfg[ci];
+    if(cc.mode!=='monthly'||cc.basis!=='received'||!cc.staff_id)continue;
+    var tt=cache.tenants.find(function(x){return x.id===cc.tenant_id});
+    if(!tt)continue;
+    var expMap={};
+    cache.rents.filter(function(r){return r.tenant_id===tt.id&&r.status==='paid'&&r.pay_date}).forEach(function(r){
+      var pm=String(r.pay_date).slice(0,7);expMap[pm]=(expMap[pm]||0)+(r.amount||0);
+    });
+    var mine=rec.filter(function(r){return r.tenant_id===tt.id&&r.mode==='monthly'&&r.basis==='received'});
+    for(var mi=0;mi<mine.length;mi++){
+      var rr=mine[mi];
+      if(rr.settled)continue; // 已结算（可能已发员工）一律不动
+      var expBase=expMap[rr.month];
+      if(expBase==null||expBase<=0){
+        try{var dr=await sb.from('commission_records').delete().eq('id',rr.id);if(!dr||!dr.error)removed++}catch(e){}
+      }else{
+        var expAmt=_commCalc(expBase,cc);
+        if(Math.abs((rr.base_amount||0)-expBase)>0.005||Math.abs((rr.amount||0)-expAmt)>0.005){
+          try{var ur=await sb.from('commission_records').update({base_amount:expBase,amount:expAmt}).eq('id',rr.id);if(!ur||!ur.error)updated++}catch(e){}
+        }
+      }
+    }
+  }
+  return{a:toAdd.length,r:removed,u:updated};
 }
 async function rCommission(){
   var mc=document.getElementById('mainContent');
   if(mc)mc.innerHTML='<div class="page-hd"><h2>'+i18n.t('comm.title')+'</h2></div><div class="empty"><div class="ei">💼</div><p>'+i18n.t('common.loading')+'</p></div>';
   var d=await _commLoadAll();
-  if(_commOn()){try{await commGenerate();d=await _commLoadAll()}catch(e){}}
+  if(_commOn()){try{var _g=await commGenerate();d=await _commLoadAll();if((_g.r||0)>0||(_g.u||0)>0)toast(i18n.t('comm.reconciled',{r:_g.r||0,u:_g.u||0}),'w')}catch(e){}}
   cache.staff=d.staff;cache.tcomm=d.cfg;cache.commissions=d.rec;
   var staff=d.staff,rec=d.rec;
   var months={};rec.forEach(function(r){if(r.month)months[r.month]=1});
