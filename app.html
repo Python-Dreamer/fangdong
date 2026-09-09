@@ -231,7 +231,7 @@ select.fc{-webkit-appearance:none;appearance:none;background-image:url("data:ima
 <div class="ov" id="overlay" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal" onclick="event.stopPropagation()"></div></div>
 <div class="sb-overlay" id="sbOverlay" onclick="closeSB()"></div>
 <div class="photo-viewer-overlay" id="photoViewer" onclick="closePhotoViewer(event)"><button class="photo-viewer-close" onclick="closePhotoViewer()">×</button><span class="photo-viewer-nav" id="photoViewerPrev" onclick="event.stopPropagation();photoViewerNav(-1)">‹</span><img class="photo-viewer-img" id="photoViewerImg" src="" alt=""><span class="photo-viewer-nav" id="photoViewerNext" onclick="event.stopPropagation();photoViewerNav(1)">›</span></div>
-<script src="i18n.js?v=78"></script>
+<script src="i18n.js?v=79"></script>
 <script>
 var sbUrl=localStorage.getItem('sb_url')||'https://ruilifangfong.site',sbKey=localStorage.getItem('sb_key')||'eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8',sb=null,sdkReady=false,currentUser=null,currentProfile=null,currentPage='dashboard';
 var DEFAULT_SB_URL='https://ruilifangfong.site',DEFAULT_SB_KEY='eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8';
@@ -2669,6 +2669,64 @@ function _mRow(label,sym,prefix,item){
     +'<input type="number" step="0.01" inputmode="decimal" id="b_'+prefix+'_f" value="'+fee+'" oninput="_billCalc()" style="width:86px;padding:5px 6px;border:1px solid var(--bd);border-radius:6px;font-size:13px;font-weight:700;color:var(--d)">'
     +rd+'</div>';
 }
+
+// ===== v79: 账单抄表照片扫码分享（纯增量，不改动现有账单逻辑）=====
+function _qrReady(){return new Promise(function(res){
+  if(typeof QRCode!=="undefined"){res(true);return}
+  var srcs=["vendor/qrcode.min.js","https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js","https://cdn.bootcdn.net/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"];var i=0;
+  (function tryL(){if(i>=srcs.length){res(false);return}
+    var sc=document.createElement("script");sc.src=srcs[i];
+    sc.onload=function(){if(typeof QRCode!=="undefined")res(true);else{i++;tryL()}};
+    sc.onerror=function(){i++;tryL()};document.head.appendChild(sc);})();
+})}
+function _billShareBase(){var b=(location.origin||FILE_BASE||"");return String(b).replace(/\/+$/,"")}
+function _billMeterPhotos(tenantId){
+  var arr=(cache.meters||[]).filter(function(m){return m.tenant_id===tenantId&&m.photo_url}).slice();
+  arr.sort(function(a,b){return String(b.reading_date||"").localeCompare(String(a.reading_date||""))||String(b.created_at||"").localeCompare(String(a.created_at||""))});
+  var photos=[];
+  if(arr.length){var p=arr[0].photo_url;if(p.indexOf("contract-photos/")===0)p=p.substring("contract-photos/".length);photos.push({path:p,date:arr[0].reading_date||""})}
+  return photos;
+}
+function _billShareText(d){
+  var lang=localStorage.getItem("lang")||"zh-CN";var lines=[];
+  if(d.rent>0)lines.push((lang==="en"?"Rent":"房租")+" ¥"+_billFmt(d.rent));
+  if(d.cw>0)lines.push(i18n.t("meter.coldWater")+" ¥"+_billFmt(d.cw));
+  if(d.hw>0)lines.push(i18n.t("meter.hotWater")+" ¥"+_billFmt(d.hw));
+  if(d.el>0)lines.push(i18n.t("meter.electricity")+" ¥"+_billFmt(d.el));
+  (d.others||[]).forEach(function(o){lines.push(o.name+" ¥"+_billFmt(o.amount))});
+  var head="";
+  if(lang==="en"){head="Payment notice";}
+  else{var ps=(window._billCtx&&window._billCtx.bills)?window._billCtx.bills.map(function(b){return _monthLabel(b.period_start||b.due_date)}).filter(function(v,i,ar){return ar.indexOf(v)===i}):[];head="缴费期间："+(ps.join("、")||"-");}
+  return head+"\n"+lines.join("\n");
+}
+function _billNewToken(){
+  try{if(crypto&&crypto.randomUUID)return crypto.randomUUID()}catch(e){}
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,function(c){var r=Math.random()*16|0,v=c==="x"?r:(r&0x3|0x8);return v.toString(16)});
+}
+async function _genBillShareQR(){
+  var ctx=window._billCtx;if(!ctx||!ctx.tenant){toast(i18n.t("common.opFail"),"e");return}
+  var t=ctx.tenant,rm=ctx.room;var d=_billCollect();var photos=_billMeterPhotos(t.id);
+  try{
+    var token=_billNewToken();var exp=new Date(Date.now()+90*86400000).toISOString();
+    var payload={owner_id:getOwnerId(),tenant_id:t.id,share_token:token,tenant_name:t.name||"",room_name:rm?rm.name:"",bill_summary:_billShareText(d),total_amount:d.total,photos:photos,expires_at:exp};
+    var ins=await sb.from("bill_shares").insert(payload).select().single();
+    if(ins.error||!ins.data){toast((ins.error&&ins.error.message)||i18n.t("common.opFail"),"e");return}
+    var url=_billShareBase()+"/billshare.html?token="+token;
+    var ok=await _qrReady();
+    var qrHtml=ok?'<div id="bqrBox" style="display:flex;justify-content:center;padding:8px 0"></div>':'<div style="color:var(--d);font-size:13px;margin:10px 0">'+i18n.t("bqr.qrFail")+'</div>';
+    openModal('<div class="m-hd"><h3>📷 '+i18n.t("bqr.title")+'</h3><button class="m-x" onclick="closeModal()">&times;</button></div>'
+      +'<div class="m-bd" style="text-align:center">'
+      +'<p style="font-size:13px;color:var(--ts);margin-bottom:6px">'+i18n.t("bqr.hint")+'</p>'
+      +qrHtml
+      +'<div id="bqrUrl" style="background:var(--bg);border-radius:8px;padding:10px;margin:10px 0;word-break:break-all;font-size:12px;line-height:1.6;user-select:all;text-align:left">'+esc(url)+'</div>'
+      +'<p style="font-size:11px;color:var(--ts)">'+i18n.t("bqr.privacy")+'</p>'
+      +'</div>'
+      +'<div class="m-ft"><button class="btn btn-gh" onclick="_copyBillShareUrl()">🔗 '+i18n.t("bqr.copyLink")+'</button><button class="btn btn-p" onclick="closeModal()">'+i18n.t("common.close")+'</button></div>');
+    if(ok){new QRCode(document.getElementById("bqrBox"),{text:url,width:220,height:220,colorDark:"#1E293B",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M})}
+  }catch(e){console.error("bill share",e);toast(i18n.t("common.opFail"),"e")}
+}
+function _copyBillShareUrl(){var el=document.getElementById("bqrUrl");if(el&&el.textContent.trim())_copyText(el.textContent.trim())}
+// ===== v79 end =====
 function showBillModal(targetType,targetId){
   if(!canEdit()){toast(i18n.t('common.readOnly'),'w');return}
   var t,rm;
@@ -2728,6 +2786,7 @@ function showBillModal(targetType,targetId){
     +'</div>'
     +'</div>'
     +'<div class="m-ft"><button class="btn btn-gh" onclick="_billCopyText()">📋 '+i18n.t('bill.copyText')+'</button>'
+    +'<button class="btn btn-gh" onclick="_genBillShareQR()">📷 '+i18n.t("bqr.btn")+'</button>'
     +'<button class="btn btn-p" onclick="_billGenImage()">🖼️ '+i18n.t('bill.saveImage')+'</button></div>';
   openModal(html2);
   try{var pre=document.getElementById('b_other_preset');if(pre){var parts=pre.textContent.split('|');_billAddOther(parts[0],parseFloat(parts[1])||0)}}catch(e){console.warn('preset other fee',e)}

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>缴费明细 · 抄表照片</title>
+<meta name="theme-color" content="#4F46E5">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--p:#4F46E5;--g:#10B981;--w:#F59E0B;--d:#EF4444;--bg:#F1F5F9;--c:#fff;--t:#1E293B;--ts:#64748B;--bd:#E2E8F0}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--t);min-height:100vh;-webkit-overflow-scrolling:touch}
+.page-wrap{max-width:640px;margin:0 auto;padding:16px;min-height:100vh}
+.header{text-align:center;padding:18px 0 14px}
+.header h1{font-size:20px;font-weight:700;margin-bottom:4px}
+.header p{font-size:13px;color:var(--ts)}
+.card{background:var(--c);border-radius:12px;padding:18px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.card h2{font-size:15px;font-weight:700;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:6px}
+.tenant-box{background:var(--bg);border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.9}
+.tenant-box b{font-size:16px}
+.tenant-room{color:var(--ts);font-size:13px}
+.summary{font-size:14px;line-height:2;white-space:pre-wrap;word-break:break-word}
+.total-bar{display:flex;justify-content:space-between;align-items:center;background:var(--p);color:#fff;border-radius:10px;padding:14px 18px;margin-top:6px}
+.total-bar .lb{font-size:15px;font-weight:600}
+.total-bar .amt{font-size:24px;font-weight:800}
+.photo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.photo-item{border-radius:10px;overflow:hidden;background:var(--bg);position:relative;cursor:pointer}
+.photo-item img{width:100%;height:150px;object-fit:cover;display:block}
+.photo-cap{font-size:11px;color:var(--ts);padding:5px 8px;background:var(--c);border-top:1px solid var(--bd)}
+.no-photo{font-size:13px;color:var(--ts);text-align:center;padding:18px 0}
+.tip{font-size:12px;color:var(--ts);text-align:center;line-height:1.7;margin:16px 8px}
+.loading{text-align:center;padding:60px 20px}
+.spinner{width:40px;height:40px;border:3px solid var(--bd);border-top-color:var(--p);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-page{text-align:center;padding:70px 24px}
+.error-page .ico{font-size:52px;margin-bottom:14px}
+.error-page h2{font-size:18px;margin-bottom:10px}
+.error-page p{font-size:13px;color:var(--ts);line-height:1.7}
+.viewer{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:99;display:none;align-items:center;justify-content:center;padding:20px}
+.viewer.on{display:flex}
+.viewer img{max-width:100%;max-height:100%;border-radius:6px}
+.viewer .x{position:absolute;top:18px;right:22px;color:#fff;font-size:34px;cursor:pointer;line-height:1}
+.tag-expired{display:inline-block;background:#FEF3C7;color:#92400E;border-radius:12px;padding:4px 12px;font-size:12px;font-weight:600;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="page-wrap" id="app">
+  <div class="loading"><div class="spinner"></div><p>正在加载缴费明细...</p></div>
+</div>
+<div class="viewer" id="viewer" onclick="this.classList.remove('on')"><span class="x">&times;</span><img id="viewerImg" src=""></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+var SB_URL=(location.origin||'https://ruilifangfong.site');
+var SB_KEY='eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8';
+
+function esc(s){if(s===null||s===undefined)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function getToken(){return new URLSearchParams(location.search).get('token')||''}
+function photoUrl(path){if(!path)return'';if(/^https?:\/\//.test(path))return path;return SB_URL+'/files/contract-photos/'+path}
+function showError(title,msg){document.getElementById('app').innerHTML='<div class="error-page"><div class="ico">🔗</div><h2>'+esc(title)+'</h2><p>'+esc(msg)+'</p></div>'}
+function viewPhoto(src){var v=document.getElementById('viewer'),im=document.getElementById('viewerImg');im.src=src;v.classList.add('on')}
+
+async function load(){
+  var token=getToken();
+  if(!token){showError('链接无效','缺少访问凭证，请向房东重新获取二维码或链接。');return}
+  try{
+    var sb=window.supabase.createClient(SB_URL,SB_KEY);
+    var r=await sb.from('bill_shares').select('*').eq('share_token',token).single();
+    if(r.error||!r.data){showError('明细不存在','未找到对应账单，可能链接有误或已被撤销。');return}
+    var d=r.data;
+    if(d.expires_at&&new Date(d.expires_at).getTime()<Date.now()){
+      document.getElementById('app').innerHTML='<div class="error-page"><div class="ico">⏰</div><h2>链接已过期</h2><p>为保护隐私，该缴费明细链接已失效。<br>如需查看，请联系房东重新生成二维码。</p></div>';
+      return;
+    }
+    render(d);
+  }catch(e){showError('加载失败','网络异常，请稍后重试。'+(e&&e.message?('('+e.message+')'):''))}
+}
+
+function render(d){
+  var photos=Array.isArray(d.photos)?d.photos:[];
+  var photoHtml=photos.length
+    ? '<div class="photo-grid">'+photos.map(function(p,idx){
+        var src=photoUrl(p.path||p);
+        var cap=p.date?('抄表日期 '+esc(p.date)):('抄表照片 '+(idx+1));
+        return '<div class="photo-item" onclick="viewPhoto(\''+src.replace(/'/g,"%27")+'\')"><img loading="lazy" src="'+src+'" alt="抄表照片"><div class="photo-cap">'+cap+'</div></div>';
+      }).join('')+'</div>'
+    : '<div class="no-photo">本期暂无抄表照片</div>';
+  var html=''
+    +'<div class="header"><h1>🧾 缴费明细</h1><p>扫码查看本期账单与抄表照片</p></div>'
+    +'<div class="card"><div class="tenant-box"><b>'+esc(d.tenant_name||'租户')+'</b> <span class="tenant-room">'+esc(d.room_name?('· '+d.room_name):'')+'</span></div></div>'
+    +'<div class="card"><h2>📋 本期账单</h2><div class="summary">'+esc(d.bill_summary||'')+'</div>'
+    +'<div class="total-bar"><span class="lb">合计应缴</span><span class="amt">¥'+Number(d.total_amount||0).toLocaleString()+'</span></div></div>'
+    +'<div class="card"><h2>📷 抄表照片</h2>'+photoHtml+'</div>'
+    +'<p class="tip">请核对账单与水电表读数，如有疑问请联系房东。<br>本链接仅供本人查看，请勿转发。</p>';
+  document.getElementById('app').innerHTML=html;
+}
+
+if(!window.supabase){
+  var s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+  s.onload=load;s.onerror=function(){showError('加载失败','资源加载失败，请检查网络后重试。')};
+  document.head.appendChild(s);
+}else{load()}
+</script>
+</body>
+</html>

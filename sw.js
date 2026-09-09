@@ -1,9 +1,11 @@
-var CACHE_NAME='fangdong-v78';
+var CACHE_NAME='fangdong-v79';
 var CACHE_URLS=[
   './',
   './index.html',
   './app.html',
   './sign.html',
+  './billshare.html',
+  './vendor/qrcode.min.js',
   './match.html',
   './tools.html',
   './whatsnew.html',
