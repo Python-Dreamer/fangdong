@@ -114,10 +114,65 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-10 v79 催租账单二维码 -->
+  <!-- 2026-09-11 v80 登记必填+账单图片二维码+抄表可编辑 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 11 日 · V80</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">📝</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          登记租户：入住日期、合同到期、月租金改为必填，防止账单出错
+          <span class="badge imp">更省心</span>
+        </div>
+        <div class="feat-desc">
+          新增/编辑租户时，<b>月租金、入住日期、合同到期日期</b>这三项现在标了红色 * 号、必须填写，否则会提示你补全、不能保存。<br>
+          · <b>为什么</b>：账单是按「入住日期 + 合同到期 + 月租金 + 付款方式」自动算的，以前漏填日期会导致<b>账单生成不出来或月份算错</b>；现在从源头拦住，填错（合同到期早于入住）也会提醒。<br>
+          · 原有字段、填写习惯都不变，只是把关键项设成必填。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon new">🖼️</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          账单图片里直接带上二维码和备注，发给租户一张图就够
+          <span class="badge new">新功能</span>
+        </div>
+        <div class="feat-desc">
+          账单弹窗点<b>「保存图片」</b>生成的账单图，现在<b>右下角会印上扫码二维码</b>，图里还会完整显示<b>备注文字</b>。<br>
+          · 租户长按保存或收到这张图后，<b>微信扫一扫图上的二维码</b>，就能看账单明细和抄表照片，不用再单独发链接。<br>
+          · 你在账单里写的<b>备注（比如催缴说明、缴费方式）</b>也会清楚印在图上，租户一看就明白。<br>
+          · 二维码同样是专属随机口令、只能看这一户这一期、90 天失效。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">✏️</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          水电抄表记录可以修改了，填错不用删了重录
+          <span class="badge imp">更省心</span>
+        </div>
+        <div class="feat-desc">
+          每条抄表记录上新增<b>「编辑」</b>按钮，点进去可以改<b>抄表日期、各项读数/单价/金额、其他费用、备注、照片</b>。<br>
+          · 保存后明细、合计金额自动重算；<b>已经标记收款</b>的记录，修改金额后账本里的这笔<b>水电收入会自动同步</b>，不会对不上账。<br>
+          · 照片不传就保留原来的，传新的才替换。<br>
+          · 新增、收款、删除等原有操作完全不变。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2026-09-10 v79 催租账单二维码 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag">V79</span>
       <span class="version-date">2026 年 9 月 10 日 · V79</span>
     </div>
 
