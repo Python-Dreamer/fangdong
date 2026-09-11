@@ -560,7 +560,7 @@ async function doStaffAccountSave(){
   if(window._saving)return;window._saving=true;
   try{
     var sess=await sb.auth.getSession();var tkn=sess.data.session.access_token;
-    var r=await fetch(FILE_BASE+'/staff/create-account',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tkn},body:JSON.stringify({email:email,password:pass,staff_id:window._saStaffId,staff_name:''})});
+    var r=await fetch(FILE_BASE+'/admin/create-staff-account',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tkn},body:JSON.stringify({email:email,password:pass,staff_id:window._saStaffId,staff_name:''})});
     var d=await r.json().catch(function(){return {}});
     if(!r.ok||!d.ok){toast((d&&d.error)||i18n.t('common.saveFailed'),'e');return}
     closeModal();toast(i18n.t('staff.openSuccess')+'：'+email,'s');if(typeof rCommission==='function')rCommission();

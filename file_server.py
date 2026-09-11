@@ -254,7 +254,7 @@ class FileHandler(BaseHTTPRequestHandler):
 
         # 员工子账号API - 老板为自己的员工开通登录账号（v81，纯增量）
         # 任何登录房东都可调，但只能给自己名下员工(staff_id)开号，owner_id 强制为本人
-        if path == "/staff/create-account":
+        if path == "/admin/create-staff-account":
             user = auth_request(self)
             if not user:
                 self._json(403, {"error": "无权限"})
