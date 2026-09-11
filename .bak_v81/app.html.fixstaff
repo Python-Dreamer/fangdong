@@ -231,7 +231,7 @@ select.fc{-webkit-appearance:none;appearance:none;background-image:url("data:ima
 <div class="ov" id="overlay" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal" onclick="event.stopPropagation()"></div></div>
 <div class="sb-overlay" id="sbOverlay" onclick="closeSB()"></div>
 <div class="photo-viewer-overlay" id="photoViewer" onclick="closePhotoViewer(event)"><button class="photo-viewer-close" onclick="closePhotoViewer()">×</button><span class="photo-viewer-nav" id="photoViewerPrev" onclick="event.stopPropagation();photoViewerNav(-1)">‹</span><img class="photo-viewer-img" id="photoViewerImg" src="" alt=""><span class="photo-viewer-nav" id="photoViewerNext" onclick="event.stopPropagation();photoViewerNav(1)">›</span></div>
-<script src="i18n.js?v=83"></script>
+<script src="i18n.js?v=81"></script>
 <script>
 var sbUrl=localStorage.getItem('sb_url')||'https://ruilifangfong.site',sbKey=localStorage.getItem('sb_key')||'eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8',sb=null,sdkReady=false,currentUser=null,currentProfile=null,currentPage='dashboard';
 var DEFAULT_SB_URL='https://ruilifangfong.site',DEFAULT_SB_KEY='eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8';
@@ -497,13 +497,11 @@ function rStaffRooms(){
     '<div><div style="font-size:26px;font-weight:700">'+rooms.length+'</div><div style="font-size:12px;opacity:.7">'+i18n.t('staff.totalRooms')+'</div></div>'+
     '</div></div>';
   if(!rooms.length){html+='<div class="empty"><div class="ei">🏘️</div><p>'+i18n.t('staff.noRooms')+'</p></div>';mc.innerHTML=html;return;}
-  var sortedRooms=rooms.slice().sort(function(a,b){var va=_staffRoomVacant(a)?0:1,vb=_staffRoomVacant(b)?0:1;if(va!==vb)return va-vb;return String(a.name||'').localeCompare(String(b.name||''),'zh')});
-  html+='<div class="card"><div class="card-hd"><h3>'+i18n.t('staff.roomList')+'</h3></div><div class="tbl-wrap"><table><thead><tr><th>'+i18n.t('staff.buildingCol')+'</th><th>'+i18n.t('staff.roomCol')+'</th><th>'+i18n.t('staff.typeCol')+'</th><th>'+i18n.t('staff.areaCol')+'</th><th>'+i18n.t('staff.rentCol')+'</th><th>'+i18n.t('common.status')+'</th></tr></thead><tbody>';
-  sortedRooms.forEach(function(r){
+  html+='<div class="card"><div class="card-hd"><h3>'+i18n.t('staff.roomList')+'</h3></div><div class="tbl-wrap"><table><thead><tr><th>'+i18n.t('staff.buildingCol')+'</th><th>'+i18n.t('staff.roomCol')+'</th><th>'+i18n.t('common.status')+'</th></tr></thead><tbody>';
+  rooms.forEach(function(r){
     var isV=_staffRoomVacant(r);
     var bn=(r.building_id&&bm[r.building_id])?bm[r.building_id]:i18n.t('staff.ungrouped');
-    var rentTxt=r.rent_amount?('¥'+Number(r.rent_amount).toLocaleString()):'-';
-    html+='<tr><td>'+esc(bn)+'</td><td style="font-weight:600">'+esc(r.name||'')+'</td><td>'+esc(_trRoomType(r.type))+'</td><td>'+(r.area?esc(r.area)+'㎡':'-')+'</td><td style="font-weight:600">'+rentTxt+'</td><td>'+(isV?'<span class="tag t-green">'+i18n.t('staff.vacant')+'</span>':'<span class="tag t-gray">'+i18n.t('staff.occupied')+'</span>')+'</td></tr>';
+    html+='<tr><td>'+esc(bn)+'</td><td style="font-weight:600">'+esc(r.name||'')+'</td><td>'+(isV?'<span class="tag t-green">'+i18n.t('staff.vacant')+'</span>':'<span class="tag t-gray">'+i18n.t('staff.occupied')+'</span>')+'</td></tr>';
   });
   html+='</tbody></table></div></div>';
   mc.innerHTML=html;
@@ -1835,29 +1833,21 @@ function _commFieldChg(){
 function _commInitForm(tenantId){
   if(!_commOn())return;
   var sel=document.getElementById('fCStaff');if(!sel)return;
-  function curCfg(){return tenantId?(cache.tcomm||[]).find(function(c){return c.tenant_id===tenantId}):null}
-  var cfg=curCfg();
+  var cfg=tenantId?(cache.tcomm||[]).find(function(c){return c.tenant_id===tenantId}):null;
   function fill(){
-    var c=curCfg();
-    if(c){
-      var stEl=document.getElementById('fCStaff');
-      if(stEl&&c.staff_id)stEl.value=c.staff_id;
-      if(document.getElementById('fCMode'))document.getElementById('fCMode').value=c.mode==='onetime'?'onetime':'monthly';
-      if(document.getElementById('fCBasis'))document.getElementById('fCBasis').value=c.basis==='received'?'received':'effective';
-      if(document.getElementById('fCRateType'))document.getElementById('fCRateType').value=c.rate_type==='fixed'?'fixed':'percent';
-      if(document.getElementById('fCRate'))document.getElementById('fCRate').value=c.rate!=null?c.rate:'';
+    if(cfg){
+      if(document.getElementById('fCMode'))document.getElementById('fCMode').value=cfg.mode==='onetime'?'onetime':'monthly';
+      if(document.getElementById('fCBasis'))document.getElementById('fCBasis').value=cfg.basis==='received'?'received':'effective';
+      if(document.getElementById('fCRateType'))document.getElementById('fCRateType').value=cfg.rate_type==='fixed'?'fixed':'percent';
+      if(document.getElementById('fCRate'))document.getElementById('fCRate').value=cfg.rate!=null?cfg.rate:'';
     }
     _commFieldChg();
   }
-  if((cache.staff||[]).length && cfg){
-    if(cfg.staff_id)sel.value=cfg.staff_id;
-    fill();return
-  }
+  if((cache.staff||[]).length){fill();return}
   _commLoadAll().then(function(d){
     cache.staff=d.staff;cache.tcomm=d.cfg;
     var se=document.getElementById('fCStaff');
-    var c2=curCfg();
-    if(se){var cur=c2?c2.staff_id:'';se.innerHTML=_commStaffOptions(cur);if(cur)se.value=cur}
+    if(se){var cur=cfg?cfg.staff_id:'';se.innerHTML=_commStaffOptions(cur)}
     fill();
   });
 }
@@ -1866,23 +1856,12 @@ async function _commSaveForTenant(tenantId){
     if(!_commOn()||!tenantId)return;
     var staffEl=document.getElementById('fCStaff');if(!staffEl)return;
     var staffId=staffEl.value||null;
-    if(!staffId){
-      try{await sb.from('tenant_commission').delete().eq('tenant_id',tenantId)}catch(e){}
-      try{cache.tcomm=(cache.tcomm||[]).filter(function(x){return x.tenant_id!==tenantId});}catch(e){}
-      return;
-    }
+    if(!staffId){try{await sb.from('tenant_commission').delete().eq('tenant_id',tenantId)}catch(e){}return}
     var modeEl=document.getElementById('fCMode'),basisEl=document.getElementById('fCBasis'),rtEl=document.getElementById('fCRateType'),rateEl=document.getElementById('fCRate');
     var mode=modeEl?modeEl.value:'monthly';
     var payload={owner_id:getOwnerId(),tenant_id:tenantId,staff_id:staffId,mode:mode,basis:mode==='onetime'?'effective':(basisEl?basisEl.value:'effective'),rate_type:rtEl?rtEl.value:'percent',rate:parseFloat(rateEl?rateEl.value:'0')||0,updated_at:new Date().toISOString()};
     var r=await sb.from('tenant_commission').upsert(payload,{onConflict:'tenant_id'}).select();
-    if(r.error){console.warn('commission save:',r.error.message);}
-    else{
-      try{
-        var saved=(r.data&&r.data[0])?r.data[0]:payload;
-        var list=cache.tcomm=(cache.tcomm||[]).filter(function(x){return x.tenant_id!==tenantId});
-        list.push(saved);
-      }catch(e){}
-    }
+    if(r.error)console.warn('commission save:',r.error.message);
   }catch(e){console.warn('commission save failed:',e)}
 }
 async function commToggleSettle(id){

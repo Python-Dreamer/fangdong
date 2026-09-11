@@ -231,7 +231,7 @@ select.fc{-webkit-appearance:none;appearance:none;background-image:url("data:ima
 <div class="ov" id="overlay" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal" onclick="event.stopPropagation()"></div></div>
 <div class="sb-overlay" id="sbOverlay" onclick="closeSB()"></div>
 <div class="photo-viewer-overlay" id="photoViewer" onclick="closePhotoViewer(event)"><button class="photo-viewer-close" onclick="closePhotoViewer()">×</button><span class="photo-viewer-nav" id="photoViewerPrev" onclick="event.stopPropagation();photoViewerNav(-1)">‹</span><img class="photo-viewer-img" id="photoViewerImg" src="" alt=""><span class="photo-viewer-nav" id="photoViewerNext" onclick="event.stopPropagation();photoViewerNav(1)">›</span></div>
-<script src="i18n.js?v=83"></script>
+<script src="i18n.js?v=72"></script>
 <script>
 var sbUrl=localStorage.getItem('sb_url')||'https://ruilifangfong.site',sbKey=localStorage.getItem('sb_key')||'eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8',sb=null,sdkReady=false,currentUser=null,currentProfile=null,currentPage='dashboard';
 var DEFAULT_SB_URL='https://ruilifangfong.site',DEFAULT_SB_KEY='eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8';
@@ -269,7 +269,7 @@ async function decryptTenants(tenantIds){if(!tenantIds||!tenantIds.length)return
 
 // ========== 身份与权限 ==========
 function getOwnerId(){return currentUser.id}
-function getRole(){if(staffAccount)return 'staff';return 'owner'}
+function getRole(){return 'owner'}
 function isAdmin(){if(!currentUser)return false;var a=['332303155@qq.com','18213501784@163.com'];return a.indexOf(currentUser.email)>=0}
 function getSubscriptionTier(){if(!currentProfile)return'free';if(isAdmin())return'pro';if(cache.whitelist&&cache.whitelist.length){var w=cache.whitelist.find(function(x){return x.email===currentUser.email});if(w){if(!w.expires_at||new Date(w.expires_at)>=new Date())return w.tier||'pro'}}var tier=currentProfile.subscription_tier||'free';if(tier!=='free'&&currentProfile.subscription_expires){var exp=new Date(currentProfile.subscription_expires);if(exp<new Date()){currentProfile.subscription_tier='free';return'free'}}if(tier==='free'&&currentProfile.trial_expires){var trialExp=new Date(currentProfile.trial_expires);if(trialExp>=new Date())return'trial'}return tier}
 function getSubscriptionExpires(){if(!currentProfile)return null;if(isAdmin())return null;if(cache.whitelist&&cache.whitelist.length){var w=cache.whitelist.find(function(x){return x.email===currentUser.email});if(w)return w.expires_at||null}return currentProfile.subscription_expires||null}
@@ -279,7 +279,7 @@ function _getRoomLockMap(){var t=getSubscriptionTier();if(t==='pro'||isAdmin())r
 function isRoomLocked(id){var map=_getRoomLockMap();return !!map[id]}
 function isTenantLocked(tid){var t=cache.tenants.find(function(x){return x.id===tid});if(!t)return false;return isRoomLocked(t.room_id)}
 function isRentLocked(rid){var r=cache.rents.find(function(x){return x.id===rid});if(!r)return false;return isRoomLocked(r.room_id)}
-function canEdit(){if(staffAccount)return false;var t=getSubscriptionTier();if(t==='pro'||t==='basic'||t==='trial'||isAdmin())return true;var limit=getRoomLimit();return cache.rooms.length<limit}
+function canEdit(){var t=getSubscriptionTier();if(t==='pro'||t==='basic'||t==='trial'||isAdmin())return true;var limit=getRoomLimit();return cache.rooms.length<limit}
 
 // ========== 白名单管理 ==========
 async function loadWhitelist(){if(!currentUser)return;try{if(isAdmin()){var rwl=await Promise.race([sb.from('whitelist').select('*'),new Promise(function(_,rej){setTimeout(function(){rej(new Error('timeout'))},5000)})]);cache.whitelist=rwl.data||[]}else{var rm=await Promise.race([sb.from('whitelist').select('*').eq('email',currentUser.email).limit(1),new Promise(function(_,rej){setTimeout(function(){rej(new Error('timeout'))},5000)})]);cache.whitelist=rm.data||[]}}catch(e){cache.whitelist=[];console.warn('whitelist load failed:',e.message)}}
@@ -321,7 +321,7 @@ var passwordRecoveryMode=false;
 var _recoveryFormShown=false;
 function _showRecoveryForm(){if(_recoveryFormShown)return;_recoveryFormShown=true;try{var p=window.location.pathname;if((window.location.search||'').indexOf('reset=1')<0)p+='?reset=1';window.history.replaceState({},document.title,p);window.location.hash=''}catch(e){}sb.auth.getSession().then(function(r){if(r.data&&r.data.session){showNewPasswordForm(true)}else{sb.auth.signOut().catch(function(){});showNewPasswordForm(false)}}).catch(function(){sb.auth.signOut().catch(function(){});showNewPasswordForm(false)})}
 function _setupAuthListener(){if(!sb||sb.__recoveryListening)return;sb.__recoveryListening=true;sb.auth.onAuthStateChange(function(event,session){if(event==='PASSWORD_RECOVERY'){passwordRecoveryMode=true;_showRecoveryForm()}else if(event==='SIGNED_IN'&&(window.location.search||'').includes('type=recovery')){passwordRecoveryMode=true;_showRecoveryForm()}})}
-async function checkAuth(){if(!sb){renderConfig();return}try{var hash=window.location.hash||'';var search=window.location.search||'';var isRecovery=hash.includes('type=recovery')||search.includes('type=recovery');if(isRecovery)passwordRecoveryMode=true;var codeMatch=search.match(/[?&]code=([^&]+)/);if(codeMatch){try{var er=await sb.auth.exchangeCodeForSession(decodeURIComponent(codeMatch[1]));if(er.error)console.warn('Code exchange:',er.error.message)}catch(ex){console.warn('Code exchange error:',ex.message)}}if(hash.includes('access_token')||hash.includes('refresh_token')){await new Promise(function(r){setTimeout(r,500)})}var r=await sb.auth.getSession();if(r.data&&r.data.session){currentUser=r.data.session.user;if(isRecovery){passwordRecoveryMode=false;_showRecoveryForm();return}var _isStaff=await loadStaffAccount();if(_isStaff){if(!staffAccount.active){toast(i18n.t('staff.accountDisabled'),'e');setTimeout(function(){doSignOut()},1600);return;}await loadStaffData();renderStaffApp();return;}await loadProfile();await loadAllData();if(isAdmin())await loadFeedback();loadWhitelist().then(function(){updateBadges();if(currentPage==='dashboard'||currentPage==='settings')renderPage()});subscribeRealtime();renderApp()}else{if(isRecovery||(window.location.search||'').includes('reset=1')){_showRecoveryForm();return}renderAuth()}}catch(e){console.error('Auth check failed:',e);toast(i18n.t('auth.connFailed'),'e');if((window.location.search||'').includes('type=recovery')||(window.location.hash||'').includes('type=recovery')||(window.location.search||'').includes('reset=1')){_showRecoveryForm()}else{renderAuth()}}}
+async function checkAuth(){if(!sb){renderConfig();return}try{var hash=window.location.hash||'';var search=window.location.search||'';var isRecovery=hash.includes('type=recovery')||search.includes('type=recovery');if(isRecovery)passwordRecoveryMode=true;var codeMatch=search.match(/[?&]code=([^&]+)/);if(codeMatch){try{var er=await sb.auth.exchangeCodeForSession(decodeURIComponent(codeMatch[1]));if(er.error)console.warn('Code exchange:',er.error.message)}catch(ex){console.warn('Code exchange error:',ex.message)}}if(hash.includes('access_token')||hash.includes('refresh_token')){await new Promise(function(r){setTimeout(r,500)})}var r=await sb.auth.getSession();if(r.data&&r.data.session){currentUser=r.data.session.user;if(isRecovery){passwordRecoveryMode=false;_showRecoveryForm();return}await loadProfile();await loadAllData();if(isAdmin())await loadFeedback();loadWhitelist().then(function(){updateBadges();if(currentPage==='dashboard'||currentPage==='settings')renderPage()});subscribeRealtime();renderApp()}else{if(isRecovery||(window.location.search||'').includes('reset=1')){_showRecoveryForm();return}renderAuth()}}catch(e){console.error('Auth check failed:',e);toast(i18n.t('auth.connFailed'),'e');if((window.location.search||'').includes('type=recovery')||(window.location.hash||'').includes('type=recovery')||(window.location.search||'').includes('reset=1')){_showRecoveryForm()}else{renderAuth()}}}
 function _waitForRecoverySession(tries){if(tries>=15)return;setTimeout(function(){sb.auth.getSession().then(function(rr){if(rr.data&&rr.data.session){currentUser=rr.data.session.user;_showRecoveryForm()}else{_waitForRecoverySession(tries+1)}})}.bind(this),tries===0?300:500)}
 async function loadProfile(){try{var r=await sb.from('profiles').select('*').eq('id',currentUser.id).single();if(r.error){currentProfile={name:currentUser.user_metadata?.name||''}}else{currentProfile=r.data||{name:currentUser.user_metadata?.name||''}}if(!currentProfile.subscription_tier&&!currentProfile.subscription_expires&&!currentProfile.trial_expires){var trialEnd=new Date();trialEnd.setDate(trialEnd.getDate()+7);currentProfile.trial_expires=trialEnd.toISOString().slice(0,10);try{await sb.from('profiles').upsert({id:currentUser.id,subscription_tier:currentProfile.subscription_tier||'free',trial_expires:currentProfile.trial_expires})}catch(e){console.warn('Trial init error:',e)}}}catch(e){currentProfile={name:currentUser.user_metadata?.name||''}}}
 
@@ -447,136 +447,8 @@ function closeSB(){var s=document.getElementById('sidebar'),o=document.getElemen
 function goPage(p){_fullRender=true;currentPage=p;_mSel={active:false,type:'',ids:{}};document.querySelectorAll('.nav-item').forEach(function(n){n.classList.toggle('on',n.dataset.p===p)});renderPage();closeSB();mselUpdateBar()}
 
 // ========== 渲染主框架 ==========
-
-// ===== v81 员工子账号（只读）=====
-var staffAccount=null;var staffPage='srooms';
-async function loadStaffAccount(){
-  try{
-    var r=await sb.from('staff_accounts').select('*').eq('id',currentUser.id).limit(1);
-    var row=(r&&r.data&&r.data[0])||null;
-    if(row){staffAccount=row;
-      if(row.staff_id){try{var sr=await sb.from('staff').select('name,phone').eq('id',row.staff_id).limit(1);if(sr.data&&sr.data[0]){staffAccount.name=sr.data[0].name;staffAccount.phone=sr.data[0].phone}}catch(e){}}
-      return true;
-    }
-  }catch(e){}
-  staffAccount=null;return false;
-}
-async function loadStaffData(){
-  var oid=staffAccount.owner_id,sid=staffAccount.staff_id;
-  try{var rb=await sb.from('rooms').select('*').eq('owner_id',oid).order('created_at',{ascending:true});cache.rooms=rb.data||[]}catch(e){cache.rooms=[]}
-  try{var bd=await sb.from('buildings').select('*').eq('owner_id',oid);cache.buildings=bd.data||[]}catch(e){cache.buildings=[]}
-  try{var cr=await sb.from('commission_records').select('*').eq('owner_id',oid).eq('staff_id',sid).order('month',{ascending:false});cache.commissions=cr.data||[]}catch(e){cache.commissions=[]}
-}
-function renderStaffApp(){
-  var sa=staffAccount||{};
-  var disp=sa.name||(currentProfile&&currentProfile.name)||sa.email||'';
-  document.getElementById('app').innerHTML='<div class="app-wrap"><button class="mob-btn" onclick="toggleSB()">☰</button>'+
-    '<div class="sidebar" id="sidebar"><div class="sidebar-hd"><h1>🏠 '+i18n.t('common.appName')+'</h1><div class="user-info">'+esc(disp)+' <span style="font-size:10px;opacity:.6">'+i18n.t('staff.roleTag')+'</span></div></div>'+
-    '<div class="nav-item on" data-p="srooms" onclick="staffGo(\'srooms\')"><span class="ico">🏘️</span>'+i18n.t('staff.listings')+'</div>'+
-    '<div class="nav-item" data-p="scomm" onclick="staffGo(\'scomm\')"><span class="ico">💼</span>'+i18n.t('staff.myCommission')+'</div>'+
-    '<div class="sidebar-ft"><button class="btn btn-gh" style="width:100%;justify-content:center;margin-bottom:8px" onclick="i18n.toggleLang()">'+(i18n.getLang()==='zh-CN'?'🌐 English':'🌐 中文')+'</button><button class="btn btn-gh" style="width:100%;justify-content:center" onclick="doSignOut()">'+i18n.t('nav.logout')+'</button></div></div>'+
-    '<div class="main" id="mainContent"></div></div>';
-  staffPage='srooms';rStaffRooms();
-}
-function staffGo(p){
-  staffPage=p;
-  var items=document.querySelectorAll('.nav-item');
-  for(var i=0;i<items.length;i++){var it=items[i];if(it.getAttribute('data-p')===p)it.classList.add('on');else it.classList.remove('on')}
-  if(p==='srooms')rStaffRooms();else if(p==='scomm')rStaffCommission();
-}
-function _staffRoomVacant(r){return !r||r.status!=='occupied';}
-function rStaffRooms(){
-  var mc=document.getElementById('mainContent');if(!mc)return;
-  var bm={};(cache.buildings||[]).forEach(function(b){bm[b.id]=b.name});
-  var rooms=cache.rooms||[];
-  var vacant=rooms.filter(_staffRoomVacant).length;var occ=rooms.length-vacant;
-  var html='<div class="page-hd"><h2>'+i18n.t('staff.listings')+'</h2></div>';
-  html+='<div class="card"><div style="display:flex;gap:20px;flex-wrap:wrap;padding:6px 4px">'+
-    '<div><div style="font-size:26px;font-weight:700;color:var(--g)">'+vacant+'</div><div style="font-size:12px;opacity:.7">'+i18n.t('staff.vacant')+'</div></div>'+
-    '<div><div style="font-size:26px;font-weight:700;color:var(--w)">'+occ+'</div><div style="font-size:12px;opacity:.7">'+i18n.t('staff.occupied')+'</div></div>'+
-    '<div><div style="font-size:26px;font-weight:700">'+rooms.length+'</div><div style="font-size:12px;opacity:.7">'+i18n.t('staff.totalRooms')+'</div></div>'+
-    '</div></div>';
-  if(!rooms.length){html+='<div class="empty"><div class="ei">🏘️</div><p>'+i18n.t('staff.noRooms')+'</p></div>';mc.innerHTML=html;return;}
-  var sortedRooms=rooms.slice().sort(function(a,b){var va=_staffRoomVacant(a)?0:1,vb=_staffRoomVacant(b)?0:1;if(va!==vb)return va-vb;return String(a.name||'').localeCompare(String(b.name||''),'zh')});
-  html+='<div class="card"><div class="card-hd"><h3>'+i18n.t('staff.roomList')+'</h3></div><div class="tbl-wrap"><table><thead><tr><th>'+i18n.t('staff.buildingCol')+'</th><th>'+i18n.t('staff.roomCol')+'</th><th>'+i18n.t('staff.typeCol')+'</th><th>'+i18n.t('staff.areaCol')+'</th><th>'+i18n.t('staff.rentCol')+'</th><th>'+i18n.t('common.status')+'</th></tr></thead><tbody>';
-  sortedRooms.forEach(function(r){
-    var isV=_staffRoomVacant(r);
-    var bn=(r.building_id&&bm[r.building_id])?bm[r.building_id]:i18n.t('staff.ungrouped');
-    var rentTxt=r.rent_amount?('¥'+Number(r.rent_amount).toLocaleString()):'-';
-    html+='<tr><td>'+esc(bn)+'</td><td style="font-weight:600">'+esc(r.name||'')+'</td><td>'+esc(_trRoomType(r.type))+'</td><td>'+(r.area?esc(r.area)+'㎡':'-')+'</td><td style="font-weight:600">'+rentTxt+'</td><td>'+(isV?'<span class="tag t-green">'+i18n.t('staff.vacant')+'</span>':'<span class="tag t-gray">'+i18n.t('staff.occupied')+'</span>')+'</td></tr>';
-  });
-  html+='</tbody></table></div></div>';
-  mc.innerHTML=html;
-}
-function rStaffCommission(){
-  var mc=document.getElementById('mainContent');if(!mc)return;
-  var rec=cache.commissions||[];
-  var fmt=function(n){return '¥'+(Number(n)||0).toFixed(2)};
-  var total=rec.reduce(function(a,r){return a+(Number(r.amount)||0)},0);
-  var settled=rec.filter(function(r){return r.settled}).reduce(function(a,r){return a+(Number(r.amount)||0)},0);
-  var unsettled=total-settled;
-  var html='<div class="page-hd"><h2>'+i18n.t('staff.myCommission')+'</h2></div>';
-  html+='<div class="card"><div style="display:flex;gap:20px;flex-wrap:wrap;padding:6px 4px">'+
-    '<div><div style="font-size:22px;font-weight:700">'+fmt(total)+'</div><div style="font-size:12px;opacity:.7">'+i18n.t('staff.totalCommission')+'</div></div>'+
-    '<div><div style="font-size:22px;font-weight:700;color:var(--g)">'+fmt(settled)+'</div><div style="font-size:12px;opacity:.7">'+i18n.t('staff.settled')+'</div></div>'+
-    '<div><div style="font-size:22px;font-weight:700;color:var(--w)">'+fmt(unsettled)+'</div><div style="font-size:12px;opacity:.7">'+i18n.t('staff.unsettled')+'</div></div>'+
-    '</div></div>';
-  if(!rec.length){html+='<div class="empty"><div class="ei">💼</div><p>'+i18n.t('staff.noCommission')+'</p></div>';mc.innerHTML=html;return;}
-  var sorted=rec.slice().sort(function(a,b){return String(b.month||'').localeCompare(String(a.month||''))});
-  html+='<div class="card"><div class="tbl-wrap"><table><thead><tr><th>'+i18n.t('staff.monthCol')+'</th><th>'+i18n.t('staff.amountCol')+'</th><th>'+i18n.t('common.status')+'</th></tr></thead><tbody>';
-  sorted.forEach(function(r){
-    html+='<tr><td>'+esc(r.month||'-')+'</td><td style="font-weight:600">'+fmt(r.amount)+'</td><td>'+(r.settled?'<span class="tag t-green">'+i18n.t('staff.settled')+'</span>':'<span class="tag t-gray">'+i18n.t('staff.unsettled')+'</span>')+'</td></tr>';
-  });
-  html+='</tbody></table></div></div>';
-  mc.innerHTML=html;
-}
-function staffAcctBtn(sid){return ' <button class="btn btn-sm btn-p" onclick="showStaffAccountModal(\''+sid+'\')">'+i18n.t('staff.openAccount')+'</button>';}
-async function showStaffAccountModal(sid){
-  var staff=(cache.staff||[]).find(function(x){return x.id===sid});
-  if(!staff){toast(i18n.t('common.modifyFail'),'e');return}
-  window._saStaffId=sid;window._saExisting=null;
-  openModal('<div class="m-hd"><h3>'+i18n.t('staff.accountTitle')+'</h3><button class="m-x" onclick="closeModal()">×</button></div><div class="m-bd"><div id="saBody">'+i18n.t('common.loading')+'</div></div>');
-  var existing=null;
-  try{var r=await sb.from('staff_accounts').select('*').eq('staff_id',sid).limit(1);existing=(r.data&&r.data[0])||null}catch(e){}
-  window._saExisting=existing;
-  var body='<div class="fr"><div class="fg"><label>'+i18n.t('comm.staffName')+'</label><input class="fc" value="'+esc(staff.name)+'" readonly></div></div>';
-  if(existing){
-    body+='<div style="background:var(--bg);border-radius:8px;padding:10px;margin:8px 0;font-size:13px;line-height:1.6">'+i18n.t('staff.acctExists',{email:existing.email})+'<br>'+(existing.active?('<span style="color:var(--g)">● '+i18n.t('staff.acctActive')+'</span>'):('<span style="color:var(--w)">● '+i18n.t('staff.acctInactive')+'</span>'))+'</div>';
-    body+='<p style="font-size:12px;opacity:.7;margin:6px 0">'+i18n.t('staff.resetHint')+'</p>';
-    body+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">';
-    if(existing.active){body+='<button class="btn btn-gh" style="color:var(--w)" onclick="doToggleStaffAccount(0)">'+i18n.t('staff.acctDisable')+'</button>';}
-    else{body+='<button class="btn btn-gh" style="color:var(--g)" onclick="doToggleStaffAccount(1)">'+i18n.t('staff.acctEnable')+'</button>';}
-    body+='</div>';
-  }else{
-    body+='<div class="fr"><div class="fg"><label>'+i18n.t('staff.acctEmail')+'</label><input class="fc" id="saEmail" type="email" placeholder="staff@email.com" autocomplete="off"></div><div class="fg"><label>'+i18n.t('staff.acctPwd')+'</label><input class="fc" id="saPass" type="text" placeholder="'+i18n.t('staff.passHint')+'" autocomplete="new-password"></div></div>';
-    body+='<p style="font-size:12px;opacity:.7;margin:8px 0">'+i18n.t('staff.openHint')+'</p>';
-    body+='<button class="btn btn-p" onclick="doStaffAccountSave()">'+i18n.t('staff.openAccount')+'</button>';
-  }
-  var el=document.getElementById('saBody');if(el)el.innerHTML=body;
-}
-async function doStaffAccountSave(){
-  var email=(document.getElementById('saEmail').value||'').trim();
-  var pass=(document.getElementById('saPass').value||'').trim();
-  if(email.indexOf('@')<0){toast(i18n.t('staff.badEmail'),'e');return}
-  if(pass.length<6){toast(i18n.t('staff.badPwd'),'e');return}
-  if(window._saving)return;window._saving=true;
-  try{
-    var sess=await sb.auth.getSession();var tkn=sess.data.session.access_token;
-    var r=await fetch(FILE_BASE+'/admin/create-staff-account',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tkn},body:JSON.stringify({email:email,password:pass,staff_id:window._saStaffId,staff_name:''})});
-    var d=await r.json().catch(function(){return {}});
-    if(!r.ok||!d.ok){toast((d&&d.error)||i18n.t('common.saveFailed'),'e');return}
-    closeModal();toast(i18n.t('staff.openSuccess')+'：'+email,'s');if(typeof rCommission==='function')rCommission();
-  }catch(e){toast(i18n.t('common.saveFailed'),'e')}
-  finally{window._saving=false}
-}
-async function doToggleStaffAccount(flag){
-  if(!window._saExisting)return;
-  var r=await sb.from('staff_accounts').update({active:flag?true:false}).eq('id',window._saExisting.id);
-  if(r.error){toast(r.error.message,'e');return}
-  closeModal();toast(i18n.t('common.updateSuccess'),'s');if(typeof rCommission==='function')rCommission();
-}
-function renderApp(){document.getElementById('app').innerHTML='<div class="app-wrap"><button class="mob-btn" onclick="toggleSB()">☰</button><div class="sidebar" id="sidebar"><div class="sidebar-hd"><h1>🏠 '+i18n.t('common.appName')+'</h1><div class="user-info" style="cursor:pointer" onclick="editName()">'+esc(currentProfile.name||currentUser.email)+' <span style="font-size:10px;opacity:.6">✏️</span></div></div><div class="nav-item on" data-p="dashboard" onclick="goPage(\'dashboard\')"><span class="ico">📊</span>'+i18n.t('common.dashboard')+'</div><div class="nav-item" data-p="rooms" onclick="goPage(\'rooms\')"><span class="ico">🏘️</span>'+i18n.t('common.roomsMgmt')+'</div><div class="nav-item" data-p="tenants" onclick="goPage(\'tenants\')"><span class="ico">👥</span>'+i18n.t('common.tenantsMgmt')+'</div><div class="nav-item" data-p="rent" onclick="goPage(\'rent\')"><span class="ico">💰</span>'+i18n.t('common.rentMgmt')+'<span class="badge" id="bOd" style="display:none">0</span></div><div class="nav-item" data-p="finance" onclick="goPage(\'finance\')"><span class="ico">🧾</span>'+i18n.t('common.financeMgmt')+'<span class="badge" id="bAdj" style="display:none">0</span></div><div class="nav-item" data-p="commission" onclick="goPage(\'commission\')" style="display:none"><span class="ico">💼</span>'+i18n.t('comm.title')+'</div><div class="nav-item" data-p="feedback" onclick="goPage(\'feedback\')" id="navFeedback" style="display:none"><span class="ico">💬</span>'+i18n.t('common.feedbackMgmt')+'<span class="badge" id="bFb" style="display:none">0</span></div><div class="nav-item" data-p="settings" onclick="goPage(\'settings\')"><span class="ico">⚙️</span>'+i18n.t('nav.settings')+'</div><a class="nav-item" href="tools.html" target="_blank" style="text-decoration:none"><span class="ico">🧰</span>'+i18n.t('nav.tools')+'</a><a class="nav-item" href="services.html" target="_blank" style="text-decoration:none"><span class="ico">🛎️</span>'+i18n.t('nav.services')+'</a><div class="sidebar-ft"><button class="btn btn-gh" id="langToggle" style="width:100%;justify-content:center;margin-bottom:8px" onclick="i18n.toggleLang()">'+(i18n.getLang()==='zh-CN'?'🌐 English':'🌐 中文')+'</button><button class="btn btn-gh" style="width:100%;justify-content:center;margin-bottom:8px" onclick="showFeedbackModal()">'+i18n.t('nav.feedbackBtn')+'</button><button class="btn btn-gh" style="width:100%;justify-content:center" onclick="doSignOut()">'+i18n.t('nav.logout')+'</button></div></div><div class="main" id="mainContent"></div></div><div class="rt-ind"><div class="rt-dot" id="rtDot"></div><span id="rtText">'+i18n.t('nav.realtimeSync')+'</span></div>';if(isAdmin()){document.getElementById("navFeedback").style.display=""}try{_commNavSync()}catch(e){}renderPage();updateBadges()}
-function renderPage(){_fullRender=true;var fn={dashboard:rDashboard,rooms:rRooms,tenants:rTenants,rent:rRent,finance:rFinance,commission:rCommission,settings:rSettings,feedback:rFeedback};(fn[currentPage]||rDashboard)();updateBadges();mselInject();mselAddBtn()}
+function renderApp(){document.getElementById('app').innerHTML='<div class="app-wrap"><button class="mob-btn" onclick="toggleSB()">☰</button><div class="sidebar" id="sidebar"><div class="sidebar-hd"><h1>🏠 '+i18n.t('common.appName')+'</h1><div class="user-info" style="cursor:pointer" onclick="editName()">'+esc(currentProfile.name||currentUser.email)+' <span style="font-size:10px;opacity:.6">✏️</span></div></div><div class="nav-item on" data-p="dashboard" onclick="goPage(\'dashboard\')"><span class="ico">📊</span>'+i18n.t('common.dashboard')+'</div><div class="nav-item" data-p="rooms" onclick="goPage(\'rooms\')"><span class="ico">🏘️</span>'+i18n.t('common.roomsMgmt')+'</div><div class="nav-item" data-p="tenants" onclick="goPage(\'tenants\')"><span class="ico">👥</span>'+i18n.t('common.tenantsMgmt')+'</div><div class="nav-item" data-p="rent" onclick="goPage(\'rent\')"><span class="ico">💰</span>'+i18n.t('common.rentMgmt')+'<span class="badge" id="bOd" style="display:none">0</span></div><div class="nav-item" data-p="finance" onclick="goPage(\'finance\')"><span class="ico">🧾</span>'+i18n.t('common.financeMgmt')+'<span class="badge" id="bAdj" style="display:none">0</span></div><div class="nav-item" data-p="feedback" onclick="goPage(\'feedback\')" id="navFeedback" style="display:none"><span class="ico">💬</span>'+i18n.t('common.feedbackMgmt')+'<span class="badge" id="bFb" style="display:none">0</span></div><div class="nav-item" data-p="settings" onclick="goPage(\'settings\')"><span class="ico">⚙️</span>'+i18n.t('nav.settings')+'</div><a class="nav-item" href="tools.html" target="_blank" style="text-decoration:none"><span class="ico">🧰</span>'+i18n.t('nav.tools')+'</a><a class="nav-item" href="services.html" target="_blank" style="text-decoration:none"><span class="ico">🛎️</span>'+i18n.t('nav.services')+'</a><div class="sidebar-ft"><button class="btn btn-gh" id="langToggle" style="width:100%;justify-content:center;margin-bottom:8px" onclick="i18n.toggleLang()">'+(i18n.getLang()==='zh-CN'?'🌐 English':'🌐 中文')+'</button><button class="btn btn-gh" style="width:100%;justify-content:center;margin-bottom:8px" onclick="showFeedbackModal()">'+i18n.t('nav.feedbackBtn')+'</button><button class="btn btn-gh" style="width:100%;justify-content:center" onclick="doSignOut()">'+i18n.t('nav.logout')+'</button></div></div><div class="main" id="mainContent"></div></div><div class="rt-ind"><div class="rt-dot" id="rtDot"></div><span id="rtText">'+i18n.t('nav.realtimeSync')+'</span></div>';if(isAdmin()){document.getElementById("navFeedback").style.display=""}renderPage();updateBadges()}
+function renderPage(){_fullRender=true;var fn={dashboard:rDashboard,rooms:rRooms,tenants:rTenants,rent:rRent,finance:rFinance,settings:rSettings,feedback:rFeedback};(fn[currentPage]||rDashboard)();updateBadges();mselInject();mselAddBtn()}
 function updateBadges(){var rentRemindDays=cache.settings.rent_remind_days||5;var od=cache.rents.filter(function(r){if(r.status!=='pending'&&r.status!=='overdue')return false;if(!cache.settings.enable_reminders)return false;var tn=cache.tenants.find(function(x){return x.id===r.tenant_id});if(tn&&tn.status==='inactive')return false;var d=daysDiff(today(),r.due_date);return d<=rentRemindDays||d<0}).length;var daysWarn=cache.settings.contract_remind_days||30;var ex=cache.tenants.filter(function(t){return t.status==='active'&&t.contract_end&&daysDiff(today(),t.contract_end)<=daysWarn}).length;var adjDue=cache.adjustments.filter(function(a){if(a.status!=='pending')return false;var tn=cache.tenants.find(function(x){return x.id===a.tenant_id});if(tn&&tn.status==='inactive')return false;return daysDiff(today(),a.adjust_date)<=7}).length;var b1=document.getElementById('bOd');if(b1){b1.style.display=(od+ex)?'inline':'none';b1.textContent=od+ex};var bAdj=document.getElementById('bAdj');if(bAdj){bAdj.style.display=adjDue?'inline':'none';bAdj.textContent=adjDue};if(isAdmin()&&cache.feedback){var unreadFb=cache.feedback.filter(function(x){return x.status==='unread'}).length;var bFb=document.getElementById('bFb');if(bFb){bFb.style.display=unreadFb?'inline':'none';bFb.textContent=unreadFb}}}
 
 // ========== 工作台 ==========
@@ -777,26 +649,17 @@ function getRoomTenantCount(roomId){return cache.tenants.filter(function(t){retu
 
 function rTenants(){var st=pageState.tenants;if(!st.building)st.building='__all__';var bid=st.building;var bRoomIds=(bid==='__all__')?cache.rooms.map(function(r){return r.id}):cache.rooms.filter(function(r){return r.building_id===bid}).map(function(r){return r.id});var baseTs=cache.tenants.slice();if(bid!=='__all__'){baseTs=baseTs.filter(function(t){return bRoomIds.indexOf(t.room_id)>=0})}if(st.filter==='active')baseTs=baseTs.filter(function(t){return t.status==='active'});else if(st.filter==='inactive')baseTs=baseTs.filter(function(t){return t.status==='inactive'});if(st.search){var k=st.search.toLowerCase();baseTs=baseTs.filter(function(t){var rm=cache.rooms.find(function(r){return r.id===t.room_id});return t.name.toLowerCase().includes(k)||(t.phone&&t.phone.includes(k))||(rm&&rm.name.toLowerCase().includes(k))||(t.occupants&&t.occupants.some(function(o){return o.name&&o.name.toLowerCase().includes(k)}))})}baseTs.sort(function(a,b){var ra=_renewalRank(a),rb=_renewalRank(b);if(rb!==ra)return ra-rb;return (a.created_at||'').localeCompare(b.created_at||'')});var ce=canEdit();function tenantRow(t){var rm=cache.rooms.find(function(r){return r.id===t.room_id});var _rr=_renewalRank(t);var _renewTag=_rr===0?(' <span class="tag t-red" style="font-size:10px">'+i18n.t('tenant.expiredTag')+'</span>'):_rr===1?(' <span class="tag t-yellow" style="font-size:10px">'+i18n.t('tenant.renewTag')+'</span>'):'';var sg=t.status==='active'?'t-green':'t-gray',sx=t.status==='active'?i18n.t('tenant.active'):i18n.t('tenant.inactive');var payBtn=ce&&t.status==='active'?'<button class="btn btn-sm btn-g" onclick="doQuickPay(\''+t.id+'\')">'+i18n.t('rent.payment')+'</button> ':'';var act=ce&&t.status==='active'?'<button class="btn btn-sm btn-gh" onclick="showEditTenant(\''+t.id+'\')">'+i18n.t('common.edit')+'</button> '+payBtn+'<button class="btn btn-sm btn-gh" style="color:var(--w)" onclick="doDeactivate(\''+t.id+'\')">'+i18n.t('tenant.moveOut')+'</button> <button class="btn btn-sm btn-gh" style="color:var(--d)" onclick="delTenant(\''+t.id+'\')">'+i18n.t('common.del')+'</button>':(ce?'<button class="btn btn-sm btn-gh" onclick="showEditTenant(\''+t.id+'\')">'+i18n.t('common.view')+'</button> <button class="btn btn-sm btn-gh" style="color:var(--d)" onclick="delTenant(\''+t.id+'\')">'+i18n.t('common.del')+'</button>':'');return'<tr onclick="showTenantDetail(\''+t.id+'\')" style="cursor:pointer"><td style="font-weight:600">'+esc(t.name)+((t.occupants&&t.occupants.length)?' <span style="font-size:10px;color:var(--p);font-weight:400">+'+t.occupants.length+'</span>':'')+_renewTag+'</td><td>'+esc(t.phone||'-')+'</td><td>'+esc(rm?rm.name:'-')+'</td><td>'+(t.rent_amount?'¥'+t.rent_amount.toLocaleString():'-')+'</td><td>'+fmtDate(t.move_in_date)+'</td><td><span class="tag '+sg+'">'+sx+'</span></td>'+(ce?'<td onclick="event.stopPropagation()">'+act+'</td>':'')+'</tr>'}function tenantFloor(t){var rm=cache.rooms.find(function(r){return r.id===t.room_id});if(!rm)return null;var n=String(rm.name||'').match(/\d/);if(n){var num=parseInt(n[0],10);if(!isNaN(num)&&num>0)return num}if(rm.floor){var f=parseInt(rm.floor,10);if(!isNaN(f)&&f>0)return f}return null}var bodyHtml='';if(baseTs.length){if(bid!=='__all__'){var tGroups={};var tOthers=[];baseTs.forEach(function(t){var f=tenantFloor(t);if(f===null)tOthers.push(t);else{(tGroups[f]=tGroups[f]||[]).push(t)}});var tFloors=Object.keys(tGroups).map(function(x){return parseInt(x,10)}).sort(function(a,b){return a-b});var colCount=ce?7:6;tFloors.forEach(function(f){bodyHtml+='<tr><td colspan="'+colCount+'" class="floor-hd"><span class="fc">'+i18n.t('building.floorN',{n:f})+'</span></td></tr>';tGroups[f].forEach(function(t){bodyHtml+=tenantRow(t)})});if(tOthers.length){bodyHtml+='<tr><td colspan="'+colCount+'" class="floor-hd">'+i18n.t('building.otherFloor')+'</td></tr>';tOthers.forEach(function(t){bodyHtml+=tenantRow(t)})}}else{bodyHtml=baseTs.map(tenantRow).join('')}}var tbl=baseTs.length?'<div class="tbl-wrap"><table><thead><tr><th>'+i18n.t('tenant.name')+'</th><th>'+i18n.t('common.phone')+'</th><th>'+i18n.t('tenant.room')+'</th><th>'+i18n.t('room.rent')+'</th><th>'+i18n.t('room.occupied')+'</th><th>'+i18n.t('common.status')+'</th><'+(ce?'<th>'+i18n.t('common.operation')+'</th>':'')+'</tr></thead><tbody>'+bodyHtml+'</tbody></table></div>':'<div class="empty"><div class="ei">👥</div><h3>'+i18n.t('tenant.empty')+'</h3><p>'+i18n.t('tenant.addFirstHint')+'</p></div>';var tc=document.getElementById('tblTenants');if(tc&&!_fullRender){tc.innerHTML=tbl;return}var statsTs=(bid==='__all__')?cache.tenants:cache.tenants.filter(function(t){return bRoomIds.indexOf(t.room_id)>=0});var actCount=statsTs.filter(function(t){return t.status==='active'}).length;var inactCount=statsTs.filter(function(t){return t.status==='inactive'}).length;var bldgBar='';if(cache.buildings&&cache.buildings.length){function bldgTStats(arr){return{total:arr.length,active:arr.filter(function(t){return t.status==='active'}).length,inactive:arr.filter(function(t){return t.status==='inactive'}).length}}var allTStats=bldgTStats(cache.tenants);bldgBar='<div class="bldg-bar"><div class="bldg-card'+(bid==='__all__'?' on':'')+'" onclick="selectTenantBuilding(\'__all__\')"><div class="bn">'+i18n.t('common.all')+'</div><div class="bs"><b>'+allTStats.total+'</b> '+i18n.t('common.unitPerson')+' · <span class="g">'+allTStats.active+'</span> / <span class="y">'+allTStats.inactive+'</span></div></div>';cache.buildings.forEach(function(b){var brIds=cache.rooms.filter(function(r){return r.building_id===b.id}).map(function(r){return r.id});var bts=cache.tenants.filter(function(t){return brIds.indexOf(t.room_id)>=0});var s=bldgTStats(bts);bldgBar+='<div class="bldg-card'+(bid===b.id?' on':'')+'" onclick="selectTenantBuilding(\''+b.id+'\')"><div class="bn">'+esc(b.name)+'</div><div class="bs"><b>'+s.total+'</b> '+i18n.t('common.unitPerson')+' · <span class="g">'+s.active+'</span> / <span class="y">'+s.inactive+'</span></div></div>'});bldgBar+='</div>'}document.getElementById('mainContent').innerHTML='<div class="page-hd"><h2>'+i18n.t('tenant.title')+'</h2><div class="hd-actions">'+(ce?'<button class="btn btn-p" onclick="showAddTenant()">'+i18n.t('tenant.addBtn')+'</button>':'')+'</div></div>'+bldgBar+'<div class="stats"><div class="sc"><div class="sc-i blue">👥</div><div><h3>'+statsTs.length+'</h3><p>'+i18n.t('tenant.title')+'</p></div></div><div class="sc"><div class="sc-i green">📈</div><div><h3>'+actCount+'</h3><p>'+i18n.t('tenant.active')+'</p></div></div><div class="sc"><div class="sc-i yellow">📤</div><div><h3>'+inactCount+'</h3><p>'+i18n.t('tenant.inactive')+'</p></div></div></div><div class="card"><div class="toolbar"><div class="sbox"><span>🔍</span><input placeholder="'+i18n.t('common.searchNameRoom')+'" value="'+esc(st.search)+'" oninput="pageState.tenants.search=this.value;debounceTenants()" oncompositionstart="_composing=true" oncompositionend="_composing=false;debounceTenants()"></div><select class="fsel" id="selTenants" onchange="filterTenants()" autocomplete="off" data-lpignore="true"><option value="all"'+(st.filter==='all'?' selected':'')+'>'+i18n.t('common.all')+'</option><option value="active"'+(st.filter==='active'?' selected':'')+'>'+i18n.t('tenant.active')+'</option><option value="inactive"'+(st.filter==='inactive'?' selected':'')+'>'+i18n.t('tenant.inactive')+'</option></select></div><div id="tblTenants">'+tbl+'</div></div>'}
 
-function showAddTenant(){window._roomShowOccupied=false;if(!canEdit()){toast(i18n.t('common.readOnly'),'w');return}pendingPhotos['new']=[];pendingFiles['new']=[];window._occList=[];var allRooms=cache.rooms;if(!allRooms.length){toast(''+i18n.t('tenant.addRoomFirst')+'','w');return}var _bMap={};(cache.buildings||[]).forEach(function(b){_bMap[b.id]=b.name});var roomOptions=allRooms.filter(function(r){return roomVacant(r);}).map(function(r){var cnt=getRoomTenantCount(r.id);var bn=(r.building_id&&_bMap[r.building_id])?_bMap[r.building_id]+' / ':'';var label=bn+esc(r.name)+(cnt>0?' ('+cnt+''+i18n.t('tenant.peopleLiving')+')':'');return'<option value="'+r.id+'" data-rent="'+(r.rent_amount||'')+'" data-bid="'+(r.building_id||'')+'">'+label+'</option>'}).join('');openModal('<div class="m-hd"><h3>'+i18n.t('tenant.addTitle')+'</h3><button class="m-x" onclick="closeModal()">×</button></div><div class="m-bd"><div class="fr"><div class="fg"><label>'+i18n.t('tenant.name')+'<span class="req">*</span></label><input class="fc" id="fTN" placeholder="'+i18n.t('tenant.namePh')+'"></div><div class="fg"><label>'+i18n.t('tenant.phone')+'</label><input class="fc" id="fTP" placeholder="'+i18n.t('tenant.phonePh')+'" type="tel"></div></div><div class="fr"><div class="fg"><label>'+i18n.t('common.nationality')+'</label><select class="fc" id="fTNat" autocomplete="off" data-lpignore="true"><option value="'+i18n.t('nat.china')+'">'+i18n.t('nat.china')+'</option><option value="'+i18n.t('nat.myanmar')+'">'+i18n.t('nat.myanmar')+'</option><option value="'+i18n.t('nat.vietnam')+'">'+i18n.t('nat.vietnam')+'</option><option value="'+i18n.t('nat.laos')+'">'+i18n.t('nat.laos')+'</option><option value="'+i18n.t('nat.thailand')+'">'+i18n.t('nat.thailand')+'</option><option value="'+i18n.t('nat.cambodia')+'">'+i18n.t('nat.cambodia')+'</option><option value="'+i18n.t('common.other')+'">'+i18n.t('common.other')+'</option></select></div><div class="fg"><label>'+i18n.t('tenant.gender')+'</label><select class="fc" id="fTGen" autocomplete="off" data-lpignore="true"><option value="">'+i18n.t('common.select')+'</option><option>'+i18n.t('tenant.male')+'</option><option>'+i18n.t('tenant.female')+'</option></select></div></div><div class="fr"><div class="fg"><label>'+i18n.t('common.idCard')+'</label><input class="fc" id="fTID" placeholder="'+i18n.t('tenant.idNumber')+'" oninput="autoFillGender()"></div><div class="fg"><label>'+i18n.t('tenant.emergencyContact')+'</label><input class="fc" id="fTE" placeholder="'+i18n.t('tenant.emergencyContact')+'"></div></div><div class="fr"><div class="fg"><label>'+i18n.t('tenant.roomSearch')+'</label><input class="fc" id="fTRmS" placeholder="'+i18n.t('tenant.roomSearchPh')+'" oninput="filterTenantRooms()" oncompositionstart="_composing=true" oncompositionend="_composing=false;filterTenantRooms()"></div><div class="fg"><label>'+i18n.t('building.selectBuilding')+'</label><select class="fc" id="fTRmB" onchange="filterTenantRooms()" autocomplete="off" data-lpignore="true"><option value="__all__">'+i18n.t('common.all')+'</option>'+(cache.buildings||[]).map(function(b){return'<option value="'+b.id+'">'+esc(b.name)+'</option>'}).join('')+'</select></div></div><div class="fr"><div class="fg"><label>'+i18n.t('tenant.room')+'<span class="req">*</span></label>'+roomOccToggleHtml()+'<select class="fc" id="fTRm" autocomplete="off" data-lpignore="true"><option value="">'+i18n.t('tenant.selectRoom')+'</option>'+roomOptions+'</select></div><div class="fg"><label>'+i18n.t('tenant.rentLabel')+'<span class="req">*</span></label><input class="fc" id="fTRa" type="number" placeholder="'+i18n.t('rent.amount3')+'"></div></div><div class="fr"><div class="fg"><label>'+i18n.t('tenant.moveInDate')+'<span class="req">*</span></label><input class="fc" id="fTMI" type="date" value="'+today()+'"></div><div class="fg"><label>'+i18n.t('tenant.contractEndDate')+'<span class="req">*</span></label><input class="fc" id="fTCE" type="date"></div></div><div class="fr"><div class="fg"><label>'+i18n.t('room.depositLabel')+'</label><input class="fc" id="fTDP" type="number" placeholder="'+i18n.t('room.depositPh')+'"></div><div class="fg"><label>'+i18n.t('room.payMethod')+'<span class="req">*</span></label><select class="fc" id="fTPM" autocomplete="off" data-lpignore="true"><option value="">'+i18n.t('common.select')+'</option><option>'+i18n.t('pay.monthly')+'</option><option>'+i18n.t('pay.quarterly')+'</option><option>'+i18n.t('pay.halfYear')+'</option><option>'+i18n.t('pay.yearly')+'</option></select><div class="hint">'+i18n.t('common.determinesCycle')+'</div></div></div><div class="fg"><label>'+i18n.t('common.notes')+'</label><textarea class="fc" id="fTNo" placeholder="'+i18n.t('common.notesPh')+'"></textarea></div>'+_commSectionHtml(null)+'<div class="occ-section"><h4>👥 '+i18n.t('tenant.occupants')+'<span class="occ-tag">'+i18n.t('common.main2')+'</span></h4><div id="occContainer"></div></div><div class="photo-section"><h4>'+i18n.t('tenant.contractPhotos')+'</h4><div class="photo-grid" id="photoGridNew"><div class="photo-upload-btn" id="photoUploadBtnNew" onclick="triggerPhotoUpload(\'new\')"><span>+</span>'+i18n.t('tenant.photoUpload')+'</div></div><p class="contract-photo-hint">'+i18n.t('tenant.clickUploadPhotos')+'，'+i18n.t('common.easyView')+'</p><input type="file" id="photoInputNew" accept="image/*" capture="environment" multiple style="display:none" onchange="handlePhotoUpload(this,\'new\')"></div></div><div class="file-section"><h4>'+i18n.t('tenant.contractFiles')+'</h4><div class="file-list" id="fileListNew"></div><div class="file-upload-btn" onclick="triggerFileUpload(\'new\')"><span>+</span>'+i18n.t('tenant.uploadContractFile')+'</div><p class="file-hint">'+i18n.t('common.fileHint')+'</p><input type="file" id="fileInputNew" accept=".pdf,.doc,.docx" multiple style="display:none" onchange="handleFileUpload(this,\'new\')"></div><div class="m-ft"><button class="btn btn-gh" onclick="closeModal()">'+i18n.t('common.cancel')+'</button><button class="btn btn-p" id="saveTenantBtn" onclick="doAddTenantGuard()">'+i18n.t('common.save')+'</button></div>');renderOccForm();_commInitForm(null)}
+function showAddTenant(){if(!canEdit()){toast(i18n.t('common.readOnly'),'w');return}pendingPhotos['new']=[];window._occList=[];var allRooms=cache.rooms;if(!allRooms.length){toast(''+i18n.t('tenant.addRoomFirst')+'','w');return}var roomOptions=allRooms.map(function(r){var cnt=getRoomTenantCount(r.id);var label=esc(r.name)+(cnt>0?' ('+cnt+''+i18n.t('tenant.peopleLiving')+')':'');return'<option value="'+r.id+'" data-rent="'+(r.rent_amount||'')+'">'+label+'</option>'}).join('');openModal('<div class="m-hd"><h3>'+i18n.t('tenant.addTitle')+'</h3><button class="m-x" onclick="closeModal()">×</button></div><div class="m-bd"><div class="fr"><div class="fg"><label>'+i18n.t('tenant.name')+'<span class="req">*</span></label><input class="fc" id="fTN" placeholder="'+i18n.t('tenant.namePh')+'"></div><div class="fg"><label>'+i18n.t('tenant.phone')+'</label><input class="fc" id="fTP" placeholder="'+i18n.t('tenant.phonePh')+'" type="tel"></div></div><div class="fr"><div class="fg"><label>'+i18n.t('common.nationality')+'</label><select class="fc" id="fTNat" autocomplete="off" data-lpignore="true"><option value="'+i18n.t('nat.china')+'">'+i18n.t('nat.china')+'</option><option value="'+i18n.t('nat.myanmar')+'">'+i18n.t('nat.myanmar')+'</option><option value="'+i18n.t('nat.vietnam')+'">'+i18n.t('nat.vietnam')+'</option><option value="'+i18n.t('nat.laos')+'">'+i18n.t('nat.laos')+'</option><option value="'+i18n.t('nat.thailand')+'">'+i18n.t('nat.thailand')+'</option><option value="'+i18n.t('nat.cambodia')+'">'+i18n.t('nat.cambodia')+'</option><option value="'+i18n.t('common.other')+'">'+i18n.t('common.other')+'</option></select></div><div class="fg"><label>'+i18n.t('tenant.gender')+'</label><select class="fc" id="fTGen" autocomplete="off" data-lpignore="true"><option value="">'+i18n.t('common.select')+'</option><option>'+i18n.t('tenant.male')+'</option><option>'+i18n.t('tenant.female')+'</option></select></div></div><div class="fr"><div class="fg"><label>'+i18n.t('common.idCard')+'</label><input class="fc" id="fTID" placeholder="'+i18n.t('tenant.idNumber')+'" oninput="autoFillGender()"></div><div class="fg"><label>'+i18n.t('tenant.emergencyContact')+'</label><input class="fc" id="fTE" placeholder="'+i18n.t('tenant.emergencyContact')+'"></div></div><div class="fr"><div class="fg"><label>'+i18n.t('tenant.room')+'<span class="req">*</span></label><select class="fc" id="fTRm" autocomplete="off" data-lpignore="true"><option value="">'+i18n.t('tenant.selectRoom')+'</option>'+roomOptions+'</select></div><div class="fg"><label>'+i18n.t('tenant.rentLabel')+'</label><input class="fc" id="fTRa" type="number" placeholder="'+i18n.t('rent.amount3')+'"></div></div><div class="fr"><div class="fg"><label>'+i18n.t('tenant.moveInDate')+'</label><input class="fc" id="fTMI" type="date" value="'+today()+'"></div><div class="fg"><label>'+i18n.t('tenant.contractEndDate')+'</label><input class="fc" id="fTCE" type="date"></div></div><div class="fr"><div class="fg"><label>'+i18n.t('room.depositLabel')+'</label><input class="fc" id="fTDP" type="number" placeholder="'+i18n.t('room.depositPh')+'"></div><div class="fg"><label>'+i18n.t('room.payMethod')+'<span class="req">*</span></label><select class="fc" id="fTPM" autocomplete="off" data-lpignore="true"><option value="">'+i18n.t('common.select')+'</option><option>'+i18n.t('pay.monthly')+'</option><option>'+i18n.t('pay.quarterly')+'</option><option>'+i18n.t('pay.halfYear')+'</option><option>'+i18n.t('pay.yearly')+'</option></select><div class="hint">'+i18n.t('common.determinesCycle')+'</div></div></div><div class="fg"><label>'+i18n.t('common.notes')+'</label><textarea class="fc" id="fTNo" placeholder="'+i18n.t('common.notesPh')+'"></textarea></div><div class="occ-section"><h4>👥 '+i18n.t('tenant.occupants')+'<span class="occ-tag">'+i18n.t('common.main2')+'</span></h4><div id="occContainer"></div></div><div class="photo-section"><h4>'+i18n.t('tenant.contractPhotos')+'</h4><div class="photo-grid" id="photoGridNew"><div class="photo-upload-btn" id="photoUploadBtnNew" onclick="triggerPhotoUpload(\'new\')"><span>+</span>'+i18n.t('tenant.photoUpload')+'</div></div><p class="contract-photo-hint">'+i18n.t('tenant.clickUploadPhotos')+'，'+i18n.t('common.easyView')+'</p><input type="file" id="photoInputNew" accept="image/*" capture="environment" multiple style="display:none" onchange="handlePhotoUpload(this,\'new\')"></div></div><div class="m-ft"><button class="btn btn-gh" onclick="closeModal()">'+i18n.t('common.cancel')+'</button><button class="btn btn-p" id="saveTenantBtn" onclick="doAddTenant()">'+i18n.t('common.save')+'</button></div>');renderOccForm()}
 
-function doAddTenantGuard(){
-var rmEl=document.getElementById('fTRm');var rmId=rmEl?rmEl.value:'';
-if(rmId){var ex=(cache.tenants||[]).filter(function(t){return t.room_id===rmId&&t.status==='active';});
-if(ex.length>0&&!window._roomShowOccupied){var r=(cache.rooms||[]).find(function(x){return x.id===rmId;});var lbl=r?(r.name||''):'';
-var nm=ex[0].name||'';
-confirmDialog(i18n.t('tenant.roomOccupiedWarn',{name:lbl,tenant:nm}),'',function(){window._roomShowOccupied=true;doAddTenant();});
-return;}}
-doAddTenant();
-}
-async function doAddTenant(){if(window._saving)return;var btn=document.getElementById('saveTenantBtn');if(btn){btn.textContent=i18n.t('common.saving');btn.disabled=true}window._saving=true;try{var name=document.getElementById('fTN').value.trim();if(!name){toast(i18n.t('tenant.enterName'),'e');return}var rmId=document.getElementById('fTRm').value;if(!rmId){toast(i18n.t('tenant.pleaseSelectRoom'),'e');return}var payMethod=document.getElementById('fTPM').value;if(!payMethod){toast(''+i18n.t('rent.selectPayMethod')+'','e');return}var rent=parseFloat(document.getElementById('fTRa').value)||0;if(!(rent>0)){toast(i18n.t('tenant.needRent'),'e');return}var newPhotos=pendingPhotos['new']||[];var moveIn=document.getElementById('fTMI').value||null;var contractEnd=document.getElementById('fTCE').value||null;if(!moveIn){toast(i18n.t('tenant.needMoveIn'),'e');return}if(!contractEnd){toast(i18n.t('tenant.needContractEnd'),'e');return}if(contractEnd<=moveIn){toast(i18n.t('tenant.contractAfterMoveIn'),'e');return}var r=await sb.from('tenants').insert({owner_id:getOwnerId(),name:name,phone:document.getElementById('fTP').value.trim()||null,nationality:_natToZh(document.getElementById('fTNat').value)||'中国',gender:_genderToZh(document.getElementById('fTGen').value)||null,id_number:document.getElementById('fTID').value.trim()||null,emergency_contact:document.getElementById('fTE').value.trim()||null,room_id:rmId,rent_amount:rent,move_in_date:moveIn,contract_end:contractEnd,deposit:parseFloat(document.getElementById('fTDP').value)||0,pay_method:payMethod,notes:document.getElementById('fTNo').value.trim()||null,status:'active',contract_photos:newPhotos,contract_files:pendingFiles['new']||[],occupants:collectOcc()});if(r.error){toast(r.error.message,'e');return}await sb.from('rooms').update({status:'occupied'}).eq('id',rmId);pendingPhotos['new']=[];pendingFiles['new']=[];var billCount=0;if(moveIn&&contractEnd&&rent>0&&payMethod){var tid=r.data&&r.data[0]?r.data[0].id:null;if(tid){var tenant={id:tid,room_id:rmId,rent_amount:rent,move_in_date:moveIn,contract_end:contractEnd,pay_method:payMethod};billCount=await autoGenerateBills(tenant)}}try{var _ctid=(r.data&&r.data[0])?r.data[0].id:(typeof tid!=='undefined'?tid:null);if(_ctid)await _commSaveForTenant(_ctid)}catch(e){}closeModal();toast(billCount>0?''+i18n.t('tenant.registerSuccess')+'，'+i18n.t('wl.autoGenerated')+''+billCount+''+i18n.t('rent.rentBillCount')+'':''+i18n.t('tenant.registerSuccess')+'');await loadAllData();renderPage();try{_commNavSync()}catch(e){}}finally{window._saving=false;var b=document.getElementById('saveTenantBtn');if(b){b.textContent=i18n.t('common.save');b.disabled=false}}}
+async function doAddTenant(){if(window._saving)return;var btn=document.getElementById('saveTenantBtn');if(btn){btn.textContent=i18n.t('common.saving');btn.disabled=true}window._saving=true;try{var name=document.getElementById('fTN').value.trim();if(!name){toast(i18n.t('tenant.enterName'),'e');return}var rmId=document.getElementById('fTRm').value;if(!rmId){toast(i18n.t('tenant.pleaseSelectRoom'),'e');return}var payMethod=document.getElementById('fTPM').value;if(!payMethod){toast(''+i18n.t('rent.selectPayMethod')+'','e');return}var rent=parseFloat(document.getElementById('fTRa').value)||0;var newPhotos=pendingPhotos['new']||[];var moveIn=document.getElementById('fTMI').value||null;var contractEnd=document.getElementById('fTCE').value||null;var r=await sb.from('tenants').insert({owner_id:getOwnerId(),name:name,phone:document.getElementById('fTP').value.trim()||null,nationality:_natToZh(document.getElementById('fTNat').value)||'中国',gender:_genderToZh(document.getElementById('fTGen').value)||null,id_number:document.getElementById('fTID').value.trim()||null,emergency_contact:document.getElementById('fTE').value.trim()||null,room_id:rmId,rent_amount:rent,move_in_date:moveIn,contract_end:contractEnd,deposit:parseFloat(document.getElementById('fTDP').value)||0,pay_method:payMethod,notes:document.getElementById('fTNo').value.trim()||null,status:'active',contract_photos:newPhotos,contract_files:pendingFiles['new']||[],occupants:collectOcc()});if(r.error){toast(r.error.message,'e');return}await sb.from('rooms').update({status:'occupied'}).eq('id',rmId);pendingPhotos['new']=[];var billCount=0;if(moveIn&&contractEnd&&rent>0&&payMethod){var tid=r.data&&r.data[0]?r.data[0].id:null;if(tid){var tenant={id:tid,room_id:rmId,rent_amount:rent,move_in_date:moveIn,contract_end:contractEnd,pay_method:payMethod};billCount=await autoGenerateBills(tenant)}}closeModal();toast(billCount>0?''+i18n.t('tenant.registerSuccess')+'，'+i18n.t('wl.autoGenerated')+''+billCount+''+i18n.t('rent.rentBillCount')+'':''+i18n.t('tenant.registerSuccess')+'');await loadAllData();renderPage()}finally{window._saving=false;var b=document.getElementById('saveTenantBtn');if(b){b.textContent=i18n.t('common.save');b.disabled=false}}}
 
-async function showEditTenant(id){window._roomShowOccupied=false;var t=cache.tenants.find(function(x){return x.id===id});if(!t)return;try{var dm=await decryptTenants([id]);if(dm[id]){t.id_number=dm[id].id_number;t.occupants=dm[id].occupants||t.occupants;window._occList=(t.occupants||[]).slice()}}catch(e){console.warn('decrypt for edit failed:',e)}var allRooms=cache.rooms;var photos=t.contract_photos||[];var photoHtml=renderPhotoGrid(photos,id);pendingFiles[id]=(t.contract_files||[]).slice();var filesHtml=renderFilesHtml(t.contract_files||[],id,canEdit()&&t.status==='active');var fileUploadHtml='<div class="file-section"><h4>'+i18n.t('tenant.contractFiles')+'</h4><div class="file-list" id="fileList'+id+'"></div><div class="file-upload-btn" onclick="triggerFileUpload(\''+id+'\')"><span>+</span>'+i18n.t('tenant.uploadContractFile')+'</div><p class="file-hint">'+i18n.t('common.fileHint')+'</p><input type="file" id="fileInput'+id+'" accept=".pdf,.doc,.docx" multiple style="display:none" onchange="handleFileUpload(this,\''+id+'\')"></div>';var ce2=t.contract_end?new Date(t.contract_end):null;var renewDate='';if(ce2){ce2.setFullYear(ce2.getFullYear()+1);renewDate=ce2.toISOString().slice(0,10)}var natOpts=[i18n.t('nat.china'),i18n.t('nat.myanmar'),i18n.t('nat.vietnam'),i18n.t('nat.laos'),i18n.t('nat.thailand'),i18n.t('nat.cambodia'),i18n.t('common.other')].map(function(n){return'<option'+(_trNat(t.nationality)===n?' selected':'')+'>'+n+'</option>'}).join('');window._occList=(t.occupants||[]).slice();var isEdit=canEdit()&&t.status==='active';openModal('<div class="m-hd"><h3>'+(t.status==='active'?i18n.t('common.edit'):''+i18n.t('common.view')+'')+''+i18n.t('set.tenants')+'</h3><button class="m-x" onclick="closeModal()">×</button></div><div class="m-bd"><div class="fr"><div class="fg"><label>'+i18n.t('tenant.name')+'</label><input class="fc" id="fTN" value="'+esc(t.name)+'"'+(isEdit?'':' readonly')+'></div><div class="fg"><label>'+i18n.t('tenant.phone')+'</label><input class="fc" id="fTP" value="'+esc(t.phone||'')+'"'+(isEdit?'':' readonly')+'></div></div><div class="fr"><div class="fg"><label>'+i18n.t('common.nationality')+'</label><select class="fc" id="fTNat" autocomplete="off" data-lpignore="true"'+(isEdit?'':' disabled')+'>'+natOpts+'</select></div><div class="fg"><label>'+i18n.t('tenant.gender')+'</label><select class="fc" id="fTGen" autocomplete="off" data-lpignore="true"'+(isEdit?'':' disabled')+'><option value="">'+i18n.t('common.select')+'</option><option'+(_trGender(t.gender)===i18n.t('tenant.male')?' selected':'')+'>'+i18n.t('tenant.male')+'</option><option'+(_trGender(t.gender)===i18n.t('tenant.female')?' selected':'')+'>'+i18n.t('tenant.female')+'</option></select></div></div><div class="fr"><div class="fg"><label>'+i18n.t('common.idCard')+'</label><input class="fc" id="fTID" value="'+esc(t.id_number||'')+'" oninput="autoFillGender()"'+(isEdit?'':' readonly')+'></div><div class="fg"><label>'+i18n.t('tenant.emergencyContact')+'</label><input class="fc" id="fTE" value="'+esc(t.emergency_contact||'')+'"'+(isEdit?'':' readonly')+'></div></div><div class="fr"><div class="fg"><label>'+i18n.t('tenant.roomSearch')+'</label><input class="fc" id="fTRmS" placeholder="'+i18n.t('tenant.roomSearchPh')+'" oninput="filterTenantRooms()" oncompositionstart="_composing=true" oncompositionend="_composing=false;filterTenantRooms()"'+(isEdit?'':' disabled')+'></div><div class="fg"><label>'+i18n.t('building.selectBuilding')+'</label><select class="fc" id="fTRmB" onchange="filterTenantRooms()" autocomplete="off" data-lpignore="true"'+(isEdit?'':' disabled')+'><option value="__all__">'+i18n.t('common.all')+'</option>'+(cache.buildings||[]).map(function(b){return'<option value="'+b.id+'">'+esc(b.name)+'</option>'}).join('')+'</select></div></div><div class="fr"><div class="fg"><label>'+i18n.t('tenant.room')+'</label>'+roomOccToggleHtml()+'<select class="fc" id="fTRm" autocomplete="off" data-lpignore="true"'+(isEdit?'':' disabled')+'>'+(function(){var _bm={};(cache.buildings||[]).forEach(function(b){_bm[b.id]=b.name});return allRooms.filter(function(r){return window._roomShowOccupied||roomVacant(r)||String(r.id)===String(t.room_id);}).map(function(r){var sel=(r.id===t.room_id?' selected':'');var bn=(r.building_id&&_bm[r.building_id])?_bm[r.building_id]+' / ':'';return'<option value="'+r.id+'" data-bid="'+(r.building_id||'')+'"'+sel+'>'+bn+esc(r.name)+'</option>'}).join('')})()+'</select></div><div class="fg"><label>'+i18n.t('cg.monthlyRent')+(isEdit?'<span class="req">*</span>':'')+'</label><input class="fc" id="fTRa" type="number" value="'+(t.rent_amount||'')+'"'+(isEdit?'':' readonly')+'></div></div><div class="fr"><div class="fg"><label>'+i18n.t('tenant.moveInDate')+(isEdit?'<span class="req">*</span>':'')+'</label><input class="fc" id="fTMI" type="date" value="'+(t.move_in_date||'')+'"'+(isEdit?'':' readonly')+'></div><div class="fg" style="position:relative"><label>'+i18n.t('tenant.contractEndDate')+(isEdit?'<span class="req">*</span>':'')+'</label><input class="fc" id="fTCE" type="date" value="'+(t.contract_end||'')+'"'+(isEdit?'':' readonly')+'>'+(isEdit&&renewDate?'<button class="btn btn-sm btn-gh" style="position:absolute;right:8px;top:28px;font-size:10px;padding:2px 6px" onclick="showRenew(\''+t.id+'\')">'+i18n.t('tenant.renew')+'</button>':'')+'</div></div><div class="fr"><div class="fg"><label>'+i18n.t('tenant.deposit')+'</label><input class="fc" id="fTDP" type="number" value="'+(t.deposit||'')+'"'+(isEdit?'':' readonly')+'></div><div class="fg"><label>'+i18n.t('room.payMethod')+'</label><select class="fc" id="fTPM" autocomplete="off" data-lpignore="true"'+(isEdit?'':' disabled')+'>'+[i18n.t('pay.monthly'),i18n.t('pay.quarterly'),i18n.t('pay.halfYear'),i18n.t('pay.yearly')].map(function(m){return'<option'+(_trPay(t.pay_method)===m?' selected':'')+'>'+m+'</option>'}).join('')+'</select></div></div><div class="fg"><label>'+i18n.t('common.notes')+'</label><textarea class="fc" id="fTNo"'+(isEdit?'':' readonly')+'>'+esc(t.notes||'')+'</textarea></div>'+_commSectionHtml((cache.tcomm||[]).find(function(c){return c.tenant_id===id}))+'<div class="occ-section"><h4>👥 '+i18n.t('tenant.occupants')+'<span class="occ-tag">'+i18n.t('common.main2')+'</span></h4><div id="occContainer"></div></div>'+photoHtml+fileUploadHtml+filesHtml+'</div><div class="m-ft"><button class="btn btn-gh" onclick="closeModal()">'+i18n.t('common.close')+'</button>'+(isEdit?'<button class="btn btn-p" id="saveTenantBtn" onclick="doEditTenant(\''+t.id+'\')">'+i18n.t('common.save')+'</button>':'')+'<button class="btn btn-o" onclick="contractGen_start(\''+t.id+'\')">'+i18n.t('cg.title')+'</button></div>');renderOccForm();_commInitForm(id);var _idEl=document.getElementById('fTID');if(_idEl&&isEncId(_idEl.value)){_idEl.value='';(t.occupants||[]).forEach(function(_o,i){var _oe=document.getElementById('occID'+i);if(_oe&&isEncId(_oe.value))_oe.value=''})}}
+async function showEditTenant(id){var t=cache.tenants.find(function(x){return x.id===id});if(!t)return;try{var dm=await decryptTenants([id]);if(dm[id]){t.id_number=dm[id].id_number;t.occupants=dm[id].occupants||t.occupants;window._occList=(t.occupants||[]).slice()}}catch(e){console.warn('decrypt for edit failed:',e)}var allRooms=cache.rooms;var photos=t.contract_photos||[];var photoHtml=renderPhotoGrid(photos,id);pendingFiles[id]=(t.contract_files||[]).slice();var filesHtml=renderFilesHtml(t.contract_files||[],id);var fileUploadHtml='<div class="file-section"><h4>'+i18n.t('tenant.contractFiles')+'</h4><div class="file-list" id="fileList'+id+'"></div><div class="file-upload-btn" onclick="triggerFileUpload(\''+id+'\')"><span>+</span>'+i18n.t('tenant.uploadContractFile')+'</div><p class="file-hint">'+i18n.t('common.fileHint')+'</p><input type="file" id="fileInput'+id+'" accept=".pdf,.doc,.docx" multiple style="display:none" onchange="handleFileUpload(this,\''+id+'\')"></div>';var ce2=t.contract_end?new Date(t.contract_end):null;var renewDate='';if(ce2){ce2.setFullYear(ce2.getFullYear()+1);renewDate=ce2.toISOString().slice(0,10)}var natOpts=[i18n.t('nat.china'),i18n.t('nat.myanmar'),i18n.t('nat.vietnam'),i18n.t('nat.laos'),i18n.t('nat.thailand'),i18n.t('nat.cambodia'),i18n.t('common.other')].map(function(n){return'<option'+(_trNat(t.nationality)===n?' selected':'')+'>'+n+'</option>'}).join('');window._occList=(t.occupants||[]).slice();var isEdit=canEdit()&&t.status==='active';openModal('<div class="m-hd"><h3>'+(t.status==='active'?i18n.t('common.edit'):''+i18n.t('common.view')+'')+''+i18n.t('set.tenants')+'</h3><button class="m-x" onclick="closeModal()">×</button></div><div class="m-bd"><div class="fr"><div class="fg"><label>'+i18n.t('tenant.name')+'</label><input class="fc" id="fTN" value="'+esc(t.name)+'"'+(isEdit?'':' readonly')+'></div><div class="fg"><label>'+i18n.t('tenant.phone')+'</label><input class="fc" id="fTP" value="'+esc(t.phone||'')+'"'+(isEdit?'':' readonly')+'></div></div><div class="fr"><div class="fg"><label>'+i18n.t('common.nationality')+'</label><select class="fc" id="fTNat" autocomplete="off" data-lpignore="true"'+(isEdit?'':' disabled')+'>'+natOpts+'</select></div><div class="fg"><label>'+i18n.t('tenant.gender')+'</label><select class="fc" id="fTGen" autocomplete="off" data-lpignore="true"'+(isEdit?'':' disabled')+'><option value="">'+i18n.t('common.select')+'</option><option'+(_trGender(t.gender)===i18n.t('tenant.male')?' selected':'')+'>'+i18n.t('tenant.male')+'</option><option'+(_trGender(t.gender)===i18n.t('tenant.female')?' selected':'')+'>'+i18n.t('tenant.female')+'</option></select></div></div><div class="fr"><div class="fg"><label>'+i18n.t('common.idCard')+'</label><input class="fc" id="fTID" value="'+esc(t.id_number||'')+'" oninput="autoFillGender()"'+(isEdit?'':' readonly')+'></div><div class="fg"><label>'+i18n.t('tenant.emergencyContact')+'</label><input class="fc" id="fTE" value="'+esc(t.emergency_contact||'')+'"'+(isEdit?'':' readonly')+'></div></div><div class="fr"><div class="fg"><label>'+i18n.t('tenant.room')+'</label><select class="fc" id="fTRm" autocomplete="off" data-lpignore="true"'+(isEdit?'':' disabled')+'>'+allRooms.map(function(r){var sel=(r.id===t.room_id?' selected':'');return'<option value="'+r.id+'"'+sel+'>'+esc(r.name)+'</option>'}).join('')+'</select></div><div class="fg"><label>'+i18n.t('cg.monthlyRent')+'</label><input class="fc" id="fTRa" type="number" value="'+(t.rent_amount||'')+'"'+(isEdit?'':' readonly')+'></div></div><div class="fr"><div class="fg"><label>'+i18n.t('tenant.moveInDate')+'</label><input class="fc" id="fTMI" type="date" value="'+(t.move_in_date||'')+'"'+(isEdit?'':' readonly')+'></div><div class="fg" style="position:relative"><label>'+i18n.t('tenant.contractEndDate')+'</label><input class="fc" id="fTCE" type="date" value="'+(t.contract_end||'')+'"'+(isEdit?'':' readonly')+'>'+(isEdit&&renewDate?'<button class="btn btn-sm btn-gh" style="position:absolute;right:8px;top:28px;font-size:10px;padding:2px 6px" onclick="showRenew(\''+t.id+'\')">'+i18n.t('tenant.renew')+'</button>':'')+'</div></div><div class="fr"><div class="fg"><label>'+i18n.t('tenant.deposit')+'</label><input class="fc" id="fTDP" type="number" value="'+(t.deposit||'')+'"'+(isEdit?'':' readonly')+'></div><div class="fg"><label>'+i18n.t('room.payMethod')+'</label><select class="fc" id="fTPM" autocomplete="off" data-lpignore="true"'+(isEdit?'':' disabled')+'>'+[i18n.t('pay.monthly'),i18n.t('pay.quarterly'),i18n.t('pay.halfYear'),i18n.t('pay.yearly')].map(function(m){return'<option'+(_trPay(t.pay_method)===m?' selected':'')+'>'+m+'</option>'}).join('')+'</select></div></div><div class="fg"><label>'+i18n.t('common.notes')+'</label><textarea class="fc" id="fTNo"'+(isEdit?'':' readonly')+'>'+esc(t.notes||'')+'</textarea></div><div class="occ-section"><h4>👥 '+i18n.t('tenant.occupants')+'<span class="occ-tag">'+i18n.t('common.main2')+'</span></h4><div id="occContainer"></div></div>'+photoHtml+fileUploadHtml+filesHtml+'</div><div class="m-ft"><button class="btn btn-gh" onclick="closeModal()">'+i18n.t('common.close')+'</button>'+(isEdit?'<button class="btn btn-p" id="saveTenantBtn" onclick="doEditTenant(\''+t.id+'\')">'+i18n.t('common.save')+'</button>':'')+'<button class="btn btn-o" onclick="contractGen_start(\''+t.id+'\')">'+i18n.t('cg.title')+'</button></div>');renderOccForm();var _idEl=document.getElementById('fTID');if(_idEl&&isEncId(_idEl.value)){_idEl.value='';(t.occupants||[]).forEach(function(_o,i){var _oe=document.getElementById('occID'+i);if(_oe&&isEncId(_oe.value))_oe.value=''})}}
 
-async function doEditTenant(id){if(window._saving)return;var btn=document.getElementById('saveTenantBtn');if(btn){btn.textContent=i18n.t('common.saving');btn.disabled=true}window._saving=true;try{var old=cache.tenants.find(function(x){return x.id===id});var nrm=document.getElementById('fTRm').value;var _rentV=parseFloat(document.getElementById('fTRa').value)||0;if(!(_rentV>0)){toast(i18n.t('tenant.needRent'),'e');return}var _miV=document.getElementById('fTMI').value||null;if(!_miV){toast(i18n.t('tenant.needMoveIn'),'e');return}var _ceV=document.getElementById('fTCE').value||null;if(!_ceV){toast(i18n.t('tenant.needContractEnd'),'e');return}if(_ceV<=_miV){toast(i18n.t('tenant.contractAfterMoveIn'),'e');return}var r=await sb.from('tenants').update({name:document.getElementById('fTN').value.trim(),phone:document.getElementById('fTP').value.trim()||null,nationality:_natToZh(document.getElementById('fTNat').value)||'中国',gender:_genderToZh(document.getElementById('fTGen').value)||null,id_number:document.getElementById('fTID').value.trim()||null,emergency_contact:document.getElementById('fTE').value.trim()||null,room_id:nrm,rent_amount:parseFloat(document.getElementById('fTRa').value)||0,move_in_date:document.getElementById('fTMI').value||null,contract_end:document.getElementById('fTCE').value||null,deposit:parseFloat(document.getElementById('fTDP').value)||0,pay_method:document.getElementById('fTPM').value||null,notes:document.getElementById('fTNo').value.trim()||null,contract_files:pendingFiles[id]||old.contract_files||[],occupants:collectOcc()}).eq('id',id);if(r.error){toast(r.error.message,'e');return}if(old&&old.room_id!==nrm){await sb.from('rooms').update({status:'occupied'}).eq('id',nrm);var others=cache.tenants.filter(function(x){return x.room_id===old.room_id&&x.status==='active'&&x.id!==id});if(!others.length)await sb.from('rooms').update({status:'vacant'}).eq('id',old.room_id)}try{await _commSaveForTenant(id)}catch(e){}closeModal();toast(i18n.t('common.updateSuccess'));await loadAllData();renderPage()}catch(e){toast(''+i18n.t('common.opFail')+'：'+(e&&e.message||''),'e');closeModal()}finally{window._saving=false;var b=document.getElementById('saveTenantBtn');if(b){b.textContent=i18n.t('common.save');b.disabled=false}}}
+async function doEditTenant(id){if(window._saving)return;var btn=document.getElementById('saveTenantBtn');if(btn){btn.textContent=i18n.t('common.saving');btn.disabled=true}window._saving=true;try{var old=cache.tenants.find(function(x){return x.id===id});var nrm=document.getElementById('fTRm').value;var r=await sb.from('tenants').update({name:document.getElementById('fTN').value.trim(),phone:document.getElementById('fTP').value.trim()||null,nationality:_natToZh(document.getElementById('fTNat').value)||'中国',gender:_genderToZh(document.getElementById('fTGen').value)||null,id_number:document.getElementById('fTID').value.trim()||null,emergency_contact:document.getElementById('fTE').value.trim()||null,room_id:nrm,rent_amount:parseFloat(document.getElementById('fTRa').value)||0,move_in_date:document.getElementById('fTMI').value||null,contract_end:document.getElementById('fTCE').value||null,deposit:parseFloat(document.getElementById('fTDP').value)||0,pay_method:document.getElementById('fTPM').value||null,notes:document.getElementById('fTNo').value.trim()||null,contract_files:pendingFiles[id]||old.contract_files||[],occupants:collectOcc()}).eq('id',id);if(r.error){toast(r.error.message,'e');return}if(old&&old.room_id!==nrm){await sb.from('rooms').update({status:'occupied'}).eq('id',nrm);var others=cache.tenants.filter(function(x){return x.room_id===old.room_id&&x.status==='active'&&x.id!==id});if(!others.length)await sb.from('rooms').update({status:'vacant'}).eq('id',old.room_id)}closeModal();toast(i18n.t('common.updateSuccess'));await loadAllData();renderPage()}catch(e){toast(''+i18n.t('common.opFail')+'：'+(e&&e.message||''),'e');closeModal()}finally{window._saving=false;var b=document.getElementById('saveTenantBtn');if(b){b.textContent=i18n.t('common.save');b.disabled=false}}}
 
 async function doRenewFromEdit(id,newDate){if(window._saving)return;window._saving=true;try{var nr=parseFloat(document.getElementById('fTRa').value)||0;var upd={contract_end:newDate};if(nr&&nr>0)upd.rent_amount=nr;var r=await sb.from('tenants').update(upd).eq('id',id);if(r.error){toast(r.error.message,'e');return}toast(i18n.t('tenant.renewSuccess'));await loadAllData();showEditTenant(id)}finally{window._saving=false}}
 
-function showTenantDetail(id){var t=cache.tenants.find(function(x){return x.id===id});if(!t)return;var rm=cache.rooms.find(function(r){return r.id===t.room_id}),d=t.contract_end?daysDiff(today(),t.contract_end):null;var nextPay=getNextPayDate(t);var nextPayDays=nextPay?daysDiff(today(),nextPay):null;var rents=cache.rents.filter(function(r){return r.tenant_id===id}).sort(function(a,b){return(b.due_date||'').localeCompare(a.due_date||'')});var rt=rents.length?'<div style="margin-top:8px;overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="width:100%;min-width:0"><thead><tr><th>'+i18n.t('rent.dueDateLabel')+'</th><th>'+i18n.t('rent.amount')+'</th><th>'+i18n.t('common.status')+'</th><th>'+i18n.t('dash.payDate')+'</th><th>'+i18n.t('rent.payMethod')+'</th></tr></thead><tbody>'+rents.slice(0,10).map(function(r){return'<tr><td style="padding:5px;font-size:12px">'+fmtDate(r.due_date)+'</td><td style="padding:5px;font-size:12px">¥'+r.amount.toLocaleString()+'</td><td style="padding:5px;font-size:12px"><span class="tag '+(r.status==='paid'?'t-green':r.status==='overdue'?'t-red':'t-yellow')+'">'+(r.status==='paid'?i18n.t('rent.paid'):r.status==='overdue'?i18n.t('dash.overdue'):i18n.t('rent.pending'))+'</span></td><td style="padding:5px;font-size:12px">'+(r.pay_date?fmtDate(r.pay_date):'-')+'</td><td style="padding:5px;font-size:12px">'+_trRentPay(r.pay_method)+'</td></tr>'}).join('')+'</tbody></table></div>':'<p style="font-size:12px;color:var(--ts);margin-top:8px">'+i18n.t('rent.empty')+'</p>';var photos=t.contract_photos||[];var photoHtml=photos.length?'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">'+photos.map(function(p,i){return'<div class="photo-thumb-wrap"><img class="photo-thumb" src="" data-path="'+esc(p)+'" onclick="openPhotoViewer(\''+esc(p)+'\',\''+id+'\')" alt="'+i18n.t('misc.contractPhoto')+'"></div>'}).join('')+'</div>':'<p style="font-size:12px;color:var(--ts);margin-top:8px">'+i18n.t('tenant.noContractPhotos')+'</p>';var filesHtml=renderFilesHtml(t.contract_files||[],t.id);var payBtn=t.status==='active'&&canEdit()?'<button class="btn btn-g" style="margin-right:8px" onclick="doQuickPay(\''+t.id+'\')">💰 '+i18n.t('rent.payment')+'</button>':'';var renewBtn=t.status==='active'&&t.contract_end&&canEdit()?'<button class="btn btn-g" style="margin-right:8px" onclick="showRenew(\''+t.id+'\')">📝 '+i18n.t('tenant.renew')+'</button>':'';openModal('<div class="m-hd"><h3>'+esc(t.name)+'</h3><button class="m-x" onclick="closeModal()">×</button></div><div class="m-bd"><div class="dr"><div class="dl">'+i18n.t('common.phone')+'</div><div class="dv">'+esc(t.phone||'-')+'</div></div><div class="dr"><div class="dl">'+i18n.t('common.nationality')+'</div><div class="dv">'+_trNat(t.nationality)+'</div></div><div class="dr"><div class="dl">'+i18n.t('tenant.gender')+'</div><div class="dv">'+_trGender(t.gender||getGenderFromId(t.id_number))+'</div></div><div class="dr"><div class="dl">'+i18n.t('common.age')+'</div><div class="dv">'+(getTenantAge(t)?getTenantAge(t)+''+i18n.t('common.yearsOld')+'':'-')+'</div></div><div class="dr"><div class="dl">'+i18n.t('common.idCard')+'</div><div class="dv">'+maskIdNumber(t.id_number,t.id_last4)+'</div></div><div class="dr"><div class="dl">'+i18n.t('tenant.room')+'</div><div class="dv">'+esc(rm?rm.name:'-')+'</div></div><div class="dr"><div class="dl">'+i18n.t('cg.monthlyRent')+'</div><div class="dv">¥'+(t.rent_amount||0).toLocaleString()+'</div></div><div class="dr"><div class="dl">'+i18n.t('tenant.deposit')+'</div><div class="dv">¥'+(t.deposit||0).toLocaleString()+'</div></div><div class="dr"><div class="dl">'+i18n.t('room.payMethod')+'</div><div class="dv">'+_trPay(t.pay_method)+'</div></div><div class="dr"><div class="dl">'+i18n.t('room.occupied')+'</div><div class="dv">'+fmtDate(t.move_in_date)+'</div></div><div class="dr"><div class="dl">'+i18n.t('rent.nextPayment')+'</div><div class="dv" style="color:'+(nextPayDays!==null?(nextPayDays<0?'var(--d)':nextPayDays<=7?'var(--w)':'inherit'):'inherit')+';font-weight:600">'+(nextPay?fmtDate(nextPay)+' ('+(nextPayDays<0?i18n.t('dash.overdue')+Math.abs(nextPayDays)+i18n.t('common.day'):nextPayDays===0?i18n.t('common.today'):i18n.t('common.nDaysLater',{n:nextPayDays}))+')':'-')+'</div></div>'+(d!==null?'<div class="dr"><div class="dl" style="font-size:11px;color:var(--ts)">'+i18n.t('tenant.contractRemaining')+'</div><div class="dv" style="font-size:11px;color:var(--ts)">'+(d<0?i18n.t('common.expired')+Math.abs(d)+i18n.t('common.day'):d+i18n.t('common.day'))+'</div></div>':'')+'<div class="dr"><div class="dl">'+i18n.t('tenant.emergencyContact')+'</div><div class="dv">'+esc(t.emergency_contact||'-')+'</div></div>'+(function(){var occ=t.occupants||[];if(!occ.length)return'';return'<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"><h4 style="font-size:13px;font-weight:700;margin-bottom:8px">👥 '+i18n.t('tenant.occupants')+' ('+occ.length+''+i18n.t('common.unitPerson')+')</h4>'+occ.map(function(o,i){var age=getOccAge(o);return'<div class="dr"><div class="dl" style="width:70px">'+(i+1)+'</div><div class="dv"><span style="font-weight:600">'+esc(o.name||'-')+'</span>'+(o.nationality&&_natToZh(o.nationality)!=='中国'?' <span class="tag t-blue" style="font-size:10px">'+esc(_trNat(o.nationality))+'</span>':'')+(o.gender||getGenderFromId(o.id_number)?' <span class="tag t-gray" style="font-size:10px">'+esc(_trGender(o.gender||getGenderFromId(o.id_number)))+'</span>':'')+(age?' <span class="tag t-gray" style="font-size:10px">'+age+''+i18n.t('common.yearsOld')+'</span>':'')+(o.phone?' <span style="color:var(--ts);font-size:12px">'+esc(o.phone)+'</span>':'')+(o.id_number?' <span style="color:var(--ts);font-size:12px">'+maskIdNumber(o.id_number,o.id_last4)+'</span>':'')+'</div></div>'}).join('')+'</div>'})()+'<h4 style="margin-top:14px;font-size:13px;font-weight:700">'+i18n.t('common.contractPhotos')+'</h4>'+photoHtml+'<h4 style="margin-top:14px;font-size:13px;font-weight:700">'+i18n.t('common.contractFiles')+'</h4>'+filesHtml+'<div id="adjSection_'+id+'">'+_renderTenantAdjustments(id)+'</div><h4 style="margin-top:14px;font-size:13px;font-weight:700">'+i18n.t('rent.paymentRecords')+'</h4>'+rt+'<div id="meterSection_'+id+'">'+renderMeterList(id)+'</div></div><div class="m-ft">'+payBtn+renewBtn+'<button class="btn btn-gh" onclick="closeModal()">'+i18n.t('common.close')+'</button></div>');loadPhotoThumbnails(photos,id)}
+function showTenantDetail(id){var t=cache.tenants.find(function(x){return x.id===id});if(!t)return;var rm=cache.rooms.find(function(r){return r.id===t.room_id}),d=t.contract_end?daysDiff(today(),t.contract_end):null;var nextPay=getNextPayDate(t);var nextPayDays=nextPay?daysDiff(today(),nextPay):null;var rents=cache.rents.filter(function(r){return r.tenant_id===id}).sort(function(a,b){return(b.due_date||'').localeCompare(a.due_date||'')});var rt=rents.length?'<div style="margin-top:8px;overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="width:100%;min-width:0"><thead><tr><th>'+i18n.t('rent.dueDateLabel')+'</th><th>'+i18n.t('rent.amount')+'</th><th>'+i18n.t('common.status')+'</th><th>'+i18n.t('dash.payDate')+'</th><th>'+i18n.t('rent.payMethod')+'</th></tr></thead><tbody>'+rents.slice(0,10).map(function(r){return'<tr><td style="padding:5px;font-size:12px">'+fmtDate(r.due_date)+'</td><td style="padding:5px;font-size:12px">¥'+r.amount.toLocaleString()+'</td><td style="padding:5px;font-size:12px"><span class="tag '+(r.status==='paid'?'t-green':r.status==='overdue'?'t-red':'t-yellow')+'">'+(r.status==='paid'?i18n.t('rent.paid'):r.status==='overdue'?i18n.t('dash.overdue'):i18n.t('rent.pending'))+'</span></td><td style="padding:5px;font-size:12px">'+(r.pay_date?fmtDate(r.pay_date):'-')+'</td><td style="padding:5px;font-size:12px">'+_trRentPay(r.pay_method)+'</td></tr>'}).join('')+'</tbody></table></div>':'<p style="font-size:12px;color:var(--ts);margin-top:8px">'+i18n.t('rent.empty')+'</p>';var photos=t.contract_photos||[];var photoHtml=photos.length?'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">'+photos.map(function(p,i){return'<div class="photo-thumb-wrap"><img class="photo-thumb" src="" data-path="'+esc(p)+'" onclick="openPhotoViewer(\''+esc(p)+'\',\''+id+'\')" alt="'+i18n.t('misc.contractPhoto')+'"></div>'}).join('')+'</div>':'<p style="font-size:12px;color:var(--ts);margin-top:8px">'+i18n.t('tenant.noContractPhotos')+'</p>';var filesHtml=renderFilesHtml(t.contract_files||[],t.id);var payBtn=t.status==='active'&&canEdit()?'<button class="btn btn-g" style="margin-right:8px" onclick="doQuickPay(\''+t.id+'\')">💰 '+i18n.t('rent.payment')+'</button>':'';var renewBtn=t.status==='active'&&t.contract_end&&canEdit()?'<button class="btn btn-g" style="margin-right:8px" onclick="showRenew(\''+t.id+'\')">📝 '+i18n.t('tenant.renew')+'</button>':'';openModal('<div class="m-hd"><h3>'+esc(t.name)+'</h3><button class="m-x" onclick="closeModal()">×</button></div><div class="m-bd"><div class="dr"><div class="dl">'+i18n.t('common.phone')+'</div><div class="dv">'+esc(t.phone||'-')+'</div></div><div class="dr"><div class="dl">'+i18n.t('common.nationality')+'</div><div class="dv">'+_trNat(t.nationality)+'</div></div><div class="dr"><div class="dl">'+i18n.t('tenant.gender')+'</div><div class="dv">'+_trGender(t.gender||getGenderFromId(t.id_number))+'</div></div><div class="dr"><div class="dl">'+i18n.t('common.age')+'</div><div class="dv">'+(getTenantAge(t)?getTenantAge(t)+''+i18n.t('common.yearsOld')+'':'-')+'</div></div><div class="dr"><div class="dl">'+i18n.t('common.idCard')+'</div><div class="dv">'+maskIdNumber(t.id_number,t.id_last4)+'</div></div><div class="dr"><div class="dl">'+i18n.t('tenant.room')+'</div><div class="dv">'+esc(rm?rm.name:'-')+'</div></div><div class="dr"><div class="dl">'+i18n.t('cg.monthlyRent')+'</div><div class="dv">¥'+(t.rent_amount||0).toLocaleString()+'</div></div><div class="dr"><div class="dl">'+i18n.t('tenant.deposit')+'</div><div class="dv">¥'+(t.deposit||0).toLocaleString()+'</div></div><div class="dr"><div class="dl">'+i18n.t('room.payMethod')+'</div><div class="dv">'+_trPay(t.pay_method)+'</div></div><div class="dr"><div class="dl">'+i18n.t('room.occupied')+'</div><div class="dv">'+fmtDate(t.move_in_date)+'</div></div><div class="dr"><div class="dl">'+i18n.t('rent.nextPayment')+'</div><div class="dv" style="color:'+(nextPayDays!==null?(nextPayDays<0?'var(--d)':nextPayDays<=7?'var(--w)':'inherit'):'inherit')+';font-weight:600">'+(nextPay?fmtDate(nextPay)+' ('+(nextPayDays<0?i18n.t('dash.overdue')+Math.abs(nextPayDays)+i18n.t('common.day'):nextPayDays===0?i18n.t('common.today'):i18n.t('common.nDaysLater',{n:nextPayDays}))+')':'-')+'</div></div>'+(d!==null?'<div class="dr"><div class="dl" style="font-size:11px;color:var(--ts)">'+i18n.t('tenant.contractRemaining')+'</div><div class="dv" style="font-size:11px;color:var(--ts)">'+(d<0?i18n.t('common.expired')+Math.abs(d)+i18n.t('common.day'):d+i18n.t('common.day'))+'</div></div>':'')+'<div class="dr"><div class="dl">'+i18n.t('tenant.emergencyContact')+'</div><div class="dv">'+esc(t.emergency_contact||'-')+'</div></div>'+(function(){var occ=t.occupants||[];if(!occ.length)return'';return'<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"><h4 style="font-size:13px;font-weight:700;margin-bottom:8px">👥 '+i18n.t('tenant.occupants')+' ('+occ.length+''+i18n.t('common.unitPerson')+')</h4>'+occ.map(function(o,i){var age=getOccAge(o);return'<div class="dr"><div class="dl" style="width:70px">'+(i+1)+'</div><div class="dv"><span style="font-weight:600">'+esc(o.name||'-')+'</span>'+(o.nationality&&_natToZh(o.nationality)!=='中国'?' <span class="tag t-blue" style="font-size:10px">'+esc(_trNat(o.nationality))+'</span>':'')+(o.gender||getGenderFromId(o.id_number)?' <span class="tag t-gray" style="font-size:10px">'+esc(_trGender(o.gender||getGenderFromId(o.id_number)))+'</span>':'')+(age?' <span class="tag t-gray" style="font-size:10px">'+age+''+i18n.t('common.yearsOld')+'</span>':'')+(o.phone?' <span style="color:var(--ts);font-size:12px">'+esc(o.phone)+'</span>':'')+(o.id_number?' <span style="color:var(--ts);font-size:12px">'+maskIdNumber(o.id_number,o.id_last4)+'</span>':'')+'</div></div>'}).join('')+'</div>'})()+'<h4 style="margin-top:14px;font-size:13px;font-weight:700">'+i18n.t('common.contractPhotos')+'</h4>'+photoHtml+'<div id="adjSection_'+id+'">'+_renderTenantAdjustments(id)+'</div><h4 style="margin-top:14px;font-size:13px;font-weight:700">'+i18n.t('rent.paymentRecords')+'</h4>'+rt+'<div id="meterSection_'+id+'">'+renderMeterList(id)+'</div></div><div class="m-ft">'+payBtn+renewBtn+'<button class="btn btn-gh" onclick="closeModal()">'+i18n.t('common.close')+'</button></div>');loadPhotoThumbnails(photos,id)}
 
 function doDeactivate(id){if(!canEdit()){toast(i18n.t('common.readOnly'),'w');return}confirmDialog(''+i18n.t('tenant.confirmMoveOut')+'？',''+i18n.t('tenant.roomReleased')+'',async function(){var t=cache.tenants.find(function(x){return x.id===id});var r=await sb.from('tenants').update({status:'inactive',move_out_date:today()}).eq('id',id);if(r.error){toast(r.error.message,'e');return}if(t&&t.room_id){var others=cache.tenants.filter(function(x){return x.room_id===t.room_id&&x.status==='active'&&x.id!==id});if(!others.length)await sb.from('rooms').update({status:'vacant'}).eq('id',t.room_id)}toast(''+i18n.t('tenant.moveOutSuccess')+'');await loadAllData();renderPage()})}
 
@@ -845,7 +708,7 @@ function showRenew(id){var t=cache.tenants.find(function(x){return x.id===id});i
 async function doRenew(id){if(window._saving)return;var btn=document.getElementById('saveRenewBtn');if(btn){btn.textContent=i18n.t('common.saving');btn.disabled=true}window._saving=true;try{var ne=document.getElementById('fNE').value,nr=parseFloat(document.getElementById('fNR').value);if(!ne){toast(i18n.t('tenant.selectNewExpiry'),'e');return}var upd={contract_end:ne};if(nr&&nr>0)upd.rent_amount=nr;var r=await sb.from('tenants').update(upd).eq('id',id);if(r.error){toast(r.error.message,'e');return}closeModal();toast(i18n.t('tenant.renewSuccess'));await loadAllData();renderPage()}catch(e){toast(''+i18n.t('common.opFail')+'：'+(e&&e.message||''),'e');closeModal()}finally{window._saving=false;var b=document.getElementById('saveRenewBtn');if(b){b.textContent=i18n.t('tenant.confirmRenew');b.disabled=false}}}
 
 // ========== 设置页 ==========
-function rSettings(){var s=cache.settings;var __natHtml=(function(){var natMap={},genMap={};genMap[i18n.t('tenant.male')]=0;genMap[i18n.t('tenant.female')]=0;cache.tenants.filter(function(t){return t.status==='active'}).forEach(function(t){var n=_trNat(t.nationality);if(n==='-'||!t.nationality)n=i18n.t('common.notFilled');natMap[n]=(natMap[n]||0)+1;var g=t.gender||getGenderFromId(t.id_number);var cg=_trGender(g);if(cg===i18n.t('tenant.male')||cg===i18n.t('tenant.female'))genMap[cg]++;else genMap[i18n.t('common.notFilled')]=(genMap[i18n.t('common.notFilled')]||0)+1;if(t.occupants){t.occupants.forEach(function(o){var on=_trNat(o.nationality);if(on==='-'||!o.nationality)on=i18n.t('common.notFilled');natMap[on]=(natMap[on]||0)+1;var og=o.gender||getGenderFromId(o.id_number);var cog=_trGender(og);if(cog===i18n.t('tenant.male')||cog===i18n.t('tenant.female'))genMap[cog]++;else genMap[i18n.t('common.notFilled')]=(genMap[i18n.t('common.notFilled')]||0)+1})}});var natArr=Object.keys(natMap).map(function(k){return k+': '+natMap[k]+i18n.t('common.unitPerson')});var genArr=[];Object.keys(genMap).forEach(function(k){genArr.push(k+': '+genMap[k]+i18n.t('common.unitPerson'))});return'<div class="dr"><div class="dl">'+i18n.t('set.natDist')+'</div><div class="dv" style="line-height:1.8">'+natArr.join('｜')+'</div></div><div class="dr"><div class="dl">'+i18n.t('set.genDist')+'</div><div class="dv" style="line-height:1.8">'+genArr.join('｜')+'</div></div>'})();var __occHtml=(function(){var ts=cache.tenants.filter(function(t){return t.status==='active'});var n=ts.length+ts.reduce(function(s,t){return s+(t.occupants?t.occupants.length:0)},0);return n+' '+i18n.t('common.unitPerson')})();var __backupHtml=getLastBackupTime()?'<p style="font-size:11px;color:var(--g);margin-top:2px">✅ '+i18n.t('common.lastBackup')+'：'+getLastBackupTime()+'</p>':'<p style="font-size:11px;color:var(--w);margin-top:2px">'+i18n.t('set.noBackup')+'</p>';document.getElementById('mainContent').innerHTML='<div class="page-hd"><h2>'+i18n.t('set.title')+'</h2></div><div class="card"><div class="card-hd"><h3>'+i18n.t('set.versionInfo')+'</h3></div><div style="padding:14px"><div class="dr"><div class="dl">'+i18n.t('common.currentPlan')+'</div><div class="dv" style="display:flex;align-items:center"><span id="subTierName" style="font-weight:700">--</span><button class="btn btn-sm btn-p" id="subUpgradeBtn" onclick="showUpgradeModal()" style="margin-left:8px;display:none!important">'+i18n.t('set.upgrade')+'</button></div></div><div class="dr"><div class="dl">'+i18n.t('set.roomQuota')+'</div><div class="dv" id="subRoomInfo">-- '+i18n.t('common.unitRoom')+'</div></div><div id="subTrialInfo" style="display:none"><div class="dr"><div class="dl">'+i18n.t('set.trialRemain')+'</div><div class="dv" style="color:var(--w);font-weight:700" id="subTrialDays">--</div></div></div><div id="subExpInfo" style="display:none"><div class="dr"><div class="dl">'+i18n.t('common.expiryTime')+'</div><div class="dv" id="subExpDate">--</div></div></div></div></div><div class="card" id="adminCard" style="display:none"><div class="card-hd"><h3>'+i18n.t('set.admin')+'</h3></div><div style="padding:14px"><button class="btn btn-sm btn-p" onclick="showWhitelistModal()">'+i18n.t('common.whitelistMgmt')+'</button><button class="btn btn-sm btn-p" onclick="showUserMgmtModal()" style="margin-left:8px">'+i18n.t('um.title')+'</button></div></div><div class="card"><div class="card-hd"><h3>'+i18n.t('set.reminders')+'</h3></div><div style="padding:14px"><div class="s-item"><div><h4>'+i18n.t('set.enableReminders')+'</h4><p>'+i18n.t('set.enableRemindersDesc')+'</p></div><button class="tgl'+(s.enable_reminders?' on':'')+'" id="tglReminder" onclick="tglReminder()"></button></div><div class="s-item"><div><h4>'+i18n.t('set.contractDays')+'</h4><p>'+i18n.t('set.contractDaysDesc')+'</p></div><div style="display:flex;align-items:center;gap:6px"><input type="number" class="fc" style="width:66px;text-align:center" id="iContractDays" value="'+(s.contract_remind_days||30)+'" onchange="updSet(\'contract_remind_days\',parseInt(this.value))"><span style="font-size:11px;color:var(--ts)">'+i18n.t('common.day')+'</span></div></div><div class="s-item"><div><h4>'+i18n.t('set.rentDays')+'</h4><p>'+i18n.t('set.rentDaysDesc')+'</p></div><div style="display:flex;align-items:center;gap:6px"><input type="number" class="fc" style="width:66px;text-align:center" id="iRentDays" value="'+(s.rent_remind_days||5)+'" onchange="updSet(\'rent_remind_days\',parseInt(this.value))"><span style="font-size:11px;color:var(--ts)">'+i18n.t('common.day')+'</span></div></div><div class="s-item"><div><h4>'+i18n.t('set.notifyEmail')+'</h4><p>'+i18n.t('set.notifyEmailDesc')+'</p></div><input type="email" class="fc" style="width:180px;font-size:12px" id="iNotifyEmail" value="'+(s.notification_email||'')+'" placeholder="'+i18n.t('set.notifyEmailPh')+'" onchange="updNotifyEmail(this.value)"></div><div class="s-item" style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-top:8px;border:none"><div><h4 style="font-size:12px;color:var(--ts)">'+i18n.t('set.rentDayInfo')+'</h4><p style="font-size:11px;color:var(--ts)">'+i18n.t('set.rentDayDesc')+'</p></div></div></div></div><div class="card"><div class="card-hd"><h3>'+i18n.t('set.wechatPush')+'</h3></div><div style="padding:14px"><div class="s-item" style="border:none;flex-direction:column;align-items:flex-start;gap:10px"><div><h4>PushPlus Token</h4><p>'+i18n.t('set.pushplusDesc')+'</p></div><div style="width:100%;display:flex;align-items:center;gap:8px"><input type="text" class="fc" id="pushplus_token" value="'+(s.pushplus_token||'')+'" placeholder="'+i18n.t('set.pushplusPh')+'" style="flex:1"><button class="btn btn-sm btn-p" onclick="savePushplusToken()">'+i18n.t('common.save')+'</button></div><p style="font-size:11px;color:var(--ts);line-height:1.6;margin-top:2px">👉 <a href="https://www.pushplus.plus" target="_blank" style="color:var(--p)">'+i18n.t('up.scanFollow')+' PushPlus '+i18n.t('up.getToken')+' token</a></p></div></div></div><div class="card"><div class="card-hd"><h3>💠 '+i18n.t('comm.title')+'</h3></div><div style="padding:14px"><div class="s-item"><div><h4>'+i18n.t('comm.enableModule')+'</h4><p>'+i18n.t('comm.settingDesc')+'</p></div><button class="tgl'+(s.commission_enabled?' on':'')+'" id="tglCommission" onclick="tglCommission()"></button></div></div></div><div class="card"><div class="card-hd"><h3>'+i18n.t('common.accountInfo')+'</h3></div><div style="padding:14px"><div class="dr"><div class="dl">'+i18n.t('auth.email')+'</div><div class="dv">'+esc(currentUser.email)+'</div></div><div class="dr"><div class="dl">'+i18n.t('tenant.name')+'</div><div class="dv" style="cursor:pointer;color:var(--p)" onclick="editName()">'+esc(currentProfile.name||i18n.t('nav.clickSetName'))+' ✏️</div></div><div class="dr"><div class="dl">'+i18n.t('set.role')+'</div><div class="dv">'+i18n.t('set.landlord')+'</div></div></div></div><div class="card"><div class="card-hd"><h3>'+i18n.t('common.dataStats')+'</h3></div><div style="padding:14px"><div class="dr"><div class="dl">'+i18n.t('set.rooms')+'</div><div class="dv">'+cache.rooms.length+' '+i18n.t('common.unitRoom')+'</div></div><div class="dr"><div class="dl">'+i18n.t('set.tenants')+'</div><div class="dv">'+__occHtml+'</div></div>'+__natHtml+'<div class="dr"><div class="dl">'+i18n.t('set.rentRecords')+'</div><div class="dv">'+cache.rents.length+' '+i18n.t('common.unitRecord')+'</div></div><div class="dr"><div class="dl">'+i18n.t('common.cloudSync')+'</div><div class="dv">✅ '+i18n.t('nav.connected')+'</div></div></div></div><div class="card"><div class="card-hd"><h3>'+i18n.t('set.backup')+'</h3></div><div style="padding:14px"><div class="s-item" style="border:none;flex-direction:column;align-items:flex-start;gap:8px"><div><h4>'+i18n.t('common.localAutoBackup')+'</h4><p>'+i18n.t('set.localBackupDesc')+'</p>'+__backupHtml+'</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm btn-g" onclick="exportBackup()">'+i18n.t('set.exportExcel')+'</button><button class="btn btn-sm btn-o" onclick="triggerImportBackup()">'+i18n.t('set.importBackup')+'</button></div><input type="file" id="importBackupInput" accept=".json" style="display:none" onchange="importBackup(this)"></div></div></div><div class="card"><div class="card-hd"><h3>'+i18n.t('set.security')+'</h3></div><div style="padding:14px"><div class="s-item" style="border:none;flex-direction:column;align-items:flex-start;gap:10px"><div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:4px"><span style="font-size:18px">🛡️</span><div><h4>'+i18n.t('common.dataIsolation')+'</h4><p>'+i18n.t('common.dataIsolated')+'，'+i18n.t('common.rlsPolicy')+'（RLS）'+i18n.t('common.onlyYourData')+'、'+i18n.t('common.tenantBillData')+'，'+i18n.t('common.noOtherAccess')+'</p></div></div><div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:4px"><span style="font-size:18px">🔐</span><div><h4>'+i18n.t('common.encryption')+'</h4><p>'+i18n.t('common.allDataVia')+' HTTPS '+i18n.t('common.encryptedTransfer')+'，'+i18n.t('common.dbOnAliyun')+'（PostgreSQL '+i18n.t('common.enterpriseDB')+'），'+i18n.t('common.dataEncrypted')+'，'+i18n.t('common.noPlaintext')+'</p></div></div><div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:4px"><span style="font-size:18px">📥</span><div><h4>'+i18n.t('common.exportAnytime')+'</h4><p>'+i18n.t('common.dataYours')+'。'+i18n.t('common.oneClickExport')+' '+i18n.t('common.excelAnd')+' '+i18n.t('common.json')+' '+i18n.t('common.backupLocal')+'，'+i18n.t('common.evenWithoutSystem')+'，'+i18n.t('common.dataWontLost')+'</p></div></div><div style="display:flex;align-items:flex-start;gap:10px"><span style="font-size:18px">✅</span><div><h4>'+i18n.t('common.securityStatus')+'</h4><p style="color:var(--g);font-weight:600;margin-top:2px">● '+i18n.t('common.cloudNormal')+' · ● '+i18n.t('common.syncNormal')+' · ● '+i18n.t('common.autoBackupOn')+'</p></div></div></div></div></div><div class="card"><div class="card-hd"><h3>'+i18n.t('common.advancedOps')+'</h3></div><div style="padding:14px"><div class="s-item"><div><h4 style="color:var(--d)">'+i18n.t('cfg.reconfigConn')+'</h4><p>'+i18n.t('cfg.reconfigDesc')+'</p></div><button class="btn btn-gh btn-sm" style="color:var(--d);border:1px solid var(--d)" onclick="showReConfigConfirm()">'+i18n.t('cfg.reconfig')+'</button></div></div></div>';var __t=getSubscriptionTier(),__tn={free:i18n.t('set.tierFree'),trial:i18n.t('set.tierTrial'),basic:i18n.t('set.tierBasic'),pro:i18n.t('set.tierPro')},__tc={free:'var(--ts)',trial:'var(--w)',basic:'var(--p)',pro:'var(--p)'},__el=document.getElementById('subTierName');if(__el){__el.textContent=__tn[__t]||i18n.t('set.tierFree');__el.style.color=__tc[__t]}var __ub=document.getElementById('subUpgradeBtn');if(__ub){__ub.style.display='none'}var __ri=document.getElementById('subRoomInfo');if(__ri){var __rl=getRoomLimit();__ri.textContent=cache.rooms.length+'/'+(__rl>=9999?'∞':__rl)+' '+i18n.t('common.unitRoom')+''}var __ti=document.getElementById('subTrialInfo');if(__ti&&__t==='trial'&&currentProfile.trial_expires){__ti.style.display='';var __td=document.getElementById('subTrialDays');if(__td){var __d=Math.ceil((new Date(currentProfile.trial_expires)-new Date())/86400000);__td.textContent=__d+i18n.t('common.day')}}var __exp=getSubscriptionExpires();var __ei=document.getElementById('subExpInfo');if(__ei&&__t!=='free'&&__exp){__ei.style.display='';var __ed=document.getElementById('subExpDate');if(__ed){var __daysLeft=Math.ceil((new Date(__exp)-new Date())/86400000);var __expText=fmtDate(__exp);if(__daysLeft<=7&&__daysLeft>0)__expText+=' ('+i18n.t('common.remaining2')+''+__daysLeft+''+i18n.t('common.day')+')';else if(__daysLeft<=0)__expText+=' ('+i18n.t('common.expired2')+')';__ed.textContent=__expText;if(__daysLeft<=7)__ed.style.color='var(--w)'}}var __ac=document.getElementById('adminCard');if(__ac&&isAdmin())__ac.style.display=''}
+function rSettings(){var s=cache.settings;var __natHtml=(function(){var natMap={},genMap={};genMap[i18n.t('tenant.male')]=0;genMap[i18n.t('tenant.female')]=0;cache.tenants.filter(function(t){return t.status==='active'}).forEach(function(t){var n=_trNat(t.nationality);if(n==='-'||!t.nationality)n=i18n.t('common.notFilled');natMap[n]=(natMap[n]||0)+1;var g=t.gender||getGenderFromId(t.id_number);var cg=_trGender(g);if(cg===i18n.t('tenant.male')||cg===i18n.t('tenant.female'))genMap[cg]++;else genMap[i18n.t('common.notFilled')]=(genMap[i18n.t('common.notFilled')]||0)+1;if(t.occupants){t.occupants.forEach(function(o){var on=_trNat(o.nationality);if(on==='-'||!o.nationality)on=i18n.t('common.notFilled');natMap[on]=(natMap[on]||0)+1;var og=o.gender||getGenderFromId(o.id_number);var cog=_trGender(og);if(cog===i18n.t('tenant.male')||cog===i18n.t('tenant.female'))genMap[cog]++;else genMap[i18n.t('common.notFilled')]=(genMap[i18n.t('common.notFilled')]||0)+1})}});var natArr=Object.keys(natMap).map(function(k){return k+': '+natMap[k]+i18n.t('common.unitPerson')});var genArr=[];Object.keys(genMap).forEach(function(k){genArr.push(k+': '+genMap[k]+i18n.t('common.unitPerson'))});return'<div class="dr"><div class="dl">'+i18n.t('set.natDist')+'</div><div class="dv" style="line-height:1.8">'+natArr.join('｜')+'</div></div><div class="dr"><div class="dl">'+i18n.t('set.genDist')+'</div><div class="dv" style="line-height:1.8">'+genArr.join('｜')+'</div></div>'})();var __occHtml=(function(){var ts=cache.tenants.filter(function(t){return t.status==='active'});var n=ts.length+ts.reduce(function(s,t){return s+(t.occupants?t.occupants.length:0)},0);return n+' '+i18n.t('common.unitPerson')})();var __backupHtml=getLastBackupTime()?'<p style="font-size:11px;color:var(--g);margin-top:2px">✅ '+i18n.t('common.lastBackup')+'：'+getLastBackupTime()+'</p>':'<p style="font-size:11px;color:var(--w);margin-top:2px">'+i18n.t('set.noBackup')+'</p>';document.getElementById('mainContent').innerHTML='<div class="page-hd"><h2>'+i18n.t('set.title')+'</h2></div><div class="card"><div class="card-hd"><h3>'+i18n.t('set.versionInfo')+'</h3></div><div style="padding:14px"><div class="dr"><div class="dl">'+i18n.t('common.currentPlan')+'</div><div class="dv" style="display:flex;align-items:center"><span id="subTierName" style="font-weight:700">--</span><button class="btn btn-sm btn-p" id="subUpgradeBtn" onclick="showUpgradeModal()" style="margin-left:8px;display:none!important">'+i18n.t('set.upgrade')+'</button></div></div><div class="dr"><div class="dl">'+i18n.t('set.roomQuota')+'</div><div class="dv" id="subRoomInfo">-- '+i18n.t('common.unitRoom')+'</div></div><div id="subTrialInfo" style="display:none"><div class="dr"><div class="dl">'+i18n.t('set.trialRemain')+'</div><div class="dv" style="color:var(--w);font-weight:700" id="subTrialDays">--</div></div></div><div id="subExpInfo" style="display:none"><div class="dr"><div class="dl">'+i18n.t('common.expiryTime')+'</div><div class="dv" id="subExpDate">--</div></div></div></div></div><div class="card" id="adminCard" style="display:none"><div class="card-hd"><h3>'+i18n.t('set.admin')+'</h3></div><div style="padding:14px"><button class="btn btn-sm btn-p" onclick="showWhitelistModal()">'+i18n.t('common.whitelistMgmt')+'</button><button class="btn btn-sm btn-p" onclick="showUserMgmtModal()" style="margin-left:8px">'+i18n.t('um.title')+'</button></div></div><div class="card"><div class="card-hd"><h3>'+i18n.t('set.reminders')+'</h3></div><div style="padding:14px"><div class="s-item"><div><h4>'+i18n.t('set.enableReminders')+'</h4><p>'+i18n.t('set.enableRemindersDesc')+'</p></div><button class="tgl'+(s.enable_reminders?' on':'')+'" id="tglReminder" onclick="tglReminder()"></button></div><div class="s-item"><div><h4>'+i18n.t('set.contractDays')+'</h4><p>'+i18n.t('set.contractDaysDesc')+'</p></div><div style="display:flex;align-items:center;gap:6px"><input type="number" class="fc" style="width:66px;text-align:center" id="iContractDays" value="'+(s.contract_remind_days||30)+'" onchange="updSet(\'contract_remind_days\',parseInt(this.value))"><span style="font-size:11px;color:var(--ts)">'+i18n.t('common.day')+'</span></div></div><div class="s-item"><div><h4>'+i18n.t('set.rentDays')+'</h4><p>'+i18n.t('set.rentDaysDesc')+'</p></div><div style="display:flex;align-items:center;gap:6px"><input type="number" class="fc" style="width:66px;text-align:center" id="iRentDays" value="'+(s.rent_remind_days||5)+'" onchange="updSet(\'rent_remind_days\',parseInt(this.value))"><span style="font-size:11px;color:var(--ts)">'+i18n.t('common.day')+'</span></div></div><div class="s-item"><div><h4>'+i18n.t('set.notifyEmail')+'</h4><p>'+i18n.t('set.notifyEmailDesc')+'</p></div><input type="email" class="fc" style="width:180px;font-size:12px" id="iNotifyEmail" value="'+(s.notification_email||'')+'" placeholder="'+i18n.t('set.notifyEmailPh')+'" onchange="updNotifyEmail(this.value)"></div><div class="s-item" style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-top:8px;border:none"><div><h4 style="font-size:12px;color:var(--ts)">'+i18n.t('set.rentDayInfo')+'</h4><p style="font-size:11px;color:var(--ts)">'+i18n.t('set.rentDayDesc')+'</p></div></div></div></div><div class="card"><div class="card-hd"><h3>'+i18n.t('set.wechatPush')+'</h3></div><div style="padding:14px"><div class="s-item" style="border:none;flex-direction:column;align-items:flex-start;gap:10px"><div><h4>PushPlus Token</h4><p>'+i18n.t('set.pushplusDesc')+'</p></div><div style="width:100%;display:flex;align-items:center;gap:8px"><input type="text" class="fc" id="pushplus_token" value="'+(s.pushplus_token||'')+'" placeholder="'+i18n.t('set.pushplusPh')+'" style="flex:1"><button class="btn btn-sm btn-p" onclick="savePushplusToken()">'+i18n.t('common.save')+'</button></div><p style="font-size:11px;color:var(--ts);line-height:1.6;margin-top:2px">👉 <a href="https://www.pushplus.plus" target="_blank" style="color:var(--p)">'+i18n.t('up.scanFollow')+' PushPlus '+i18n.t('up.getToken')+' token</a></p></div></div></div><div class="card"><div class="card-hd"><h3>'+i18n.t('common.accountInfo')+'</h3></div><div style="padding:14px"><div class="dr"><div class="dl">'+i18n.t('auth.email')+'</div><div class="dv">'+esc(currentUser.email)+'</div></div><div class="dr"><div class="dl">'+i18n.t('tenant.name')+'</div><div class="dv" style="cursor:pointer;color:var(--p)" onclick="editName()">'+esc(currentProfile.name||i18n.t('nav.clickSetName'))+' ✏️</div></div><div class="dr"><div class="dl">'+i18n.t('set.role')+'</div><div class="dv">'+i18n.t('set.landlord')+'</div></div></div></div><div class="card"><div class="card-hd"><h3>'+i18n.t('common.dataStats')+'</h3></div><div style="padding:14px"><div class="dr"><div class="dl">'+i18n.t('set.rooms')+'</div><div class="dv">'+cache.rooms.length+' '+i18n.t('common.unitRoom')+'</div></div><div class="dr"><div class="dl">'+i18n.t('set.tenants')+'</div><div class="dv">'+__occHtml+'</div></div>'+__natHtml+'<div class="dr"><div class="dl">'+i18n.t('set.rentRecords')+'</div><div class="dv">'+cache.rents.length+' '+i18n.t('common.unitRecord')+'</div></div><div class="dr"><div class="dl">'+i18n.t('common.cloudSync')+'</div><div class="dv">✅ '+i18n.t('nav.connected')+'</div></div></div></div><div class="card"><div class="card-hd"><h3>'+i18n.t('set.backup')+'</h3></div><div style="padding:14px"><div class="s-item" style="border:none;flex-direction:column;align-items:flex-start;gap:8px"><div><h4>'+i18n.t('common.localAutoBackup')+'</h4><p>'+i18n.t('set.localBackupDesc')+'</p>'+__backupHtml+'</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm btn-g" onclick="exportBackup()">'+i18n.t('set.exportExcel')+'</button><button class="btn btn-sm btn-o" onclick="triggerImportBackup()">'+i18n.t('set.importBackup')+'</button></div><input type="file" id="importBackupInput" accept=".json" style="display:none" onchange="importBackup(this)"></div></div></div><div class="card"><div class="card-hd"><h3>'+i18n.t('set.security')+'</h3></div><div style="padding:14px"><div class="s-item" style="border:none;flex-direction:column;align-items:flex-start;gap:10px"><div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:4px"><span style="font-size:18px">🛡️</span><div><h4>'+i18n.t('common.dataIsolation')+'</h4><p>'+i18n.t('common.dataIsolated')+'，'+i18n.t('common.rlsPolicy')+'（RLS）'+i18n.t('common.onlyYourData')+'、'+i18n.t('common.tenantBillData')+'，'+i18n.t('common.noOtherAccess')+'</p></div></div><div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:4px"><span style="font-size:18px">🔐</span><div><h4>'+i18n.t('common.encryption')+'</h4><p>'+i18n.t('common.allDataVia')+' HTTPS '+i18n.t('common.encryptedTransfer')+'，'+i18n.t('common.dbOnAliyun')+'（PostgreSQL '+i18n.t('common.enterpriseDB')+'），'+i18n.t('common.dataEncrypted')+'，'+i18n.t('common.noPlaintext')+'</p></div></div><div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:4px"><span style="font-size:18px">📥</span><div><h4>'+i18n.t('common.exportAnytime')+'</h4><p>'+i18n.t('common.dataYours')+'。'+i18n.t('common.oneClickExport')+' '+i18n.t('common.excelAnd')+' '+i18n.t('common.json')+' '+i18n.t('common.backupLocal')+'，'+i18n.t('common.evenWithoutSystem')+'，'+i18n.t('common.dataWontLost')+'</p></div></div><div style="display:flex;align-items:flex-start;gap:10px"><span style="font-size:18px">✅</span><div><h4>'+i18n.t('common.securityStatus')+'</h4><p style="color:var(--g);font-weight:600;margin-top:2px">● '+i18n.t('common.cloudNormal')+' · ● '+i18n.t('common.syncNormal')+' · ● '+i18n.t('common.autoBackupOn')+'</p></div></div></div></div></div><div class="card"><div class="card-hd"><h3>'+i18n.t('common.advancedOps')+'</h3></div><div style="padding:14px"><div class="s-item"><div><h4 style="color:var(--d)">'+i18n.t('cfg.reconfigConn')+'</h4><p>'+i18n.t('cfg.reconfigDesc')+'</p></div><button class="btn btn-gh btn-sm" style="color:var(--d);border:1px solid var(--d)" onclick="showReConfigConfirm()">'+i18n.t('cfg.reconfig')+'</button></div></div></div>';var __t=getSubscriptionTier(),__tn={free:i18n.t('set.tierFree'),trial:i18n.t('set.tierTrial'),basic:i18n.t('set.tierBasic'),pro:i18n.t('set.tierPro')},__tc={free:'var(--ts)',trial:'var(--w)',basic:'var(--p)',pro:'var(--p)'},__el=document.getElementById('subTierName');if(__el){__el.textContent=__tn[__t]||i18n.t('set.tierFree');__el.style.color=__tc[__t]}var __ub=document.getElementById('subUpgradeBtn');if(__ub){__ub.style.display='none'}var __ri=document.getElementById('subRoomInfo');if(__ri){var __rl=getRoomLimit();__ri.textContent=cache.rooms.length+'/'+(__rl>=9999?'∞':__rl)+' '+i18n.t('common.unitRoom')+''}var __ti=document.getElementById('subTrialInfo');if(__ti&&__t==='trial'&&currentProfile.trial_expires){__ti.style.display='';var __td=document.getElementById('subTrialDays');if(__td){var __d=Math.ceil((new Date(currentProfile.trial_expires)-new Date())/86400000);__td.textContent=__d+i18n.t('common.day')}}var __exp=getSubscriptionExpires();var __ei=document.getElementById('subExpInfo');if(__ei&&__t!=='free'&&__exp){__ei.style.display='';var __ed=document.getElementById('subExpDate');if(__ed){var __daysLeft=Math.ceil((new Date(__exp)-new Date())/86400000);var __expText=fmtDate(__exp);if(__daysLeft<=7&&__daysLeft>0)__expText+=' ('+i18n.t('common.remaining2')+''+__daysLeft+''+i18n.t('common.day')+')';else if(__daysLeft<=0)__expText+=' ('+i18n.t('common.expired2')+')';__ed.textContent=__expText;if(__daysLeft<=7)__ed.style.color='var(--w)'}}var __ac=document.getElementById('adminCard');if(__ac&&isAdmin())__ac.style.display=''}
 function reConfig(){confirmDialog(i18n.t('cfg.reconfigQ'),i18n.t('cfg.willDisconnect'),function(){if(realtimeChannel&&sb){sb.removeChannel(realtimeChannel);realtimeChannel=null}sb=null;currentUser=null;currentProfile=null;renderConfig()})}
 
 function showReConfigConfirm(){openModal('<div class="m-hd"><h3>'+i18n.t('cfg.reconfigTitle')+'</h3><button class="m-x" onclick="closeModal()">×</button></div><div class="m-bd"><div style="background:#FEF2F2;border-radius:8px;padding:12px;margin-bottom:14px"><p style="font-size:13px;color:var(--d);font-weight:600">'+i18n.t('cfg.disconnectWarn')+'</p><p style="font-size:12px;color:var(--ts);margin-top:4px">'+i18n.t('cfg.dataSafe')+'</p></div><div class="fg"><label>'+i18n.t('reset.confirmLabel')+'</label><input class="fc" id="fReConfigInput" placeholder="'+i18n.t('reset.confirmPh2')+'" autocomplete="off"></div></div><div class="m-ft"><button class="btn btn-gh" onclick="closeModal()">'+i18n.t('common.cancel')+'</button><button class="btn btn-d" onclick="doReConfig()">'+i18n.t('common.confirm')+'</button></div>')}
@@ -870,29 +733,23 @@ function triggerPhotoUpload(tenantId){var inp=document.getElementById('photoInpu
 
 // ========== 合同文件上传 ==========
 var pendingFiles={'new':[]};
-function triggerFileUpload(tenantId){var input=document.getElementById('fileInput'+tenantId)||document.getElementById('fileInput'+cap(tenantId));if(input)input.click()}
+function triggerFileUpload(tenantId){var input=document.getElementById('fileInput'+cap(tenantId));if(input)input.click()}
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1)}
-function roomVacant(r){if(!r)return true;if(r.status==='occupied')return false;return getRoomTenantCount(r.id)===0;}
-function roomOccToggleHtml(){return '<label class="ro" style="display:flex;align-items:center;gap:6px;margin-top:6px;font-weight:normal;cursor:pointer"><input type="checkbox" id="fTRmOcc" onchange="window._roomShowOccupied=this.checked;filterTenantRooms();" style="width:auto;margin:0"><span>'+i18n.t('tenant.showOccupied')+'</span></label>';}
-function filterTenantRooms(){var sel=document.getElementById('fTRm');if(!sel)return;var bEl=document.getElementById('fTRmB'),sEl=document.getElementById('fTRmS');var bid=bEl?bEl.value:'__all__';var kw=sEl?(sEl.value||'').trim().toLowerCase():'';var cur=sel.value;var ph=sel.options[0]&&!sel.options[0].value?sel.options[0].text:'';var bm={};(cache.buildings||[]).forEach(function(b){bm[b.id]=b.name});function lbl(r){var cnt=getRoomTenantCount(r.id);var pfx=(r.building_id&&bm[r.building_id])?bm[r.building_id]+' / ':'';return pfx+esc(r.name)+(cnt>0?' ('+cnt+i18n.t('tenant.peopleLiving')+')':'')}var html=(ph&&!cur)?'<option value="">'+ph+'</option>':'';var curMatched=false;(cache.rooms||[]).forEach(function(r){var label=lbl(r);var ok=(bid==='__all__'||r.building_id===bid)&&(!kw||label.toLowerCase().indexOf(kw)>=0)&&(window._roomShowOccupied||roomVacant(r)||String(r.id)===String(cur));if(ok){html+='<option value="'+r.id+'" data-bid="'+(r.building_id||'')+'"'+(r.id===cur?' selected':'')+'>'+label+'</option>';if(r.id===cur)curMatched=true}});if(cur&&!curMatched){var cr=(cache.rooms||[]).find(function(r){return r.id===cur});if(cr){html='<option value="'+cr.id+'" data-bid="'+(cr.building_id||'')+'" selected>'+lbl(cr)+'</option>'+html}}sel.innerHTML=html}
 async function handleFileUpload(input,tenantId){var files=Array.from(input.files||[]);if(!files.length)return;
 var existing=pendingFiles[tenantId]||[];
-if(existing.length+files.length>2){toast(i18n.t('tenant.maxFiles'),'w');input.value='';return}
+if(existing.length+files.length>1){toast(i18n.t('tenant.max1File'),'w');input.value='';return}
 for(var i=0;i<files.length;i++){
 var f=files[i];
-if(f.size>3*1024*1024){toast(''+i18n.t('common.file')+' '+f.name+' '+i18n.t('common.exceeding')+'3MB','e');continue}
+if(f.size>1*1024*1024){toast(''+i18n.t('common.file')+' '+f.name+' '+i18n.t('common.exceeding')+'1MB','e');continue}
 var ext=f.name.split('.').pop().toLowerCase();
 if(['pdf','doc','docx'].indexOf(ext)===-1){toast(i18n.t('tenant.unsupportedFormat'),'w');continue}
-var _dup=existing.some(function(x){return (x.name||'')===f.name && (x.size||0)===(f.size||0)})||
-  files.slice(0,i).some(function(g){return g.name===f.name && (g.size||0)===(f.size||0)});
-if(_dup){toast(i18n.t('tenant.dupFile',{name:f.name}),'w');continue}
 var ext2=f.name.split('.').pop();
 var safeName=f.name.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9._-]/g,'');var path=getOwnerId()+'/'+tenantId+'/'+Date.now()+'_'+safeName;
 try{var r=await FileAPI.upload('contract-files',path,f,f.type||'application/octet-stream');
 if(!r||!r.path){toast(i18n.t('common.uploadFailed'),'e');continue}
 existing.push({path:path,name:f.name,size:f.size,type:ext2})}catch(e){toast(i18n.t('common.uploadFailed'),'e')}}
 pendingFiles[tenantId]=existing;input.value='';renderFileList(tenantId)}
-function renderFileList(tenantId){var el=document.getElementById('fileList'+tenantId)||document.getElementById('fileList'+cap(tenantId));if(!el)return;
+function renderFileList(tenantId){var el=document.getElementById('fileList'+cap(tenantId));if(!el)return;
 var files=pendingFiles[tenantId]||[];
 if(!files.length){el.innerHTML='';return}
 var html='';
@@ -902,18 +759,15 @@ var icon=f.type==='pdf'?'📄':(f.type==='doc'||f.type==='docx')?'📝':'📎';
 html+='<div class="file-item"><span class="file-icon">'+icon+'</span><div class="file-info"><div class="file-name">'+esc(f.name)+'</div><div class="file-size">'+sizeStr+'</div></div><div class="file-actions"><button class="file-btn del" onclick="removeFile(\''+tenantId+'\','+i+')">'+i18n.t('common.del')+'</button></div></div>'}
 el.innerHTML=html}
 function removeFile(tenantId,idx){pendingFiles[tenantId].splice(idx,1);renderFileList(tenantId)}
-function renderFilesHtml(files,tenantId,editable){if(!files||!files.length)return '<p style="font-size:12px;color:var(--ts);margin-top:8px">'+i18n.t('tenant.noContractFiles')+'</p>';
+function renderFilesHtml(files,tenantId){if(!files||!files.length)return '<p style="font-size:12px;color:var(--ts);margin-top:8px">'+i18n.t('tenant.noContractFiles')+'</p>';
 var html='<div class="file-section"><h4>'+i18n.t('tenant.contractFiles')+'</h4><div class="file-list">';
 for(var i=0;i<files.length;i++){
 var f=files[i];var name=typeof f==='string'?f:(f.name||f.path||'');
 var ext=name.split('.').pop().toLowerCase();
 var icon=ext==='pdf'?'📄':(ext==='doc'||ext==='docx')?'📝':'📎';
 var path=typeof f==='string'?f:f.path;
-var dlBtn='<button class="file-btn" onclick="downloadFile(\''+esc(path)+'\',\''+esc(name)+'\',\''+tenantId+'\')">'+i18n.t('common.download')+'</button>';
-var delBtn=editable?'<button class="file-btn" style="color:var(--d)" onclick="deleteContractFile(\''+esc(path)+'\',\''+tenantId+'\')">'+i18n.t('common.del')+'</button>':'';
-html+='<div class="file-item"><span class="file-icon">'+icon+'</span><div class="file-info"><div class="file-name">'+esc(name)+'</div></div><div class="file-actions">'+dlBtn+delBtn+'</div></div>'}
+html+='<div class="file-item"><span class="file-icon">'+icon+'</span><div class="file-info"><div class="file-name">'+esc(name)+'</div></div><div class="file-actions"><button class="file-btn" onclick="downloadFile(\''+esc(path)+'\',\''+esc(name)+'\',\''+tenantId+'\')">'+i18n.t('common.download')+'</button></div></div>'}
 html+='</div></div>';return html}
-async function deleteContractFile(path,tenantId){confirmDialog(i18n.t('tenant.delFileConfirm'),'',async function(){try{try{await FileAPI.remove('contract-files',path)}catch(e){console.warn('File delete error:',e)}var _norm=function(x){return typeof x==='string'?x:x.path};if(tenantId==='new'){var fl=pendingFiles['new']||[];pendingFiles['new']=fl.filter(function(x){return _norm(x)!==path});renderFileList('new')}else{var tenant=cache.tenants.find(function(t){return t.id===tenantId});if(!tenant)return;var files=(tenant.contract_files||[]).filter(function(x){return _norm(x)!==path});var upd=await sb.from('tenants').update({contract_files:files}).eq('id',tenantId);if(upd.error){toast(i18n.t('common.deleteFailed'),'e');return}if(pendingFiles[tenantId]){pendingFiles[tenantId]=pendingFiles[tenantId].filter(function(x){return _norm(x)!==path})}await loadAllData();showEditTenant(tenantId)}}catch(e){console.error('Delete file error:',e);toast(i18n.t('common.deleteFailed'),'e')}})}
 async function downloadFile(path,name,tenantId){
   try{
     // 先创建一个隐藏的 a 标签，在同步点击事件中触发，避免被弹窗拦截
@@ -1101,102 +955,6 @@ function _ledgerEntries(){
   out.sort(function(a,b){return (b.date||'').localeCompare(a.date||'')});
   return out;
 }
-// ===== v75: 记账本图表分析 / 筛选导出 / 流水详情（增量，不改原逻辑）=====
-function _finFiltered(){
-  var entries=_ledgerEntries();
-  if(finBldg!=='__all__')entries=entries.filter(function(e){return e.bid===finBldg});
-  entries=entries.filter(function(e){return (e.date||'').slice(0,4)===finYear});
-  if(finMonth!=='all')entries=entries.filter(function(e){return (e.date||'').slice(0,7)===finMonth});
-  if(finFilter!=='all')entries=entries.filter(function(e){return e.type===finFilter});
-  return entries;
-}
-function _finBarChart(entries){
-  var months=[];
-  for(var mi=1;mi<=12;mi++){
-    var ym=finYear+'-'+(mi<10?'0'+mi:''+mi);
-    var d={ym:ym,label:mi,in:0,out:0};
-    entries.forEach(function(e){if((e.date||'').slice(0,7)===ym){if(e.type==='in')d.in+=e.amount;else d.out+=e.amount}});
-    months.push(d);
-  }
-  if(finMonth!=='all')months=months.filter(function(d){return d.ym===finMonth});
-  var has=months.some(function(d){return d.in>0||d.out>0});
-  if(!has)return '<div class="card" style="padding:20px;text-align:center;color:var(--ts);font-size:13px">'+i18n.t('fin.chartNoData')+'</div>';
-  var maxV=1;months.forEach(function(d){maxV=Math.max(maxV,d.in,d.out)});
-  var W=320,H=170,pad=24,bw=11,gap=(W-pad*2-12*bw)/11;
-  var bars='';
-  months.forEach(function(d,i){
-    var x=pad+i*(bw+gap);
-    var hi=Math.round(d.in/maxV*(H-pad*2));var ho=Math.round(d.out/maxV*(H-pad*2));
-    var ly=H-pad-hi;var oy=H-pad-ho;
-    var lbl=i18n.getLang&&i18n.getLang()==='en'?(parseInt(d.label,10)):(d.label);
-    bars+='<rect x="'+x+'" y="'+ly+'" width="'+bw+'" height="'+hi+'" rx="2" fill="#16a34a"><title>'+d.label+i18n.t('common.monthUnit')+' '+i18n.t('fin.shortIncome')+' ¥'+d.in.toLocaleString()+'</title></rect>';
-    bars+='<rect x="'+(x+bw+1)+'" y="'+oy+'" width="'+bw+'" height="'+ho+'" rx="2" fill="#dc2626"><title>'+d.label+i18n.t('common.monthUnit')+' '+i18n.t('fin.shortExpense')+' ¥'+d.out.toLocaleString()+'</title></rect>';
-    bars+='<text x="'+(x+bw)+'" y="'+(H-8)+'" font-size="9" fill="var(--ts)" text-anchor="middle">'+lbl+'</text>';
-  });
-  var tIn=entries.filter(function(e){return e.type==='in'}).reduce(function(a,e){return a+e.amount},0);
-  var tOut=entries.filter(function(e){return e.type==='out'}).reduce(function(a,e){return a+e.amount},0);
-  return '<div class="card" style="padding:12px 14px;margin-bottom:12px"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px">'+
-    '<b style="font-size:14px">📊 '+i18n.t('fin.chartTitle')+'</b>'+
-    '<span style="font-size:12px;color:var(--g,#16a34a)">■ '+i18n.t('fin.shortIncome')+' ¥'+tIn.toLocaleString()+'</span>'+
-    '<span style="font-size:12px;color:var(--d,#dc2626)">■ '+i18n.t('fin.shortExpense')+' ¥'+tOut.toLocaleString()+'</span>'+
-    '<span style="font-size:12px;font-weight:700;color:'+(tIn-tOut>=0?'#4F46E5':'var(--d,#dc2626)')+'">'+i18n.t('fin.shortBalance')+' ¥'+(tIn-tOut).toLocaleString()+'</span></div>'+
-    '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:560px;display:block;margin:0 auto">'+bars+'</svg></div>';
-}
-function exportLedgerFiltered(){
-  var entries=_finFiltered();
-  if(!entries.length){toast(i18n.t('fin.noLedgerData'),'w');return}
-  var rows=entries.map(function(e){
-    var _o={};
-    _o[i18n.t('fin.expenseDate')]=e.date||'';
-    _o[i18n.t('fin.filterType')]=e.type==='in'?i18n.t('fin.filterIncome'):i18n.t('fin.filterExpense');
-    _o[i18n.t('fin.category')]=(e.title||'').replace(/^[^\u4e00-\u9fa5A-Za-z]+/,'');
-    _o[i18n.t('fin.amount')]=(e.type==='in'?'':'-')+(e.amount||0);
-    _o[i18n.t('fin.relatedTenant')]=e.sub||'';
-    return _o;
-  });
-  var ws=XLSX.utils.json_to_sheet(rows);
-  var wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,i18n.t('fin.ledger'));
-  var scope=finYear+(finMonth!=='all'?'-'+finMonth.slice(5):'')+(finBldg!=='__all__'?'_'+(function(){var b=cache.buildings.find(function(x){return x.id===finBldg});return b?b.name:''})():'');
-  XLSX.writeFile(wb,i18n.t('fin.ledger')+'_'+scope+'.xlsx');
-  toast(i18n.t('set.excelExported'));
-}
-function showLedgerDetail(idx){
-  var e=_finFiltered()[idx];
-  if(!e)return;
-  window._lastLedgerEntry=e;
-  var rows='';
-  function row(k,v){return '<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--bd);font-size:13px"><span style="color:var(--ts);flex:0 0 88px">'+k+'</span><span style="flex:1;word-break:break-all">'+(v||'-')+'</span></div>'}
-  rows+=row(i18n.t('fin.expenseDate'),fmtDate(e.date));
-  rows+=row(i18n.t('fin.filterType'),e.type==='in'?'<span style="color:var(--g,#16a34a)">'+i18n.t('fin.filterIncome')+'</span>':'<span style="color:var(--d,#dc2626)">'+i18n.t('fin.filterExpense')+'</span>');
-  rows+=row(i18n.t('fin.amount'),'<b style="color:'+(e.type==='in'?'var(--g,#16a34a)':'var(--d,#dc2626)')+'">'+(e.type==='in'?'+':'-')+'¥'+(e.amount||0).toLocaleString()+'</b>');
-  rows+=row(i18n.t('fin.category'),e.title||'');
-  if(e.sub)rows+=row(i18n.t('fin.relatedTenant'),e.sub);
-  var link='';
-  if(e.kind==='rent'&&e.tid){
-    link='<div style="margin-top:12px"><button class="btn btn-gh" style="width:100%" onclick="_ledgerGoBills()">📋 '+i18n.t('fin.viewBills')+'</button></div>';
-  }else if(e.kind==='water'||e.kind==='electric'||e.kind==='utility'){
-    link='<div style="margin-top:12px"><button class="btn btn-gh" style="width:100%" onclick="closeModal();goPage(\'rent\');toast(i18n.t(\'fin.viewMeterHint\'),\'i\')">⚡ '+i18n.t('fin.viewMeters')+'</button></div>';
-  }
-  var ops='';
-  if(canEdit()&&e.editable&&e.id){
-    var editFn=e.type==='in'?'showIncomeModal':'showExpenseModal';
-    var delFn=e.type==='in'?'delIncome':'delExpense';
-    ops='<div style="display:flex;gap:8px;margin-top:14px">'+
-      '<button class="btn btn-gh" style="flex:1" onclick="closeModal();'+editFn+'(\''+e.id+'\')">'+i18n.t('common.edit')+'</button>'+
-      '<button class="btn btn-o" style="flex:1;color:var(--d)" onclick="closeModal();'+delFn+'(\''+e.id+'\')">'+i18n.t('common.delete')+'</button></div>';
-  }else if(canEdit()&&e.kind==='rent'){
-    ops='<p class="hint" style="margin-top:12px">'+i18n.t('fin.rentSysTag')+'</p>';
-  }
-  openModal('<div class="m-hd"><h3>🧾 '+i18n.t('fin.detailTitle')+'</h3><button class="m-x" onclick="closeModal()">×</button></div>'+
-    '<div class="m-bd">'+rows+link+ops+'</div>');
-}
-function _ledgerGoBills(){
-  var e=window._lastLedgerEntry;
-  closeModal();goPage('rent');
-  setTimeout(function(){var t=e?cache.tenants.find(function(x){return x.id===e.tid}):null;toast((t?t.name+' · ':'')+i18n.t('fin.viewBillsHint'),'i')},150);
-}
-// ===== v75 增量结束 =====
 function rFinanceBook(){
   var canE=canEdit();
   var entries=_ledgerEntries();
@@ -1227,10 +985,6 @@ function rFinanceBook(){
   html+='<option value="in"'+(finFilter==='in'?' selected':'')+'>'+i18n.t('fin.filterIncome')+'</option>';
   html+='<option value="out"'+(finFilter==='out'?' selected':'')+'>'+i18n.t('fin.filterExpense')+'</option>';
   html+='</select></div>';
-  // v75: 图表分析 + 导出筛选数据 按钮
-  html+='<button class="btn btn-gh" style="font-size:13px;padding:6px 12px" onclick="document.getElementById(\'finChartCard\').style.display=document.getElementById(\'finChartCard\').style.display===\'none\'?\'block\':\'none\'">📊 '+i18n.t('fin.chartBtn')+'</button>';
-  html+='<button class="btn btn-p" style="font-size:13px;padding:6px 12px" onclick="exportLedgerFiltered()">📥 '+i18n.t('fin.exportFiltered')+'</button></div>';
-  html+='<div id="finChartCard" style="display:block">'+_finBarChart(_finFiltered())+'</div>';
   html+='<div class="card" style="padding:12px 14px;margin-bottom:12px;display:flex;gap:14px;flex-wrap:wrap;font-size:13px;align-items:center">';
   html+='<b style="font-size:15px">'+finYear+i18n.t('common.yearUnit')+i18n.t('fin.yearSummary')+'</b>';
   html+='<span style="color:var(--g,#16a34a)">'+i18n.t('fin.shortIncome')+' ¥'+yIn.toLocaleString()+'</span>';
@@ -1255,7 +1009,6 @@ function rFinanceBook(){
     months[ym].items.push(e);
   });
   var ymKeys=Object.keys(months).sort().reverse();
-  var _fList=_finFiltered();
   ymKeys.filter(function(ym){return finMonth==='all'||ym===finMonth}).forEach(function(ym){
     var mo=months[ym];
     html+='<div class="card" style="padding:0;margin-bottom:12px;overflow:hidden">';
@@ -1266,7 +1019,6 @@ function rFinanceBook(){
     html+='<b style="color:'+(mo.in-mo.out>=0?'#4F46E5':'var(--d,#dc2626)')+'">'+i18n.t('fin.shortBalance')+' ¥'+(mo.in-mo.out).toLocaleString()+'</b>';
     html+='</div>';
     mo.items.forEach(function(e){
-      var _idx=_fList.indexOf(e);
       var day=(e.date||'').slice(8,10);
       var daySub=lang==='en'?['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt((e.date||'').slice(5,7),10)-1]||'':i18n.t('common.dayUnit');//v65
       var sign=e.type==='in'?'+':'-';
@@ -1278,14 +1030,14 @@ function rFinanceBook(){
       }else if(canE&&e.type==='in'&&e.kind==='rent'){
         ops='<span style="font-size:10px;color:var(--ts)">'+i18n.t('fin.rentSysTag')+'</span>';
       }
-      html+='<div style="display:flex;gap:8px;align-items:center;padding:9px 14px;border-top:1px solid var(--bd);cursor:pointer" onclick="showLedgerDetail('+_idx+')" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">';
+      html+='<div style="display:flex;gap:8px;align-items:center;padding:9px 14px;border-top:1px solid var(--bd)">';
       html+='<div style="width:34px;flex:0 0 34px;text-align:center;line-height:1.15"><div style="font-size:16px;font-weight:700;color:var(--t)">'+parseInt(day,10)+'</div><div style="font-size:10px;color:var(--ts)">'+daySub+'</div></div>';//v65
       html+='<div style="flex:1;min-width:0">';
       html+='<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.title+'</div>';
       if(e.sub)html+='<div style="font-size:11px;color:var(--ts);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.sub+'</div>';
       html+='</div>';
       html+='<b style="font-size:13px;color:'+color+';white-space:nowrap">'+sign+'¥'+e.amount.toLocaleString()+'</b>';
-      if(ops)html+='<div style="flex:0 0 auto" onclick="event.stopPropagation()">'+ops+'</div>';
+      if(ops)html+='<div style="flex:0 0 auto">'+ops+'</div>';
       html+='</div>';
     });
     html+='</div>';
@@ -1609,348 +1361,6 @@ async function doSubmitFeedback(){
     if(btn){btn.textContent=i18n.t('fb.submit');btn.disabled=false}
   }
 }
-
-// ===== v76: 中介员工提成模块（纯增量，不影响现有逻辑）=====
-var commState={tab:'report',month:'',staff:'__all__',settled:'__all__'};
-function _commOn(){return !!(cache&&cache.settings&&cache.settings.commission_enabled)}
-async function _commLoadAll(){
-  var oid=getOwnerId();var out={staff:[],cfg:[],rec:[]};
-  try{var rs=await sb.from('staff').select('*').eq('owner_id',oid).order('created_at',{ascending:true});if(rs&&!rs.error)out.staff=rs.data||[]}catch(e){}
-  try{var rc=await sb.from('tenant_commission').select('*').eq('owner_id',oid);if(rc&&!rc.error)out.cfg=rc.data||[]}catch(e){}
-  try{var rr=await sb.from('commission_records').select('*').eq('owner_id',oid);if(rr&&!rr.error)out.rec=rr.data||[]}catch(e){}
-  return out;
-}
-function _commMonthRange(t){
-  var start=(t.move_in_date||'').slice(0,7);
-  if(!start)return null;
-  var end;
-  if(t.status==='inactive'){end=(t.move_out_date||t.contract_end||'').slice(0,7)||null}
-  else{end=(t.contract_end||'').slice(0,7)||null}
-  var nowM=today().slice(0,7);
-  if(!end||end>nowM)end=nowM;
-  if(start>end)return null;
-  var months=[];var y=parseInt(start.slice(0,4),10),m=parseInt(start.slice(5,7),10);
-  var ey=parseInt(end.slice(0,4),10),em=parseInt(end.slice(5,7),10),guard=0;
-  while((y<ey||(y===ey&&m<=em))&&guard<600){months.push(y+'-'+(m<10?'0'+m:''+m));m++;if(m>12){m=1;y++}guard++}
-  return months;
-}
-function _commCalc(base,cfg){
-  base=base||0;
-  if(cfg.rate_type==='fixed')return Math.round((cfg.rate||0)*100)/100;
-  return Math.round(base*(cfg.rate||0)/100*100)/100;
-}
-async function commGenerate(){
-  if(!_commOn())return{a:0,r:0,u:0};
-  var oid=getOwnerId();var d=await _commLoadAll();
-  var staff=d.staff,cfg=d.cfg,rec=d.rec;
-  var exist={};
-  rec.forEach(function(r){exist[r.tenant_id+'|'+(r.month||'')+'|'+r.mode]=true});
-  var toAdd=[];
-  for(var i=0;i<cfg.length;i++){
-    var c=cfg[i];
-    if(!c.staff_id)continue;
-    var t=cache.tenants.find(function(x){return x.id===c.tenant_id});
-    if(!t)continue;
-    var rent=t.rent_amount||0;
-    if(c.mode==='onetime'){
-      var om=(t.move_in_date||today()).slice(0,7);var key=t.id+'|'+om+'|onetime';
-      if(!exist[key]){toAdd.push({owner_id:oid,staff_id:c.staff_id,tenant_id:t.id,month:om,amount:_commCalc(rent,c),base_amount:rent,mode:'onetime',basis:c.basis||'effective',settled:false,note:i18n.t('comm.oneTimeNote')});exist[key]=true}
-    }else if(c.basis==='received'){
-      // 按实收租金：按「收款月份」汇总当月所有已收租金（含补缴），计提提成
-      var byMonth={};
-      cache.rents.filter(function(r){return r.tenant_id===t.id&&r.status==='paid'&&r.pay_date}).forEach(function(r){
-        var pm=String(r.pay_date).slice(0,7);byMonth[pm]=(byMonth[pm]||0)+(r.amount||0);
-      });
-      Object.keys(byMonth).forEach(function(pm){
-        var base=byMonth[pm];var key2=t.id+'|'+pm+'|monthly';
-        if(!exist[key2]){toAdd.push({owner_id:oid,staff_id:c.staff_id,tenant_id:t.id,month:pm,amount:_commCalc(base,c),base_amount:base,mode:'monthly',basis:'received',settled:false,note:i18n.t('comm.recvNote')});exist[key2]=true}
-      });
-    }else{
-      var months=_commMonthRange(t);
-      if(months)months.forEach(function(mo){var key=t.id+'|'+mo+'|monthly';
-        if(!exist[key]){toAdd.push({owner_id:oid,staff_id:c.staff_id,tenant_id:t.id,month:mo,amount:_commCalc(rent,c),base_amount:rent,mode:'monthly',basis:'effective',settled:false,note:i18n.t('comm.effNote')});exist[key]=true}
-      });
-    }
-  }
-  if(toAdd.length){for(var k=0;k<toAdd.length;k+=100){try{await sb.from('commission_records').insert(toAdd.slice(k,k+100))}catch(e){}}}
-  // ===== 反向对账（仅「按月·按实收租金」）：撤销收款/删账单/金额改收 → 自动校正未结算提成；已结算不动 =====
-  var removed=0,updated=0;
-  for(var ci=0;ci<cfg.length;ci++){
-    var cc=cfg[ci];
-    if(cc.mode!=='monthly'||cc.basis!=='received'||!cc.staff_id)continue;
-    var tt=cache.tenants.find(function(x){return x.id===cc.tenant_id});
-    if(!tt)continue;
-    var expMap={};
-    cache.rents.filter(function(r){return r.tenant_id===tt.id&&r.status==='paid'&&r.pay_date}).forEach(function(r){
-      var pm=String(r.pay_date).slice(0,7);expMap[pm]=(expMap[pm]||0)+(r.amount||0);
-    });
-    var mine=rec.filter(function(r){return r.tenant_id===tt.id&&r.mode==='monthly'&&r.basis==='received'});
-    for(var mi=0;mi<mine.length;mi++){
-      var rr=mine[mi];
-      if(rr.settled)continue; // 已结算（可能已发员工）一律不动
-      var expBase=expMap[rr.month];
-      if(expBase==null||expBase<=0){
-        try{var dr=await sb.from('commission_records').delete().eq('id',rr.id);if(!dr||!dr.error)removed++}catch(e){}
-      }else{
-        var expAmt=_commCalc(expBase,cc);
-        if(Math.abs((rr.base_amount||0)-expBase)>0.005||Math.abs((rr.amount||0)-expAmt)>0.005){
-          try{var ur=await sb.from('commission_records').update({base_amount:expBase,amount:expAmt}).eq('id',rr.id);if(!ur||!ur.error)updated++}catch(e){}
-        }
-      }
-    }
-  }
-  return{a:toAdd.length,r:removed,u:updated};
-}
-async function rCommission(){
-  var mc=document.getElementById('mainContent');
-  if(mc)mc.innerHTML='<div class="page-hd"><h2>'+i18n.t('comm.title')+'</h2></div><div class="empty"><div class="ei">💼</div><p>'+i18n.t('common.loading')+'</p></div>';
-  var d=await _commLoadAll();
-  if(_commOn()){try{var _g=await commGenerate();d=await _commLoadAll();if((_g.r||0)>0||(_g.u||0)>0)toast(i18n.t('comm.reconciled',{r:_g.r||0,u:_g.u||0}),'w')}catch(e){}}
-  cache.staff=d.staff;cache.tcomm=d.cfg;cache.commissions=d.rec;
-  var staff=d.staff,rec=d.rec;
-  var months={};rec.forEach(function(r){if(r.month)months[r.month]=1});
-  var mList=Object.keys(months).sort().reverse();
-  var nowM=today().slice(0,7);
-  if(!commState.month)commState.month=mList.indexOf(nowM)>=0?nowM:(mList[0]||nowM);
-  var tabs='<div style="display:flex;gap:8px;margin-bottom:14px">'+
-    '<button class="btn btn-sm '+(commState.tab==='report'?'btn-p':'btn-gh')+'" onclick="commTab(\'report\')">📊 '+i18n.t('comm.reportTab')+'</button>'+
-    '<button class="btn btn-sm '+(commState.tab==='staff'?'btn-p':'btn-gh')+'" onclick="commTab(\'staff\')">👥 '+i18n.t('comm.staffTab')+'</button></div>';
-  var body;
-  if(commState.tab==='staff'){body=_commStaffHtml(staff)}
-  else{
-    var monthOpts=mList.map(function(m){return'<option value="'+m+'"'+(commState.month===m?' selected':'')+'>'+m+'</option>'}).join('');
-    if(mList.indexOf(commState.month)<0)monthOpts='<option value="'+commState.month+'" selected>'+commState.month+'</option>'+monthOpts;
-    var staffOpts='<option value="__all__"'+(commState.staff==='__all__'?' selected':'')+'>'+i18n.t('common.all')+'</option>'+staff.map(function(s){return'<option value="'+s.id+'"'+(commState.staff===s.id?' selected':'')+'>'+esc(s.name)+'</option>'}).join('');
-    var setOpts='<option value="__all__"'+(commState.settled==='__all__'?' selected':'')+'>'+i18n.t('comm.allStatus')+'</option><option value="unsettled"'+(commState.settled==='unsettled'?' selected':'')+'>'+i18n.t('comm.unsettled')+'</option><option value="settled"'+(commState.settled==='settled'?' selected':'')+'>'+i18n.t('comm.settled')+'</option>';
-    var cur=rec.filter(function(r){return r.month===commState.month});
-    if(commState.staff!=='__all__')cur=cur.filter(function(r){return r.staff_id===commState.staff});
-    if(commState.settled==='settled')cur=cur.filter(function(r){return r.settled});
-    if(commState.settled==='unsettled')cur=cur.filter(function(r){return!r.settled});
-    var tot=cur.reduce(function(a,r){return a+(r.amount||0)},0);
-    var setTot=cur.filter(function(r){return r.settled}).reduce(function(a,r){return a+(r.amount||0)},0);
-    var unsetTot=cur.filter(function(r){return!r.settled}).reduce(function(a,r){return a+(r.amount||0)},0);
-    var smap={};
-    cur.forEach(function(r){var sid=r.staff_id||'__none__';if(!smap[sid])smap[sid]={name:(r.staff_id?((staff.find(function(s){return s.id===r.staff_id})||{name:i18n.t('comm.staffGone')}).name):i18n.t('comm.noStaff')),total:0,settled:0,unsettled:0,cnt:0};smap[sid].total+=r.amount||0;smap[sid].cnt++;if(r.settled)smap[sid].settled+=r.amount||0;else smap[sid].unsettled+=r.amount||0});
-    var sumRows=Object.keys(smap).map(function(sid){var s=smap[sid];return'<tr><td style="font-weight:600">'+esc(s.name)+'</td><td>'+s.cnt+'</td><td style="font-weight:700">¥'+s.total.toLocaleString()+'</td><td style="color:var(--g)">¥'+s.settled.toLocaleString()+'</td><td style="color:var(--w)">¥'+s.unsettled.toLocaleString()+'</td></tr>'}).join('');
-    var sumTbl=Object.keys(smap).length?'<div class="tbl-wrap"><table><thead><tr><th>'+i18n.t('comm.staffName')+'</th><th>'+i18n.t('comm.recCount')+'</th><th>'+i18n.t('comm.monthTotal')+'</th><th>'+i18n.t('comm.settled')+'</th><th>'+i18n.t('comm.unsettled')+'</th></tr></thead><tbody>'+sumRows+'</tbody></table></div>':'<p style="font-size:12px;color:var(--ts);padding:8px 4px">'+i18n.t('comm.noDataMonth')+'</p>';
-    var detRows=cur.slice().sort(function(a,b){var sa=a.staff_id||'',sb2=b.staff_id||'';if(sa!==sb2)return sa<sb2?-1:1;return (a.tenant_id||'')<(b.tenant_id||'')?-1:1;}).map(function(r){
-      var s=r.staff_id?staff.find(function(x){return x.id===r.staff_id}):null;
-      var t=cache.tenants.find(function(x){return x.id===r.tenant_id});
-      return'<tr><td style="font-weight:600">'+esc(s?s.name:i18n.t('comm.staffGone'))+'</td><td>'+esc(t?t.name:'-')+'</td><td>'+_commModeText(r)+'</td><td>¥'+(r.base_amount||0).toLocaleString()+'</td><td style="font-weight:700">¥'+(r.amount||0).toLocaleString()+'</td><td>'+(r.settled?'<span class="tag t-green">'+i18n.t('comm.settled')+'</span>':'<span class="tag t-yellow">'+i18n.t('comm.unsettled')+'</span>')+'</td><td style="white-space:nowrap">'+(canEdit()?('<button class="btn btn-sm btn-gh" onclick="commToggleSettle(\''+r.id+'\')">'+(r.settled?i18n.t('comm.markUnsettled'):i18n.t('comm.markSettled'))+'</button> <button class="btn btn-sm btn-gh" style="color:var(--d)" onclick="commDelRec(\''+r.id+'\')">'+i18n.t('common.del')+'</button>'):'-')+'</td></tr>';
-    }).join('');
-    var detTbl=cur.length?'<div class="tbl-wrap"><table><thead><tr><th>'+i18n.t('comm.staffName')+'</th><th>'+i18n.t('set.tenants')+'</th><th>'+i18n.t('comm.rule')+'</th><th>'+i18n.t('comm.base')+'</th><th>'+i18n.t('comm.amount')+'</th><th>'+i18n.t('common.status')+'</th><th>'+i18n.t('common.operation')+'</th></tr></thead><tbody>'+detRows+'</tbody></table></div>':'<div class="empty"><div class="ei">💼</div><h3>'+i18n.t('comm.noDataMonth')+'</h3><p>'+i18n.t('comm.noDataHint')+'</p></div>';
-    body='<div class="card"><div class="toolbar">'+
-      '<select class="fsel" onchange="commState.month=this.value;rCommission()">'+monthOpts+'</select>'+
-      '<select class="fsel" onchange="commState.staff=this.value;rCommission()">'+staffOpts+'</select>'+
-      '<select class="fsel" onchange="commState.settled=this.value;rCommission()">'+setOpts+'</select>'+
-      '<span style="flex:1"></span>'+
-      (canEdit()?'<button class="btn btn-sm btn-g" onclick="commSettleAll(\''+commState.month+'\')">'+i18n.t('comm.settleAll')+'</button>':'')+
-      '<button class="btn btn-sm btn-o" onclick="commExport()">'+i18n.t('comm.export')+'</button></div></div>'+
-      '<div class="stats"><div class="sc"><div class="sc-i blue">📊</div><div><h3>'+cur.length+'</h3><p>'+i18n.t('comm.recCount')+'</p></div></div>'+
-      '<div class="sc"><div class="sc-i yellow">💵</div><div><h3>¥'+tot.toLocaleString()+'</h3><p>'+i18n.t('comm.monthTotal')+'</p></div></div>'+
-      '<div class="sc"><div class="sc-i green">✅</div><div><h3>¥'+setTot.toLocaleString()+'</h3><p>'+i18n.t('comm.settled')+'</p></div></div>'+
-      '<div class="sc"><div class="sc-i red">⏳</div><div><h3>¥'+unsetTot.toLocaleString()+'</h3><p>'+i18n.t('comm.unsettled')+'</p></div></div></div>'+
-      '<div class="card"><div class="card-hd"><h3>'+i18n.t('comm.staffSummary')+'</h3></div><div style="padding:12px 14px">'+sumTbl+'</div></div>'+
-      '<div class="card"><div class="card-hd"><h3>'+i18n.t('comm.detail')+'</h3></div>'+detTbl+'</div>';
-  }
-  document.getElementById('mainContent').innerHTML='<div class="page-hd"><h2>'+i18n.t('comm.title')+'</h2></div><div class="card" style="padding:12px 16px;margin-bottom:16px"><span style="font-size:13px">💡 '+i18n.t('comm.hint')+'</span></div>'+tabs+body;
-}
-function _commModeText(r){
-  var mt=r.mode==='onetime'?i18n.t('comm.modeOnetime'):i18n.t('comm.modeMonthly');
-  var bt=r.basis==='received'?i18n.t('comm.basisReceived'):i18n.t('comm.basisEffective');
-  if(r.mode==='onetime')return mt;
-  return mt+'·'+bt;
-}
-function commTab(t){commState.tab=t;rCommission()}
-function _commStaffHtml(staff){
-  var rows=staff.map(function(s){
-    return'<tr><td style="font-weight:600">'+esc(s.name)+'</td><td>'+esc(s.phone||'-')+'</td><td>'+(s.active?'<span class="tag t-green">'+i18n.t('comm.staffActive')+'</span>':'<span class="tag t-gray">'+i18n.t('comm.staffInactive')+'</span>')+'</td><td style="white-space:nowrap">'+(canEdit()?('<button class="btn btn-sm btn-gh" onclick="commStaffEdit(\''+s.id+'\')">'+i18n.t('common.edit')+'</button> '+(s.active?'<button class="btn btn-sm btn-gh" style="color:var(--w)" onclick="commStaffToggle(\''+s.id+'\',false)">'+i18n.t('comm.staffDeactivate')+'</button>':'<button class="btn btn-sm btn-gh" style="color:var(--g)" onclick="commStaffToggle(\''+s.id+'\',true)">'+i18n.t('comm.staffActivate')+'</button>')+' <button class="btn btn-sm btn-gh" style="color:var(--d)" onclick="commStaffDel(\''+s.id+'\')">'+i18n.t('common.del')+'</button>'+staffAcctBtn(s.id)):'-')+'</td></tr>';
-  }).join('');
-  var tbl=staff.length?'<div class="tbl-wrap"><table><thead><tr><th>'+i18n.t('comm.staffName')+'</th><th>'+i18n.t('common.phone')+'</th><th>'+i18n.t('common.status')+'</th><th>'+i18n.t('common.operation')+'</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty"><div class="ei">👥</div><h3>'+i18n.t('comm.noStaff')+'</h3><p>'+i18n.t('comm.noStaffHint')+'</p></div>';
-  return'<div class="card"><div class="card-hd"><h3>'+i18n.t('comm.staffList')+'</h3>'+(canEdit()?'<button class="btn btn-sm btn-p" onclick="commStaffEdit(null)">'+i18n.t('comm.addStaff')+'</button>':'')+'</div>'+tbl+'</div>';
-}
-function commStaffEdit(id){
-  var s=id?(cache.staff||[]).find(function(x){return x.id===id}):null;
-  window._commStaffEdit=id||null;
-  openModal('<div class="m-hd"><h3>'+(s?i18n.t('comm.editStaff'):i18n.t('comm.addStaff'))+'</h3><button class="m-x" onclick="closeModal()">×</button></div>'+
-    '<div class="m-bd"><div class="fg"><label>'+i18n.t('comm.staffName')+'<span class="req">*</span></label><input class="fc" id="fCSName" value="'+esc(s?s.name:'')+'" placeholder="'+i18n.t('comm.staffNamePh')+'"></div>'+
-    '<div class="fg"><label>'+i18n.t('common.phone')+'</label><input class="fc" id="fCSPhone" value="'+esc(s?s.phone||'':'')+'" type="tel"></div>'+
-    '<div class="fg"><label>'+i18n.t('common.notes')+'</label><textarea class="fc" id="fCSNote">'+esc(s?s.note||'':'')+'</textarea></div>'+
-    (s?'<div class="s-item"><div><h4>'+i18n.t('comm.staffActive')+'</h4></div><button class="tgl'+(s.active?' on':'')+'" id="fCSActive" onclick="this.classList.toggle(\'on\')"></button></div>':'')+
-    '</div><div class="m-ft"><button class="btn btn-gh" onclick="closeModal()">'+i18n.t('common.cancel')+'</button><button class="btn btn-p" onclick="commStaffSave()">'+i18n.t('common.save')+'</button></div>');
-}
-async function commStaffSave(){
-  var nameEl=document.getElementById('fCSName');var name=nameEl?nameEl.value.trim():'';
-  if(!name){toast(i18n.t('comm.enterStaffName'),'e');return}
-  var id=window._commStaffEdit;
-  var payload={name:name,phone:(document.getElementById('fCSPhone').value||'').trim()||null,note:(document.getElementById('fCSNote').value||'').trim()||null};
-  var tgl=document.getElementById('fCSActive');
-  if(tgl)payload.active=tgl.classList.contains('on');
-  var r;
-  if(id){r=await sb.from('staff').update(payload).eq('id',id)}
-  else{payload.owner_id=getOwnerId();payload.active=true;r=await sb.from('staff').insert(payload)}
-  if(r.error){toast(r.error.message,'e');return}
-  closeModal();toast(i18n.t('common.updateSuccess'));rCommission();
-}
-function commStaffToggle(id,active){
-  sb.from('staff').update({active:active}).eq('id',id).then(function(r){if(r&&r.error){toast(r.error.message,'e');return}toast(i18n.t('common.updateSuccess'));rCommission()});
-}
-function commStaffDel(id){
-  confirmDialog(i18n.t('comm.delStaffConfirm'),i18n.t('comm.delStaffSub'),async function(){
-    var r=await sb.from('staff').delete().eq('id',id);
-    if(r.error){toast(r.error.message,'e');return}
-    toast(i18n.t('common.deleted'));rCommission();
-  });
-}
-function _commStaffOptions(sel){
-  var list=(cache.staff||[]).filter(function(s){return s.active});
-  return'<option value="">'+i18n.t('comm.selectStaff')+'</option>'+list.map(function(s){return'<option value="'+s.id+'"'+(s.id===sel?' selected':'')+'>'+esc(s.name)+(s.phone?' ('+esc(s.phone)+')':'')+'</option>'}).join('');
-}
-function _commSectionHtml(cfg){
-  if(!_commOn())return'';
-  cfg=cfg||{};
-  return'<div class="file-section" style="border-top:1px dashed var(--bd);margin-top:12px;padding-top:12px"><h4>💼 '+i18n.t('comm.leaseTitle')+'</h4>'+
-    '<div class="fr"><div class="fg"><label>'+i18n.t('comm.dealStaff')+'</label><select class="fc" id="fCStaff">'+_commStaffOptions(cfg.staff_id)+'</select></div>'+
-    '<div class="fg"><label>'+i18n.t('comm.mode')+'</label><select class="fc" id="fCMode" onchange="_commFieldChg()"><option value="monthly"'+(cfg.mode!=='onetime'?' selected':'')+'>'+i18n.t('comm.modeMonthly')+'</option><option value="onetime"'+(cfg.mode==='onetime'?' selected':'')+'>'+i18n.t('comm.modeOnetime')+'</option></select></div></div>'+
-    '<div class="fr"><div class="fg" id="fCBasisFg"><label>'+i18n.t('comm.basis')+'</label><select class="fc" id="fCBasis" onchange="_commFieldChg()"><option value="effective"'+(cfg.basis!=='received'?' selected':'')+'>'+i18n.t('comm.basisEffective')+'</option><option value="received"'+(cfg.basis==='received'?' selected':'')+'>'+i18n.t('comm.basisReceived')+'</option></select></div>'+
-    '<div class="fg"><label>'+i18n.t('comm.rateType')+'</label><select class="fc" id="fCRateType" onchange="_commFieldChg()"><option value="percent"'+(cfg.rate_type!=='fixed'?' selected':'')+'>'+i18n.t('comm.ratePercent')+'</option><option value="fixed"'+(cfg.rate_type==='fixed'?' selected':'')+'>'+i18n.t('comm.rateFixed')+'</option></select></div></div>'+
-    '<div class="fg"><label id="fCRateLabel">'+i18n.t('comm.ratePercentLabel')+'</label><input class="fc" id="fCRate" type="number" step="0.01" min="0" value="'+(cfg.rate!=null?cfg.rate:'')+'" placeholder="'+i18n.t('comm.ratePh')+'"></div>'+
-    '<p class="file-hint" id="fCHint">'+i18n.t('comm.hintMonthlyEff')+'</p></div>';
-}
-function _commFieldChg(){
-  var modeEl=document.getElementById('fCMode');if(!modeEl)return;
-  var basisFg=document.getElementById('fCBasisFg');
-  var rtEl=document.getElementById('fCRateType');
-  var lab=document.getElementById('fCRateLabel');
-  var hint=document.getElementById('fCHint');
-  var isOne=modeEl.value==='onetime';
-  if(basisFg)basisFg.style.display=isOne?'none':'';
-  var isPct=rtEl&&rtEl.value==='percent';
-  if(lab)lab.textContent=isPct?i18n.t('comm.ratePercentLabel'):i18n.t('comm.rateFixedLabel');
-  if(hint){
-    if(isOne)hint.textContent=i18n.t('comm.hintOnetime');
-    else{var bEl=document.getElementById('fCBasis');hint.textContent=(bEl&&bEl.value==='received')?i18n.t('comm.hintMonthlyRecv'):i18n.t('comm.hintMonthlyEff')}
-  }
-}
-function _commInitForm(tenantId){
-  if(!_commOn())return;
-  var sel=document.getElementById('fCStaff');if(!sel)return;
-  function curCfg(){return tenantId?(cache.tcomm||[]).find(function(c){return c.tenant_id===tenantId}):null}
-  var cfg=curCfg();
-  function fill(){
-    var c=curCfg();
-    if(c){
-      var stEl=document.getElementById('fCStaff');
-      if(stEl&&c.staff_id)stEl.value=c.staff_id;
-      if(document.getElementById('fCMode'))document.getElementById('fCMode').value=c.mode==='onetime'?'onetime':'monthly';
-      if(document.getElementById('fCBasis'))document.getElementById('fCBasis').value=c.basis==='received'?'received':'effective';
-      if(document.getElementById('fCRateType'))document.getElementById('fCRateType').value=c.rate_type==='fixed'?'fixed':'percent';
-      if(document.getElementById('fCRate'))document.getElementById('fCRate').value=c.rate!=null?c.rate:'';
-    }
-    _commFieldChg();
-  }
-  if((cache.staff||[]).length && cfg){
-    if(cfg.staff_id)sel.value=cfg.staff_id;
-    fill();return
-  }
-  _commLoadAll().then(function(d){
-    cache.staff=d.staff;cache.tcomm=d.cfg;
-    var se=document.getElementById('fCStaff');
-    var c2=curCfg();
-    if(se){var cur=c2?c2.staff_id:'';se.innerHTML=_commStaffOptions(cur);if(cur)se.value=cur}
-    fill();
-  });
-}
-async function _commSaveForTenant(tenantId){
-  try{
-    if(!_commOn()||!tenantId)return;
-    var staffEl=document.getElementById('fCStaff');if(!staffEl)return;
-    var staffId=staffEl.value||null;
-    if(!staffId){
-      try{await sb.from('tenant_commission').delete().eq('tenant_id',tenantId)}catch(e){}
-      try{cache.tcomm=(cache.tcomm||[]).filter(function(x){return x.tenant_id!==tenantId});}catch(e){}
-      return;
-    }
-    var modeEl=document.getElementById('fCMode'),basisEl=document.getElementById('fCBasis'),rtEl=document.getElementById('fCRateType'),rateEl=document.getElementById('fCRate');
-    var mode=modeEl?modeEl.value:'monthly';
-    var payload={owner_id:getOwnerId(),tenant_id:tenantId,staff_id:staffId,mode:mode,basis:mode==='onetime'?'effective':(basisEl?basisEl.value:'effective'),rate_type:rtEl?rtEl.value:'percent',rate:parseFloat(rateEl?rateEl.value:'0')||0,updated_at:new Date().toISOString()};
-    var r=await sb.from('tenant_commission').upsert(payload,{onConflict:'tenant_id'}).select();
-    if(r.error){console.warn('commission save:',r.error.message);}
-    else{
-      try{
-        var saved=(r.data&&r.data[0])?r.data[0]:payload;
-        var list=cache.tcomm=(cache.tcomm||[]).filter(function(x){return x.tenant_id!==tenantId});
-        list.push(saved);
-      }catch(e){}
-    }
-  }catch(e){console.warn('commission save failed:',e)}
-}
-async function commToggleSettle(id){
-  var rec=(cache.commissions||[]).find(function(r){return r.id===id});
-  if(!rec)return;
-  var nv=!rec.settled;
-  var r=await sb.from('commission_records').update({settled:nv,settled_at:nv?new Date().toISOString():null}).eq('id',id);
-  if(r.error){toast(r.error.message,'e');return}
-  toast(nv?i18n.t('comm.settledDone'):i18n.t('comm.unsettledDone'));
-  rec.settled=nv;rCommission();
-}
-function commSettleAll(month){
-  var ids=(cache.commissions||[]).filter(function(r){return r.month===month&&!r.settled}).map(function(r){return r.id});
-  if(!ids.length){toast(i18n.t('comm.noUnsettled'),'w');return}
-  confirmDialog(i18n.t('comm.settleAllConfirm',{n:ids.length,m:month}),i18n.t('comm.settleAllSub'),async function(){
-    var errs=0;
-    for(var i=0;i<ids.length;i++){
-      var rr=await sb.from('commission_records').update({settled:true,settled_at:new Date().toISOString()}).eq('id',ids[i]);
-      if(rr&&rr.error)errs++;
-    }
-    if(errs){toast(i18n.t('common.opFail'),'e');return}
-    toast(i18n.t('comm.settledDone'));rCommission();
-  });
-}
-function commDelRec(id){
-  confirmDialog(i18n.t('comm.delRecConfirm'),'',async function(){
-    var r=await sb.from('commission_records').delete().eq('id',id);
-    if(r.error){toast(r.error.message,'e');return}
-    toast(i18n.t('common.deleted'));rCommission();
-  });
-}
-function commExport(){
-  var rec=(cache.commissions||[]).filter(function(r){return r.month===commState.month});
-  if(commState.staff!=='__all__')rec=rec.filter(function(r){return r.staff_id===commState.staff});
-  if(commState.settled==='settled')rec=rec.filter(function(r){return r.settled});
-  if(commState.settled==='unsettled')rec=rec.filter(function(r){return!r.settled});
-  if(!rec.length){toast(i18n.t('comm.noDataMonth'),'w');return}
-  var staff=cache.staff||[];
-  var rows=rec.map(function(r){
-    var s=r.staff_id?staff.find(function(x){return x.id===r.staff_id}):null;
-    var t=cache.tenants.find(function(x){return x.id===r.tenant_id});
-    return{'提成月份':r.month,'员工姓名':s?s.name:i18n.t('comm.staffGone'),'员工电话':s?(s.phone||''):'','租户姓名':t?t.name:'-','提成方式':_commModeText(r),'计提基数':r.base_amount||0,'提成金额':r.amount||0,'结算状态':r.settled?i18n.t('comm.settled'):i18n.t('comm.unsettled'),'备注':r.note||''};
-  });
-  var ws=XLSX.utils.json_to_sheet(rows);
-  var wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,i18n.t('comm.detail'));
-  XLSX.writeFile(wb,i18n.t('comm.exportFileName',{m:commState.month})+'.xlsx');
-  toast(i18n.t('set.excelExported'));
-}
-async function tglCommission(){
-  var cur=!!(cache.settings&&cache.settings.commission_enabled);
-  var nv=!cur;
-  var s0=cache.settings||{};
-  var r=await sb.from('workspace_settings').upsert({owner_id:getOwnerId(),enable_reminders:s0.enable_reminders!==undefined?s0.enable_reminders:true,contract_remind_days:s0.contract_remind_days||30,rent_remind_days:s0.rent_remind_days||5,notification_email:s0.notification_email||'',pushplus_token:s0.pushplus_token||'',commission_enabled:nv},{onConflict:'owner_id'});
-  if(r.error){toast(r.error.message,'e');return}
-  cache.settings.commission_enabled=nv;
-  var tg=document.getElementById('tglCommission');
-  if(tg)tg.classList.toggle('on',nv);
-  toast(nv?i18n.t('comm.enabled'):i18n.t('comm.disabled'));
-  _commNavSync();
-  if(nv)setTimeout(function(){goPage('commission')},300);
-}
-function _commNavSync(){
-  var el=document.querySelector('.nav-item[data-p="commission"]');
-  if(el)el.style.display=_commOn()?'flex':'none';
-}
-// ===== /v76 提成模块 =====
-
 function rFeedback(){
   if(!cache.feedback)cache.feedback=[];
   var list=cache.feedback.slice().sort(function(a,b){return(b.created_at||'').localeCompare(a.created_at||'')});
@@ -2432,7 +1842,7 @@ function renderMeterList(tenantId){
       rowsHtml+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font-size:12px">'+i18n.t('meter.total')+'</span><b style="color:var(--d);font-size:14px">¥'+Number(m.total_fee||0).toFixed(2)+'</b></div>'+
       noteRow+
-      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'+toggleBtn+(canEdit()?'<button class="btn btn-sm btn-gh" onclick="showMeterEditModal('+Q+m.id+Q+')">✏️ '+i18n.t('common.edit')+'</button>':'')+photoBtn+delBtn+'</div>'+
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'+toggleBtn+photoBtn+delBtn+'</div>'+
       '</div>';
   }).join('');
   return hd+cards;
@@ -2765,132 +2175,6 @@ function delMeter(id){
     toast(m&&m.paid?i18n.t('meter.delWithIncomeHint'):i18n.t('common.deleteSuccess'),'i');
   });
 }
-// ===== v80: 水电抄表记录可编辑（纯增量，新增函数，不改原有新增逻辑）=====
-async function showMeterEditModal(id){
-  if(!canEdit()){toast(i18n.t('common.readOnly'),'w');return}
-  var m=(cache.meters||[]).find(function(x){return x.id===id});if(!m)return;
-  var t=cache.tenants.find(function(x){return x.id===m.tenant_id});if(!t)return;
-  var p=meterGetPrices(m.tenant_id,m.room_id||t.room_id);
-  window._meterCtx={tenantId:m.tenant_id,editId:id,prices:p,seq:0,items:[]};
-  function n2(v){if(v===null||v===undefined||v==='')return '';var n=parseFloat(v);return isNaN(n)?'':n}
-  var sub=(cache.meterItems||[]).filter(function(x){return x.reading_id===id}).sort(function(a,b){return(a.sort_order||0)-(b.sort_order||0)});
-  var seq=0;
-  function pushItem(o){seq++;o.id=seq;window._meterCtx.items.push(o)}
-  if(sub.length){
-    sub.forEach(function(it){
-      if(it.kind==='other'){
-        pushItem({type:'other',kind:'other',label:it.label||'',cur:null,prev:null,usage:null,price:null,amount:n2(it.amount)});
-      }else{
-        var def=_meterKindDef(it.kind);
-        pushItem({type:'meter',kind:it.kind,label:it.label||def.label,
-          cur:n2(it.cur_reading),prev:n2(it.prev_reading),usage:n2(it.usage),price:n2(it.price),amount:n2(it.amount)});
-      }
-    });
-  }else{
-    [['cold_water',m.cold_water,m.cold_water_price,m.cold_water_usage,m.cold_water_fee],
-     ['hot_water',m.hot_water,m.hot_water_price,m.hot_water_usage,m.hot_water_fee],
-     ['electricity',m.electricity,m.electricity_price,m.electricity_usage,m.electricity_fee]].forEach(function(a){
-      if(a[1]!==null&&a[1]!==undefined&&a[1]!==''){
-        var def=_meterKindDef(a[0]);
-        pushItem({type:'meter',kind:a[0],label:def.label,cur:n2(a[1]),prev:'',usage:n2(a[3]),price:n2(a[2]),amount:n2(a[4])});
-      }
-    });
-  }
-  window._meterCtx.seq=seq;
-  var kindBtns=_M_KINDS.map(function(k){
-    return '<button class="btn btn-sm btn-gh" style="font-size:12px" onclick="meterAddRow('+Q+k.k+Q+')">➕ '+k.sym+' '+i18n.t('meter.addMeter',{name:k.label})+'</button>';
-  }).join(' ');
-  var photoHad=m.photo_url?('<div style="font-size:11px;color:var(--ts);margin-top:4px">📷 '+i18n.t('meter.photoKeep')+'</div>'):'';
-  var html='<div class="m-hd"><h3>✏️ '+i18n.t('meter.editTitle')+'</h3><button class="m-x" onclick="closeModal()">×</button></div>'+
-    '<div class="m-bd">'+
-    '<div style="font-size:11px;color:var(--p);background:var(--bg);padding:8px;border-radius:6px;margin-bottom:10px">'+i18n.t('meter.editHint')+'</div>'+
-    '<div class="dr"><div class="dl">'+i18n.t('meter.readingDate')+'</div><div class="dv"><input type="date" class="fc" id="mDate" value="'+(m.reading_date||today())+'"></div></div>'+
-    '<div style="background:var(--bg);border-radius:8px;padding:10px;margin:8px 0">'+
-      '<div style="font-size:12px;font-weight:700;margin-bottom:8px">📋 '+i18n.t('meter.meterList')+'</div>'+
-      '<div style="display:flex;gap:6px;flex-wrap:wrap">'+kindBtns+'</div>'+
-      '<div id="meterRows" style="margin-top:10px"></div>'+
-    '</div>'+
-    '<div style="background:var(--bg);border-radius:8px;padding:10px;margin:8px 0">'+
-      '<div style="font-size:12px;font-weight:700;margin-bottom:8px">📦 '+i18n.t('meter.otherFees')+' <button class="btn btn-sm btn-gh" style="font-size:12px;float:right" onclick="meterAddOther()">➕ '+i18n.t('meter.addOther')+'</button></div>'+
-      '<div id="meterOtherRows" style="clear:both"></div>'+
-    '</div>'+
-    '<div class="dr"><div class="dl">'+i18n.t('meter.photo')+'</div><div class="dv"><button class="btn btn-sm btn-gh" onclick="document.getElementById('+Q+'mPhotoInput'+Q+').click()">📷 '+i18n.t('meter.photo')+'</button><input type="file" id="mPhotoInput" accept="image/*" capture="environment" style="display:none" onchange="meterUploadPhoto(this)"><span id="mPhotoStatus" style="margin-left:8px;font-size:11px;color:var(--ts)"></span>'+photoHad+'</div></div>'+
-    '<div class="dr"><div class="dl">'+i18n.t('meter.notes')+'</div><div class="dv"><input type="text" class="fc" id="mNotes" placeholder="'+i18n.t('common.notesPh')+'" value="'+esc(m.notes||'')+'"></div></div>'+
-    '<div id="meterPreview" style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-top:6px;font-size:12px"></div>'+
-    '</div><div class="m-ft"><button class="btn btn-p" id="mSaveBtn" onclick="doMeterUpdate('+Q+id+Q+')">'+i18n.t('common.save')+'</button><button class="btn btn-gh" onclick="closeModal()">'+i18n.t('common.cancel')+'</button></div>';
-  openModal(html);
-  window._meterPhotoPath=null;
-  meterRenderRows();
-  meterPreview();
-}
-async function doMeterUpdate(id){
-  if(!canEdit()){toast(i18n.t('common.readOnly'),'w');return}
-  var m=(cache.meters||[]).find(function(x){return x.id===id});if(!m)return;
-  var ctx=window._meterCtx;if(!ctx){toast(i18n.t('common.opFail'),'e');return}
-  var items=(ctx.items||[]).map(function(it){
-    if(it.type==='meter'){
-      return {type:'meter',kind:it.kind,label:(document.getElementById('mi_label_'+it.id).value||'').trim(),
-        cur:_meterNum(document.getElementById('mi_cur_'+it.id).value),
-        prev:_meterNum(document.getElementById('mi_prev_'+it.id).value),
-        price:_meterNum(document.getElementById('mi_price_'+it.id).value),
-        amount:_meterNum(document.getElementById('mi_amt_'+it.id).value)};
-    }
-    return {type:'other',kind:'other',label:(document.getElementById('mi_label_'+it.id).value||'').trim(),
-      amount:_meterNum(document.getElementById('mi_amt_'+it.id).value)};
-  });
-  var meters=items.filter(function(x){return x.type==='meter'&&x.cur!==null});
-  var others=items.filter(function(x){return x.type==='other'&&x.amount!==null&&x.amount>0&&x.label});
-  if(!meters.length&&!others.length){toast(i18n.t('meter.needReading'),'e');return}
-  var date=document.getElementById('mDate').value||m.reading_date||today();
-  var notes=document.getElementById('mNotes').value.trim();
-  var btn=document.getElementById('mSaveBtn');btn.disabled=true;btn.textContent=i18n.t('common.saving');
-  try{
-    var t=cache.tenants.find(function(x){return x.id===m.tenant_id});
-    function firstMeter(kind){return meters.find(function(x){return x.kind===kind})||null}
-    var cm=firstMeter('cold_water'),hm=firstMeter('hot_water'),em=firstMeter('electricity');
-    function usageOf(x){return (x&&x.cur!==null&&x.prev!==null)?Math.max(0,x.cur-x.prev):null}
-    var total=0;
-    items.forEach(function(x){if(x.amount!==null&&!isNaN(x.amount))total+=x.amount});
-    var row={
-      tenant_id:m.tenant_id,room_id:m.room_id||(t?t.room_id:null),
-      reading_date:date,
-      cold_water:cm?cm.cur:null,hot_water:hm?hm.cur:null,electricity:em?em.cur:null,
-      cold_water_price:cm?cm.price:null,hot_water_price:hm?hm.price:null,electricity_price:em?em.price:null,
-      cold_water_usage:usageOf(cm),hot_water_usage:usageOf(hm),electricity_usage:usageOf(em),
-      cold_water_fee:cm?cm.amount:0,hot_water_fee:hm?hm.amount:0,electricity_fee:em?em.amount:0,
-      total_fee:total,notes:notes
-    };
-    if(window._meterPhotoPath)row.photo_url=window._meterPhotoPath;
-    var r=await sb.from('meter_readings').update(row).eq('id',id);
-    if(r.error){var errMsg=r.error.message||r.error.details||r.error.hint||i18n.t('common.saveFailed');toast(errMsg,'e');btn.disabled=false;btn.textContent=i18n.t('common.save');return}
-    await sb.from('meter_items').delete().eq('reading_id',id);
-    var subRows=[];var order=0;
-    items.forEach(function(x){
-      if(x.type==='meter'&&x.cur===null)return;
-      subRows.push({owner_id:getOwnerId(),reading_id:id,tenant_id:m.tenant_id,
-        kind:x.kind,label:x.label||null,
-        cur_reading:x.type==='meter'?x.cur:null,prev_reading:x.type==='meter'?x.prev:null,
-        usage:x.type==='meter'?usageOf(x):null,price:x.type==='meter'?x.price:null,
-        amount:(x.amount===null||isNaN(x.amount))?0:x.amount,sort_order:order++});
-    });
-    if(subRows.length){
-      var r2=await sb.from('meter_items').insert(subRows).select();
-      if(r2.error)toast(i18n.t('meter.detailSaveFailed')+' '+(r2.error.message||''),'e');
-    }
-    // 已收记录：同步自动入账的水电收入金额
-    try{
-      if(m.paid&&total>0){
-        var ex=await sb.from('income_records').delete().eq('ref_id',id).eq('source','meter');
-        await sb.from('income_records').insert({owner_id:getOwnerId(),tenant_id:m.tenant_id||null,room_id:m.room_id||(t?t.room_id:null),amount:total,category:'utility',source:'meter',occur_date:m.paid_date||today(),note:i18n.t('meter.incomeNote',{date:fmtDate(date)}),ref_id:id});
-      }
-    }catch(e){console.warn('income sync failed:',e)}
-    toast(i18n.t('common.updateSuccess'));
-    closeModal();
-    await loadAllData();
-    showTenantDetail(m.tenant_id);
-  }catch(e){toast(e.message||i18n.t('common.saveFailed'),'e');btn.disabled=false;btn.textContent=i18n.t('common.save')}
-}
-// ===== v80 end =====
 function _monthLabel(d){if(!d)return'';var p=String(d).split('-');return p[0]+'年'+parseInt(p[1],10)+'月'}
 function _copyText(txt){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){toast(i18n.t('rent.remindCopied'),'s')}).catch(function(){_copyFallback(txt)})}else{_copyFallback(txt)}}
 function _copyFallback(txt){var ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast(i18n.t('rent.remindCopied'),'s')}catch(e){toast(i18n.t('rent.remindCopyFail'),'e')}document.body.removeChild(ta)}
@@ -2953,64 +2237,6 @@ function _mRow(label,sym,prefix,item){
     +'<input type="number" step="0.01" inputmode="decimal" id="b_'+prefix+'_f" value="'+fee+'" oninput="_billCalc()" style="width:86px;padding:5px 6px;border:1px solid var(--bd);border-radius:6px;font-size:13px;font-weight:700;color:var(--d)">'
     +rd+'</div>';
 }
-
-// ===== v79: 账单抄表照片扫码分享（纯增量，不改动现有账单逻辑）=====
-function _qrReady(){return new Promise(function(res){
-  if(typeof QRCode!=="undefined"){res(true);return}
-  var srcs=["vendor/qrcode.min.js","https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js","https://cdn.bootcdn.net/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"];var i=0;
-  (function tryL(){if(i>=srcs.length){res(false);return}
-    var sc=document.createElement("script");sc.src=srcs[i];
-    sc.onload=function(){if(typeof QRCode!=="undefined")res(true);else{i++;tryL()}};
-    sc.onerror=function(){i++;tryL()};document.head.appendChild(sc);})();
-})}
-function _billShareBase(){var b=(location.origin||FILE_BASE||"");return String(b).replace(/\/+$/,"")}
-function _billMeterPhotos(tenantId){
-  var arr=(cache.meters||[]).filter(function(m){return m.tenant_id===tenantId&&m.photo_url}).slice();
-  arr.sort(function(a,b){return String(b.reading_date||"").localeCompare(String(a.reading_date||""))||String(b.created_at||"").localeCompare(String(a.created_at||""))});
-  var photos=[];
-  if(arr.length){var p=arr[0].photo_url;if(p.indexOf("contract-photos/")===0)p=p.substring("contract-photos/".length);photos.push({path:p,date:arr[0].reading_date||""})}
-  return photos;
-}
-function _billShareText(d){
-  var lang=localStorage.getItem("lang")||"zh-CN";var lines=[];
-  if(d.rent>0)lines.push((lang==="en"?"Rent":"房租")+" ¥"+_billFmt(d.rent));
-  if(d.cw>0)lines.push(i18n.t("meter.coldWater")+" ¥"+_billFmt(d.cw));
-  if(d.hw>0)lines.push(i18n.t("meter.hotWater")+" ¥"+_billFmt(d.hw));
-  if(d.el>0)lines.push(i18n.t("meter.electricity")+" ¥"+_billFmt(d.el));
-  (d.others||[]).forEach(function(o){lines.push(o.name+" ¥"+_billFmt(o.amount))});
-  var head="";
-  if(lang==="en"){head="Payment notice";}
-  else{var ps=(window._billCtx&&window._billCtx.bills)?window._billCtx.bills.map(function(b){return _monthLabel(b.period_start||b.due_date)}).filter(function(v,i,ar){return ar.indexOf(v)===i}):[];head="缴费期间："+(ps.join("、")||"-");}
-  return head+"\n"+lines.join("\n");
-}
-function _billNewToken(){
-  try{if(crypto&&crypto.randomUUID)return crypto.randomUUID()}catch(e){}
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,function(c){var r=Math.random()*16|0,v=c==="x"?r:(r&0x3|0x8);return v.toString(16)});
-}
-async function _genBillShareQR(){
-  var ctx=window._billCtx;if(!ctx||!ctx.tenant){toast(i18n.t("common.opFail"),"e");return}
-  var t=ctx.tenant,rm=ctx.room;var d=_billCollect();var photos=_billMeterPhotos(t.id);
-  try{
-    var token=_billNewToken();var exp=new Date(Date.now()+90*86400000).toISOString();
-    var payload={owner_id:getOwnerId(),tenant_id:t.id,share_token:token,tenant_name:t.name||"",room_name:rm?rm.name:"",bill_summary:_billShareText(d),total_amount:d.total,photos:photos,expires_at:exp};
-    var ins=await sb.from("bill_shares").insert(payload).select().single();
-    if(ins.error||!ins.data){toast((ins.error&&ins.error.message)||i18n.t("common.opFail"),"e");return}
-    var url=_billShareBase()+"/billshare.html?token="+token;
-    var ok=await _qrReady();
-    var qrHtml=ok?'<div id="bqrBox" style="display:flex;justify-content:center;padding:8px 0"></div>':'<div style="color:var(--d);font-size:13px;margin:10px 0">'+i18n.t("bqr.qrFail")+'</div>';
-    openModal('<div class="m-hd"><h3>📷 '+i18n.t("bqr.title")+'</h3><button class="m-x" onclick="closeModal()">&times;</button></div>'
-      +'<div class="m-bd" style="text-align:center">'
-      +'<p style="font-size:13px;color:var(--ts);margin-bottom:6px">'+i18n.t("bqr.hint")+'</p>'
-      +qrHtml
-      +'<div id="bqrUrl" style="background:var(--bg);border-radius:8px;padding:10px;margin:10px 0;word-break:break-all;font-size:12px;line-height:1.6;user-select:all;text-align:left">'+esc(url)+'</div>'
-      +'<p style="font-size:11px;color:var(--ts)">'+i18n.t("bqr.privacy")+'</p>'
-      +'</div>'
-      +'<div class="m-ft"><button class="btn btn-gh" onclick="_copyBillShareUrl()">🔗 '+i18n.t("bqr.copyLink")+'</button><button class="btn btn-p" onclick="closeModal()">'+i18n.t("common.close")+'</button></div>');
-    if(ok){new QRCode(document.getElementById("bqrBox"),{text:url,width:220,height:220,colorDark:"#1E293B",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M})}
-  }catch(e){console.error("bill share",e);toast(i18n.t("common.opFail"),"e")}
-}
-function _copyBillShareUrl(){var el=document.getElementById("bqrUrl");if(el&&el.textContent.trim())_copyText(el.textContent.trim())}
-// ===== v79 end =====
 function showBillModal(targetType,targetId){
   if(!canEdit()){toast(i18n.t('common.readOnly'),'w');return}
   var t,rm;
@@ -3070,7 +2296,6 @@ function showBillModal(targetType,targetId){
     +'</div>'
     +'</div>'
     +'<div class="m-ft"><button class="btn btn-gh" onclick="_billCopyText()">📋 '+i18n.t('bill.copyText')+'</button>'
-    +'<button class="btn btn-gh" onclick="_genBillShareQR()">📷 '+i18n.t("bqr.btn")+'</button>'
     +'<button class="btn btn-p" onclick="_billGenImage()">🖼️ '+i18n.t('bill.saveImage')+'</button></div>';
   openModal(html2);
   try{var pre=document.getElementById('b_other_preset');if(pre){var parts=pre.textContent.split('|');_billAddOther(parts[0],parseFloat(parts[1])||0)}}catch(e){console.warn('preset other fee',e)}
@@ -3127,7 +2352,7 @@ function _billCopyText(){
     _copyText(s2);
   }
 }
-function _billDrawCanvas(scale,qrImg,qrHint){
+function _billDrawCanvas(scale){
   var d=_billCollect(),ctx0=window._billCtx;
   var t=ctx0.tenant,rm=ctx0.room;
   var W=750;
@@ -3146,7 +2371,7 @@ function _billDrawCanvas(scale,qrImg,qrHint){
   }
   var _detailN=rows.filter(function(r){return r.detail}).length;
   var _rowH=(rows.length-_detailN)*54+_detailN*64;
-  var H=446+_rowH+noteLines.length*30+(qrImg?340:0);
+  var H=438+_rowH+noteLines.length*34;
   var cv=document.createElement('canvas');
   cv.width=W*scale;cv.height=H*scale;
   var c=cv.getContext('2d');
@@ -3193,24 +2418,16 @@ function _billDrawCanvas(scale,qrImg,qrHint){
   c.fillText(i18n.t('bill.total'),68,y+43);
   c.textAlign='right';c.font='bold 34px sans-serif';
   c.fillText('¥'+_billFmt(d.total),W-68,y+46);
-  // 备注（v80:修正纵向位置，避免压在合计条上）
-  y+=92;
+  // 备注
+  y+=40;
   if(noteLines.length){
     c.fillStyle='#6b7280';c.font='17px sans-serif';c.textAlign='left';
-    c.fillText(i18n.t('bill.note')+'：'+noteLines[0],44,y);
-    for(var ni=1;ni<noteLines.length;ni++){y+=26;c.fillText(noteLines[ni],44,y)}
-    y+=22;
-  }
-  // v80:账单内嵌扫码二维码
-  if(qrImg){
-    var qs=220;var qx=(W-qs)/2;
-    c.fillStyle='#374151';c.font='16px sans-serif';c.textAlign='center';
-    c.fillText(qrHint||i18n.t('bill.scanTip'),W/2,y+8);
-    c.drawImage(qrImg,qx,y+22,qs,qs);
+    noteLines.forEach(function(ln){c.fillText(i18n.t('bill.note')+'：'+ln,44,y);y+=34});
+    y+=10;
   }
   // 底部
   c.fillStyle='#9ca3af';c.font='15px sans-serif';c.textAlign='center';
-  c.fillText(i18n.t('bill.imgFooter'),W/2,H-30);
+  c.fillText(i18n.t('bill.imgFooter'),W/2,H-44);
   c.fillStyle='#4F46E5';c.fillRect(W/2-40,H-30,80,4);
   return cv;
 }
@@ -3220,56 +2437,11 @@ function _billDetail(prefix){
   if(u!==''&&p!=='')return Number(u).toFixed(2)+' × ¥'+Number(p).toFixed(2);
   return '';
 }
-// ===== v80: 账单图片内嵌扫码二维码（纯增量，失败自动退回无二维码图片）=====
-async function _billShareUrlForImage(){
-  var ctx=window._billCtx;if(!ctx||!ctx.tenant)return null;
-  var t=ctx.tenant,rm=ctx.room;var d=_billCollect();var photos=_billMeterPhotos(t.id);
-  try{
-    var token=_billNewToken();var exp=new Date(Date.now()+90*86400000).toISOString();
-    var payload={owner_id:getOwnerId(),tenant_id:t.id,share_token:token,tenant_name:t.name||"",room_name:rm?rm.name:"",bill_summary:_billShareText(d),total_amount:d.total,photos:photos,expires_at:exp};
-    var ins=await sb.from("bill_shares").insert(payload).select().single();
-    if(ins.error||!ins.data)return null;
-    return _billShareBase()+"/billshare.html?token="+token;
-  }catch(e){console.warn('bill share url for image failed:',e);return null}
-}
-function _qrDataURL(text,size){
-  return new Promise(function(res){
-    try{
-      var box=document.createElement('div');
-      box.style.cssText='position:fixed;left:-9999px;top:-9999px;width:'+size+'px;height:'+size+'px;opacity:0;pointer-events:none';
-      document.body.appendChild(box);
-      new QRCode(box,{text:text,width:size,height:size,colorDark:'#1E293B',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
-      setTimeout(function(){
-        var cv=box.querySelector('canvas'),img=box.querySelector('img');
-        if(cv){try{res(cv.toDataURL('image/png'))}catch(e){res(null)}}
-        else if(img&&img.src&&img.complete&&img.naturalWidth>0){res(img.src)}
-        else{var t0=Date.now();var iv=setInterval(function(){
-          var c2=box.querySelector('canvas'),im2=box.querySelector('img');
-          if(c2){clearInterval(iv);try{res(c2.toDataURL('image/png'))}catch(e){res(null)}}
-          else if(im2&&im2.src&&im2.complete&&im2.naturalWidth>0){clearInterval(iv);res(im2.src)}
-          else if(Date.now()-t0>4000){clearInterval(iv);res(null)}
-        },80)}
-        setTimeout(function(){try{document.body.removeChild(box)}catch(e){}},200);
-      },180);
-    }catch(e){console.warn('qr dataurl failed:',e);res(null)}
-  });
-}
-function _loadImg(src){return new Promise(function(res){if(!src){res(null);return}var im=new Image();im.onload=function(){res(im)};im.onerror=function(){res(null)};im.src=src})}
-// ===== v80 end =====
-async function _billGenImage(){
+function _billGenImage(){
   var d=_billCollect();
   if(d.total<=0&&d.rent<=0){toast(i18n.t('bill.noAmount'),'w');return}
-  var qrImg=null,qrHint='';
   try{
-    var url=await _billShareUrlForImage();
-    if(url){
-      var ok=await _qrReady();
-      if(ok){var du=await _qrDataURL(url,240);if(du)qrImg=await _loadImg(du)}
-      qrHint=i18n.t('bill.scanTip');
-    }
-  }catch(e){console.warn('bill qr image skipped:',e)}
-  try{
-    var cv=_billDrawCanvas(2,qrImg,qrHint);
+    var cv=_billDrawCanvas(2);
     var url=cv.toDataURL('image/png');
     openModal('<div class="m-hd"><h3>🖼️ '+i18n.t('bill.imgPreview')+'</h3><button class="m-x" onclick="closeModal()">×</button></div>'
       +'<div class="m-bd" style="text-align:center">'

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>功能更新说明 - 瑞丽房东管家</title>
+<link rel="icon" type="image/jpeg" href="birthday_icon.jpg">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --p: #6366f1; --p-light: #818cf8; --p-dark: #4f46e5;
+  --g: #10b981; --o: #f97316; --d: #ef4444; --b: #3b82f6;
+  --bg: #f1f5f9; --c: #fff; --t: #1e293b; --ts: #64748b; --bd: #e2e8f0;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+  background: var(--bg); color: var(--t); min-height: 100vh;
+  padding-bottom: 40px;
+}
+.header {
+  background: linear-gradient(135deg, var(--p) 0%, #7c3aed 100%);
+  color: #fff; padding: 32px 20px 28px; text-align: center; position: relative;
+}
+.back-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  color: rgba(255,255,255,.85); font-size: 13px; text-decoration: none;
+  position: absolute; top: 16px; left: 16px;
+}
+.back-link:hover { color: #fff; }
+.header h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+.header p { font-size: 13px; opacity: .85; }
+.container { max-width: 640px; margin: 0 auto; padding: 0 16px; margin-top: -16px; }
+
+.version-card {
+  background: var(--c); border-radius: 16px; padding: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06); margin-bottom: 16px;
+}
+.version-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px dashed var(--bd);
+}
+.version-tag {
+  display: inline-block; background: linear-gradient(135deg, var(--p), #7c3aed);
+  color: #fff; font-size: 12px; font-weight: 700; padding: 4px 10px;
+  border-radius: 999px;
+}
+.version-date { font-size: 12px; color: var(--ts); }
+
+.feat {
+  display: flex; gap: 12px; padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.feat:last-child { border-bottom: none; }
+.feat-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.feat-icon.new { background: #ecfdf5; }
+.feat-icon.fix { background: #fff7ed; }
+.feat-icon.imp { background: #eff6ff; }
+.feat-body { flex: 1; min-width: 0; }
+.feat-title {
+  font-size: 14px; font-weight: 700; margin-bottom: 4px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.badge {
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px;
+  letter-spacing: .3px;
+}
+.badge.new { background: #d1fae5; color: #065f46; }
+.badge.fix { background: #ffedd5; color: #9a3412; }
+.badge.imp { background: #dbeafe; color: #1e40af; }
+.feat-desc { font-size: 13px; color: var(--ts); line-height: 1.6; }
+.feat-desc b { color: var(--t); font-weight: 600; }
+.feat-tip {
+  margin-top: 8px; background: #f8fafc; border-left: 3px solid var(--p-light);
+  padding: 8px 12px; font-size: 12px; color: var(--ts); border-radius: 0 6px 6px 0;
+  line-height: 1.6;
+}
+.feat-tip.green { border-left-color: var(--g); background: #f0fdf4; color: #065f46; }
+
+.howto {
+  background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 10px;
+  padding: 14px 16px; margin-top: 10px;
+}
+.howto h4 {
+  font-size: 13px; color: #6b21a8; font-weight: 700; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.howto ol { padding-left: 20px; font-size: 12px; color: #6b21a8; line-height: 1.9; }
+.howto ol b { color: #581c87; }
+
+.footer {
+  text-align: center; padding: 20px 12px 8px; font-size: 12px; color: var(--ts);
+}
+.footer a { color: var(--ts); text-decoration: none; }
+.cta {
+  display: block; background: linear-gradient(135deg, var(--p), #7c3aed);
+  color: #fff; text-align: center; padding: 14px; border-radius: 12px;
+  font-size: 15px; font-weight: 700; text-decoration: none; margin-top: 8px;
+  box-shadow: 0 4px 14px rgba(99,102,241,.3);
+}
+.cta:active { transform: scale(.98); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="tools.html" class="back-link">‹ 返回工具箱</a>
+  <h1>✨ 功能更新说明</h1>
+  <p>最近上线了这些新功能，一起来看看</p>
+</div>
+
+<div class="container">
+
+  <!-- 2026-09-03 v60 热修复 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 3 日 · V60</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon fix">🔧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修复：点击「收支」和「抄表」没反应
+          <span class="badge fix">FIX</span>
+        </div>
+        <div class="feat-desc">
+          上一版新增功能中引用了一个未声明的内部变量，导致<b>点「收支」菜单不跳转、点「+抄表」按钮弹窗打不开、水电记录列表空白</b>。本次已修复，上述功能全部恢复正常；同时修复了多表抄表弹窗中费用金额留空时预览可能报错的问题。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">✅</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          交付前新增运行时自动检测
+          <span class="badge imp">质量</span>
+        </div>
+        <div class="feat-desc">
+          以后每次更新前，系统会把<b>所有页面、所有弹窗按钮在模拟环境中完整点一遍</b>，这类"点了没反应"的问题在交付前就会被拦截，不再让你当测试员。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2026-09-03 v59 版本 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#94a3b8">V59</span>
+      <span class="version-date">2026 年 9 月 3 日 · V59</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon fix">🔧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修复：导出表格按钮无反应
+          <span class="badge fix">FIX</span>
+        </div>
+        <div class="feat-desc">
+          导出 Excel 用的组件之前从外部网络加载，部分手机网络（尤其微信内）加载失败导致点击没反应。现在组件<b>直接放在本站服务器上</b>，不再依赖外部网络，点「导出表格」即可正常下载；即使主源异常也会自动切换备用源。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon fix">📱</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修复：更新后手机上仍显示旧页面
+          <span class="badge fix">FIX</span>
+        </div>
+        <div class="feat-desc">
+          之前新版本上线后，微信/浏览器可能一直缓存旧页面，新功能看不到。本次优化了缓存机制，<b>每次打开自动获取最新版</b>，离线时才使用缓存。若仍看到旧界面，把页面<b>完全关闭后重新打开</b>即可（微信里建议退出微信重新进，或用浏览器打开）。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">🔝</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          租金管理页：待续约租户排最前
+          <span class="badge imp">优化</span>
+        </div>
+        <div class="feat-desc">
+          租金管理（按租客视图）中，<b>合同已过期、临期待续约的租客自动排在最前面</b>，姓名旁带红色「已过期」/黄色「待续约」标记，避免遗漏续约。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon new">🧾</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          历史已收水电费自动补计入收入
+          <span class="badge new">NEW</span>
+        </div>
+        <div class="feat-desc">
+          本次更新前已经标记「已收取」的抄表账单，系统会<b>自动补记一笔水电收入</b>（发生日期为收款日期），和新抄表入账逻辑保持一致，收入统计更完整。
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 2026-09-03 版本 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag">V58</span>
+      <span class="version-date">2026 年 9 月 3 日</span>
+    </div>
+
+    <!-- 新功能：多表抄表 -->
+    <div class="feat">
+      <div class="feat-icon new">💧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          抄表支持多块水电表 + 其他费用
+          <span class="badge new">NEW</span>
+        </div>
+        <div class="feat-desc">
+          一套房有多块电表、水表也能记了！抄表时可以<b>随时添加任意数量的水表、电表</b>（每块表可改名称，如「2号电表」「商铺电表」），还能<b>添加其他费用</b>（网费、垃圾费、卫生费等），金额自动汇总。抄表账单点「<b>标记已收取</b>」后，水电费和其他杂费<b>自动计入当月收入</b>；待收取状态只记应收欠款，不计入收入。
+        </div>
+        <div class="howto">
+          <h4>📱 怎么用</h4>
+          <ol>
+            <li>租客详情页「水电抄表」点「<b>+ 抄表</b>」</li>
+            <li>默认有冷水、热水、电表各一块，点上方「➕加电表/加水表」可继续加表，表名可改</li>
+            <li>填上期读数、本期读数、单价，用量和金额自动算；也可以直接改金额</li>
+            <li>点「➕加其他费用」填网费、垃圾费等杂费</li>
+            <li>保存后在抄表记录上点「<b>标记已收取</b>」，这笔钱自动进入收入统计</li>
+          </ol>
+        </div>
+        <div class="feat-tip green">
+          💡 以前的抄表记录和显示方式完全不变；催租账单会自动汇总所有表的用量和其他费用。
+        </div>
+      </div>
+    </div>
+
+    <!-- 新功能：补录收入 -->
+    <div class="feat">
+      <div class="feat-icon new">💰</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          收支页新增「收入记录」，可补录历史账目
+          <span class="badge new">NEW</span>
+        </div>
+        <div class="feat-desc">
+          系统上线前的老账也能补了！进入「<b>收支管理</b>」默认就是「收入记录」页，点「<b>补录收入</b>」可登记房租、水电、押金或其他收入：选类型、填日期、金额、备注，<b>房间和租客可以不选</b>，直接记账。补录的数据和租金页收款、抄表收费<b>自动合并</b>，一起参与首页收入统计和年度收入报表。
+        </div>
+        <div class="feat-tip green">
+          💡 抄表标记「已收取」的水电杂费会自动出现在这里（来源显示「抄表收取」），不用重复登记。
+        </div>
+      </div>
+    </div>
+
+    <!-- 新功能：续约提醒 -->
+    <div class="feat">
+      <div class="feat-icon new">📝</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          每日提醒新增「续约提醒」+ 租客列表置顶
+          <span class="badge new">NEW</span>
+        </div>
+        <div class="feat-desc">
+          合同快到期的租客不会再漏掉了：每日微信/邮件提醒中新增<b>续约提醒板块</b>（到期前30天开始提示，已过期的红色标注）；<b>租客列表里待续约/已过期的租客自动排到最前面</b>，名字旁带「待续约」「已过期」标签。同时提醒服务增加了运行心跳和异常自动告警，万一推送出问题会第一时间发系统通知。
+        </div>
+      </div>
+    </div>
+
+    <!-- 修复：导出 -->
+    <div class="feat">
+      <div class="feat-icon fix">🔧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修复「导出表格」点击无反应
+          <span class="badge fix">修复</span>
+        </div>
+        <div class="feat-desc">
+          导出Excel依赖的表格组件之前从国外节点加载，手机网络不好时会加载失败导致按钮点了没反应。现已<b>切换到国内高速节点并增加备用线路</b>，加载异常时也会明确提示，不再静默无反应。
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 2026-08-28 版本 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#94a3b8;">近期更新</span>
+      <span class="version-date">2026 年 8 月 28 日</span>
+    </div>
+
+    <!-- 新功能：楼栋分组 -->
+    <div class="feat">
+      <div class="feat-icon new">🏢</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          新增「楼栋分组」管理
+          <span class="badge new">NEW</span>
+        </div>
+        <div class="feat-desc">
+          房源多、楼栋多时终于不用挤在一起了！现在可以<b>按楼栋分组管理</b>，房间、租户、租金三个页面都能按楼栋筛选，清清楚楚。
+        </div>
+        <div class="howto">
+          <h4>📱 怎么用</h4>
+          <ol>
+            <li>在<b>房间管理</b>页点顶部楼栋栏的「<b>+ 添加楼栋</b>」，输入楼栋名称（如"1栋"、"祥和公寓"、"自建房"）</li>
+            <li>添加或编辑房间时，可以<b>选择属于哪栋楼</b></li>
+            <li>点顶部楼栋卡片，<b>只看某一栋</b>的房间；房间会按楼层自动分组显示</li>
+            <li><b>租户页</b>和<b>租金页</b>同样支持按楼栋筛选，统计数据也会跟着联动</li>
+            <li>每栋楼可以<b>单独设置水电单价</b>（冷水/热水/电费），抄表时自动取该栋价格</li>
+          </ol>
+        </div>
+        <div class="feat-tip green">
+          💡 没有创建楼栋时，页面和以前完全一样，不会影响任何现有功能。楼栋名称可以随时修改或删除，删除后房间自动回到"未分组"。
+        </div>
+      </div>
+    </div>
+
+    <!-- 新功能：一键催租 -->
+    <div class="feat">
+      <div class="feat-icon new">💬</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          新增「一键催租」话术
+          <span class="badge new">NEW</span>
+        </div>
+        <div class="feat-desc">
+          到了交租日期，不用再自己想怎么发消息。租金页每条<b>待缴/逾期账单</b>旁新增「<b>催租</b>」按钮，点一下自动生成礼貌的催租话术（含房间、月份、金额、逾期天数），复制后<b>直接粘贴到微信发给租客</b>，3秒搞定一个。
+        </div>
+        <div class="howto">
+          <h4>📱 怎么用</h4>
+          <ol>
+            <li>打开<b>租金管理</b>，在「账单明细」或「缴租概览」里找到没缴费的租客</li>
+            <li>点操作栏的「<b>催租</b>」按钮，话术自动复制到剪贴板</li>
+            <li>打开微信找到该租客，<b>长按粘贴发送</b>即可</li>
+          </ol>
+        </div>
+        <div class="feat-tip green">
+          💡 逾期账单会自动带上"已逾期X天"，语气也更郑重；有多期未缴时会列出所有账单和合计金额。以后等微信公众号认证完成，还能升级成自动推送。
+        </div>
+      </div>
+    </div>
+
+    <!-- 优化：水电单价移到楼栋 -->
+    <div class="feat">
+      <div class="feat-icon imp">💧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          水电单价改为按楼栋设置
+          <span class="badge imp">优化</span>
+        </div>
+        <div class="feat-desc">
+          之前在设置页统一设水电单价，现在改到<b>添加/编辑楼栋时单独设置</b>，每栋楼可以有不同的价格。设置页的水电单价已移除，抄表时优先取房间所属楼栋的单价。
+        </div>
+        <div class="feat-tip">
+          🔧 如果楼栋没设单价，会自动用系统默认价格（冷水5元/吨、热水6元/吨、电1.5元/度），不会影响抄表计费。
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 2026-08-24 版本 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#94a3b8;">近期更新</span>
+      <span class="version-date">2026 年 8 月 24 日</span>
+    </div>
+
+    <!-- 新功能：图片压缩 -->
+    <div class="feat">
+      <div class="feat-icon new">🖼️</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          新增「图片压缩」工具
+          <span class="badge new">NEW</span>
+        </div>
+        <div class="feat-desc">
+          工具箱新增<b>图片压缩</b>功能，可批量压缩手机里的照片，<b>图片全程在本地处理，不上传服务器</b>，隐私安全。
+        </div>
+        <div class="howto">
+          <h4>📱 怎么用</h4>
+          <ol>
+            <li>打开<b>工具箱</b>，点「图片压缩」</li>
+            <li>点上传或直接<b>把图片拖进去</b>（支持多张）</li>
+            <li>调整<b>压缩质量</b>（默认 75%，越高质量越好但文件越大）</li>
+            <li>需要的话设置<b>最大尺寸</b>（默认 1920px，适合发微信/朋友圈）</li>
+            <li>点「<b>开始压缩</b>」，完成后单张下载或<b>打包成 ZIP</b> 一次下载</li>
+          </ol>
+        </div>
+        <div class="feat-tip green">
+          💡 适合场景：微信发图被限制大小、上传证件照、节省手机空间、发邮件附件太大。常见照片能压缩到原来的 30%~60%。
+        </div>
+        <a href="image_compress.html" class="cta">立即体验图片压缩 →</a>
+      </div>
+    </div>
+
+    <!-- 修复：密码重置 -->
+    <div class="feat">
+      <div class="feat-icon fix">🔐</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修复「忘记密码」邮件跳转问题
+          <span class="badge fix">FIX</span>
+        </div>
+        <div class="feat-desc">
+          之前在 QQ 邮箱能正常改密码，但<b>网易 163、Outlook 等邮箱</b>点链接会跳回登录页。这次彻底修复，<b>兼容所有邮箱客户端</b>。
+        </div>
+        <div class="feat-tip">
+          🔧 根因：浏览器缓存把重置链接的验证信息弄丢了。已让重置链接<b>强制不走缓存</b>，并优化跳转逻辑，点链接立刻进入设置新密码页面。
+        </div>
+      </div>
+    </div>
+
+    <!-- 优化：中英文 -->
+    <div class="feat">
+      <div class="feat-icon imp">🌐</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          系统支持中英文切换
+          <span class="badge imp">i18n</span>
+        </div>
+        <div class="feat-desc">
+          房东管家主系统已全面支持<b>中文 / English</b> 双语。房型、性别、国籍、付款方式、收款方式等所有字段都做了翻译，缅甸、越南等外籍租户也能看懂。
+        </div>
+        <div class="feat-tip">
+          💡 在系统设置里切换语言，选择会自动记住，下次打开还是你选的语言。数据库里统一存中文，不影响报表和搜索。
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 更早的版本 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#94a3b8;">近期上线</span>
+      <span class="version-date">2026 年 8 月</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon new">📄</div>
+      <div class="feat-body">
+        <div class="feat-title">拍照转文档（OCR）<span class="badge new">NEW</span></div>
+        <div class="feat-desc">手机拍照身份证、合同、收据，自动识别文字，导出 PDF / Word / TXT。接入百度高精度 OCR，支持智能增强、原版式还原。</div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon new">🎂</div>
+      <div class="feat-body">
+        <div class="feat-title">生日台账管理<span class="badge new">NEW</span></div>
+        <div class="feat-desc">记录家人和租户生日，支持农历/公历，自动倒计时，每日提醒里会提示近期过生日的人。</div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">📧</div>
+      <div class="feat-body">
+        <div class="feat-title">每日缴费提醒<span class="badge imp">稳定运行</span></div>
+        <div class="feat-desc">每天早上 9 点自动发邮件 + 微信推送，逾期账单、即将到期账单、近期生日一次说清，不用再一个个翻账本。</div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">🛡️</div>
+      <div class="feat-body">
+        <div class="feat-title">全站国内部署 + 安全加固<span class="badge imp">合规</span></div>
+        <div class="feat-desc">数据全部存储在国内阿里云，已通过 ICP 备案；JWT 密钥轮换、文件上传鉴权、实时连接稳定性均已加固。</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<div style="text-align:center;padding:12px;font-size:11px;color:#999;line-height:2;clear:both"><a href="https://beian.mps.gov.cn/#/query/webSearch?code=53310202533297" target="_blank" rel="noopener" style="color:#999;text-decoration:none;display:inline-flex;align-items:center;gap:3px"><img src="beian_icon.png" alt="公安备案" style="width:14px;height:16px;vertical-align:middle">滇公网安备53310202533297号</a>&nbsp;&nbsp;<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener" style="color:#999;text-decoration:none">滇ICP备2026014743号</a>&nbsp;&nbsp;© 2026 ruilifangfong.site&nbsp;&nbsp;<a href="privacy.html" target="_blank" style="color:#999;text-decoration:none">隐私说明</a></div>
+
+</body>
+</html>
