@@ -114,10 +114,52 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-11 v80 登记必填+账单图片二维码+抄表可编辑 -->
+  <!-- 2026-09-12 v81 登记只看空置房+员工子账号 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 12 日 · V81</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">🏠</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          登记租户时房间下拉默认只显示空置房，不再一长串找花眼
+          <span class="badge imp">更省心</span>
+        </div>
+        <div class="feat-desc">
+          新增租户选房间时，下拉里<b>默认只列出还空着的房间</b>，已经住了人的房间自动隐藏，房间多也能一眼选中。<br>
+          · 特殊情况（比如确实要往一间已住的房里再加人），勾选房间上方的<b>「显示已入住的房间」</b>就能看到全部房间。<br>
+          · 万一你选了一间已经住人的房，保存时会<b>再弹一次提醒</b>「该房间已住着 ××，确定还要登记吗？」，防止手滑一房两租。<br>
+          · 编辑老租户时，他当前住的那间房会照常显示，不受影响。
+        </div>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon new">👥</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          中介老板可以给员工开独立登录账号，员工只看房源和自己提成
+          <span class="badge new">新功能</span>
+        </div>
+        <div class="feat-desc">
+          在「员工提成」页面，每个员工旁边多了<b>「开通登录账号」</b>按钮。填一个邮箱和初始密码，员工就能<b>用自己的账号登录</b>。<br>
+          · 员工登录后界面很简单，只有两个页面：<b>房源情况</b>（哪些房空着、哪些已住）和<b>我的提成</b>（自己每个月提成多少、结没结算）。<br>
+          · <b>老板的利益有保障</b>：员工<b>看不到账本、收支利润、房间底价、租客姓名电话身份证，也看不到其他同事的提成</b>；不能增删改任何东西，纯查看。<br>
+          · 员工离职，老板在同一个地方点一下就能<b>停用账号</b>，他立刻登不进来，提成记录仍然保留。<br>
+          · 权限是在数据库层面锁死的，不是单纯把按钮藏起来，员工即使懂技术也绕不过去。
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 2026-09-11 v80 登记必填+账单图片二维码+抄表可编辑 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#e8eaed;color:#666">V80</span>
       <span class="version-date">2026 年 9 月 11 日 · V80</span>
     </div>
 

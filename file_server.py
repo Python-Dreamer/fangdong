@@ -252,6 +252,66 @@ class FileHandler(BaseHTTPRequestHandler):
             self._json(200, {"ok": True, "user_id": user_id, "email": email, "tier": tier})
             return
 
+        # 员工子账号API - 老板为自己的员工开通登录账号（v81，纯增量）
+        # 任何登录房东都可调，但只能给自己名下员工(staff_id)开号，owner_id 强制为本人
+        if path == "/staff/create-account":
+            user = auth_request(self)
+            if not user:
+                self._json(403, {"error": "无权限"})
+                return
+            owner_uid = user["uid"]
+            length = int(self.headers.get("Content-Length", 0))
+            try:
+                body = json.loads(self.rfile.read(length))
+            except Exception:
+                self._json(400, {"error": "参数错误"})
+                return
+            email = (body.get("email", "") or "").strip().lower()
+            password = (body.get("password", "") or "").strip()
+            staff_id = (body.get("staff_id", "") or "").strip()
+            staff_name = (body.get("staff_name", "") or "").strip()
+            if not email or "@" not in email:
+                self._json(400, {"error": "邮箱格式不正确"})
+                return
+            if len(password) < 6:
+                self._json(400, {"error": "密码至少6位"})
+                return
+            sk = get_service_key()
+            hdr = {"apikey": sk, "Authorization": f"Bearer {sk}", "Content-Type": "application/json"}
+            # 1) 校验 staff_id 确实属于该老板（用 service_role 查 staff）
+            if staff_id:
+                st, sresp = http_request("GET", f"{REST_URL}/staff?id=eq.{staff_id}&owner_id=eq.{owner_uid}&select=id,name,active", hdr)
+                rows = sresp if isinstance(sresp, list) else []
+                if st != 200 or not rows:
+                    self._json(400, {"error": "员工不存在或不属于你"})
+                    return
+                staff_name = staff_name or rows[0].get("name", "")
+            # 2) 用 Admin API 创建认证账号（邮箱直接确认）
+            status, resp = http_request("POST", f"{AUTH_URL}/admin/users",
+                {"Authorization": f"Bearer {sk}", "apikey": sk, "Content-Type": "application/json"},
+                {"email": email, "password": password, "email_confirm": True})
+            if status not in (200, 201):
+                err_msg = resp.get("msg", resp.get("error", resp.get("message", "创建失败"))) if isinstance(resp, dict) else "创建失败"
+                if isinstance(err_msg, dict):
+                    err_msg = err_msg.get("msg") or err_msg.get("message") or "创建失败"
+                self._json(status, {"error": str(err_msg)})
+                return
+            new_uid = resp.get("id", "")
+            # 3) 写入 staff_accounts 关联（owner_id 强制为调用者本人，防越权）
+            acct = {"id": new_uid, "owner_id": owner_uid, "staff_id": staff_id or None,
+                    "email": email, "role": "staff", "active": True}
+            st2, resp2 = http_request("POST", f"{REST_URL}/staff_accounts",
+                {**hdr, "Prefer": "return=representation"}, acct)
+            if st2 not in (200, 201):
+                # 关联失败则回滚删除刚建的认证账号，避免孤儿账号
+                http_request("DELETE", f"{AUTH_URL}/admin/users/{new_uid}",
+                    {"Authorization": f"Bearer {sk}", "apikey": sk})
+                err = resp2 if isinstance(resp2, str) else json.dumps(resp2, ensure_ascii=False)
+                self._json(500, {"error": "账号已建但关联失败：" + str(err)[:120]})
+                return
+            self._json(200, {"ok": True, "user_id": new_uid, "email": email, "staff_name": staff_name})
+            return
+
         # 文件上传（需登录）
         if path.startswith("/upload/"):
             user = auth_request(self)
