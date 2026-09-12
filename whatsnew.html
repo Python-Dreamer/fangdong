@@ -114,10 +114,49 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-12 v83 成交员工保存后不回显·彻底修复 -->
+  <!-- 2026-09-12 v84 员工端提成实时拉取 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 12 日 · V84</span>
+    </div>
+
+    <div class="feat">
+      <div class="feat-icon imp">💼</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修复：员工账号登录后看不到自己的提成（老板端正常）
+          <span class="badge imp">重点修复</span>
+        </div>
+        <div class="feat-desc">
+          之前如果员工是在老板设置提成之前登录的，他的「我的提成」页会一直空白，必须<b>退出重新登录</b>才看得到。<br>
+          现在改成：员工<b>每次打开「我的提成」页都实时从系统拉取最新数据</b>。无论什么时候登录、老板什么时候设置成交员工和提成，员工点进去就能看到自己每月的提成金额和结算状态，不用再反复退出登录。
+        </div>
+      </div>
+    </div>
+
+    <div style="border-top:1px dashed var(--bd);margin:6px 0 14px"></div>
+    <div style="font-size:12px;opacity:.55;margin-bottom:6px">以下为 V83 更新内容：</div>
+
+    <div class="feat">
+      <div class="feat-icon imp">🔧</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          彻底修复：租客提成选好「成交员工」保存后，再次打开不再变回默认
+          <span class="badge imp">修复</span>
+        </div>
+        <div class="feat-desc">
+          给租客选好成交员工、提成方式和比例，保存后再次打开，<b>成交员工、提成方式、计提规则、计算方式、提成比例都会准确回显</b>，员工提成也正确关联到对应成交员工。
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 2026-09-12 v83 成交员工保存后不回显·彻底修复 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#e2e8f0;color:#64748b">V83</span>
       <span class="version-date">2026 年 9 月 12 日 · V83</span>
     </div>
 
@@ -132,23 +171,6 @@ body {
           之前有老板反馈：给租客选好成交员工、提成方式和比例，明明点了保存，再打开又变回"选择成交员工（无则不提成）"。<br>
           这次找到了<b>两个根因</b>并一起修掉：①保存成功后系统没把刚填的内容刷新到界面；②重新打开时只要本地没读到这条设置，就直接显示默认、不再去数据库核对。<br>
           现在无论你是<b>保存后马上再看、关掉重新打开、还是换个手机登录</b>，<b>成交员工、提成方式、计提规则、计算方式、提成比例都会准确回显</b>，员工提成也能正确关联到对应成交员工。
-        </div>
-      </div>
-    </div>
-
-    <div style="border-top:1px dashed var(--bd);margin:6px 0 14px"></div>
-    <div style="font-size:12px;opacity:.55;margin-bottom:6px">以下为 V82 更新内容：</div>
-
-    <div class="feat">
-      <div class="feat-icon imp">🏘️</div>
-      <div class="feat-body">
-        <div class="feat-title">
-          员工账号看到的房源信息更完整，中介带看谈价更顺手
-          <span class="badge imp">更实用</span>
-        </div>
-        <div class="feat-desc">
-          员工登录后的「房源情况」页，现在会显示<b>户型、面积、月租</b>，而且<b>空置的房间自动排在最前面</b>，方便员工先推空房。<br>
-          · 租客姓名电话、账本利润这些老板的隐私信息仍然看不到，权限不变。
         </div>
       </div>
     </div>
