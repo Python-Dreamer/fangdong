@@ -2,6 +2,7 @@
   var translations = {
   "zh-CN": {
     "common.appName": "房东管家",
+    "common.theme": "主题",
     "common.appSubtitle": "简单好用的租房管理系统",
     "common.loading": "加载中...",
     "common.loadFailed": "加载失败",
@@ -1339,6 +1340,7 @@
   },
   "en": {
     "common.appName": "Landlord Manager",
+    "common.theme": "Theme",
     "common.appSubtitle": "Simple & Easy Rental Management",
     "common.loading": "Loading...",
     "common.loadFailed": "Load failed",
