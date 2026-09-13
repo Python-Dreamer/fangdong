@@ -118,17 +118,17 @@ body {
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
-      <span class="version-date">2026 年 9 月 14 日 · V87</span>
+      <span class="version-date">2026 年 9 月 14 日 · V88</span>
     </div>
     <div class="feat">
       <div class="feat-icon">📱</div>
       <div class="feat-body">
         <div class="feat-title">
-          修复：手机端表格卡片化未生效
+          彻底修复：手机端表格卡片化
           <span class="badge">修复</span>
         </div>
         <div class="feat-desc">
-          V86 的手机表格卡片样式因一处样式符号缺失没能生效，本版已修复。现在手机上房间、租客、账单等表格会正常变成卡片，楼栋概览美化也一并正常显示。电脑端与所有操作逻辑不变。
+          之前两版手机表格卡片样式都没显示，这次找到真正原因：样式表里误混入了一小段程序代码，导致整张卡片样式被浏览器跳过。已彻底清除，现在手机上房间、租客、账单、提成等表格都会正常变成一行一字段的卡片，表头自动隐藏、操作按钮整行排开，楼栋概览美化也正常显示。电脑端外观与所有操作逻辑完全不变。
         </div>
       </div>
     </div>
