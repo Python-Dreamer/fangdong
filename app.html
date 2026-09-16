@@ -310,7 +310,7 @@ html[data-th=dark] .bldg-ov-card{box-shadow:0 1px 3px rgba(0,0,0,.3)}
 <div class="ov" id="overlay" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal" onclick="event.stopPropagation()"></div></div>
 <div class="sb-overlay" id="sbOverlay" onclick="closeSB()"></div>
 <div class="photo-viewer-overlay" id="photoViewer" onclick="closePhotoViewer(event)"><button class="photo-viewer-close" onclick="closePhotoViewer()">×</button><span class="photo-viewer-nav" id="photoViewerPrev" onclick="event.stopPropagation();photoViewerNav(-1)">‹</span><img class="photo-viewer-img" id="photoViewerImg" src="" alt=""><span class="photo-viewer-nav" id="photoViewerNext" onclick="event.stopPropagation();photoViewerNav(1)">›</span></div>
-<script src="i18n.js?v=91"></script>
+<script src="i18n.js?v=92"></script>
 <script>
 var sbUrl=localStorage.getItem('sb_url')||'https://ruilifangfong.site',sbKey=localStorage.getItem('sb_key')||'eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8',sb=null,sdkReady=false,currentUser=null,currentProfile=null,currentPage='dashboard';
 var DEFAULT_SB_URL='https://ruilifangfong.site',DEFAULT_SB_KEY='eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8';
@@ -2166,7 +2166,7 @@ async function contractGen_start(tenantId){
   var t=cache.tenants.find(function(x){return x.id===tenantId});
   if(!t){toast(i18n.t('cg.tenantNotFound'),'e');return}
   try{var dm=await decryptTenants([tenantId]);if(dm[tenantId]){t.id_number=dm[tenantId].id_number;t.occupants=dm[tenantId].occupants||t.occupants}}catch(e){console.warn('decrypt for contract failed:',e)}
-  contractGen_state={tenantId:tenantId,templateHtml:'',step:1,fileLoaded:false,docxName:'',tplId:null};
+  contractGen_state={tenantId:tenantId,templateHtml:'',step:1,fileLoaded:false,docxName:'',tplId:null,blanks:[],mapDone:false,isMapped:false};
   contractGen_showModal();
 }
 
@@ -2183,6 +2183,7 @@ function contractGen_showModal(){
   html+='</div>';
   html+='<input type="file" id="cgFileInput" accept=".docx" style="display:none" onchange="contractGen_handleFile(this)">';
   html+='<div id="cgFileName" class="cg-filename" style="display:none"></div>';
+  html+='<div id="cgMapArea" style="display:none"></div>';
   html+='<div id="cgSaveTplWrap" style="display:none;text-align:center;margin:8px 0"></div>';
   html+='<div class="cg-placeholder-list">';
   html+='<b>'+i18n.t('cg.placeholders')+'</b>';
@@ -2246,6 +2247,11 @@ function contractGen_stepsBar(){
 
 function contractGen_goStep(step){
   if(step===2&&!contractGen_state.fileLoaded){toast(i18n.t('cg.uploadFirst'),'e');return}
+  if(step===2&&contractGen_state.isMapped&&!contractGen_state.mapDone&&(contractGen_state.blanks||[]).length){
+    var map=contractGen_collectMap(contractGen_state.blanks.length);
+    contractGen_state.templateHtml=contractGen_applyMap(contractGen_state.templateHtml,contractGen_state.blanks,map);
+    contractGen_state.mapDone=true;
+  }
   contractGen_state.step=step;
   contractGen_showModal();
 }
@@ -2259,8 +2265,7 @@ async function contractGen_handleFile(input){
   try{
     var arrayBuffer=await file.arrayBuffer();
     var result=await mammoth.convertToHtml({arrayBuffer:arrayBuffer});
-    contractGen_state.templateHtml=result.value;
-    contractGen_state.fileLoaded=true;
+    contractGen_prepareTemplate(result.value);
     contractGen_state.docxName=file.name;
     var btn=document.getElementById('cgNextBtn');
     if(btn){btn.disabled=false;btn.style.opacity='1'}
@@ -2273,6 +2278,35 @@ async function contractGen_handleFile(input){
   }
 }
 
+/* 上传新 docx 后：圈空并准备核对区（templateHtml 先存 CGB 锚版本） */
+function contractGen_prepareTemplate(htmlVal){
+  try{
+    var res=contractGen_tokenize(htmlVal);
+    contractGen_state.blanks=res.blanks||[];
+    contractGen_state.templateHtml=res.html;
+    contractGen_state.mapDone=false;
+    contractGen_state.isMapped=(res.blanks&&res.blanks.length>0);
+  }catch(e){
+    contractGen_state.blanks=[];
+    contractGen_state.templateHtml=htmlVal;
+    contractGen_state.mapDone=true;
+    contractGen_state.isMapped=false;
+  }
+  contractGen_state.fileLoaded=true;
+  contractGen_renderMapArea();
+}
+/* 选用已存模板：已含 CGF（或旧{{中文}}），无需再核对 */
+function contractGen_useStoredTemplate(htmlVal,docxName,tplId){
+  contractGen_state.templateHtml=htmlVal||'';
+  contractGen_state.fileLoaded=!!htmlVal;
+  contractGen_state.tplId=tplId;
+  contractGen_state.docxName=docxName||'';
+  contractGen_state.blanks=[];
+  contractGen_state.mapDone=true;
+  contractGen_state.isMapped=false;
+  var area=document.getElementById('cgMapArea');
+  if(area){area.innerHTML='';area.style.display='none';}
+}
 function contractGen_formatDate(dateStr){
   if(!dateStr)return'';
   var parts=String(dateStr).split('-');
@@ -2320,10 +2354,7 @@ async function contractGen_renderTplArea(){
 async function contractGen_pickTpl(id){
   var t=(cache.ctpls||[]).find(function(x){return x.id===id});
   if(!t)return;
-  contractGen_state.templateHtml=t.template_html||'';
-  contractGen_state.fileLoaded=!!t.template_html;
-  contractGen_state.tplId=id;
-  contractGen_state.docxName=t.docx_name||t.name||'';
+  contractGen_useStoredTemplate(t.template_html||'',t.docx_name||t.name||'',id);
   var nameEl=document.getElementById('cgFileName');
   if(nameEl){nameEl.style.display='flex';nameEl.innerHTML='📚 '+i18n.t('cg.selectedTpl')+'：'+esc(t.name||'')}
   var sw=document.getElementById('cgSaveTplWrap');if(sw)sw.style.display='none';
@@ -2343,6 +2374,11 @@ function contractGen_promptSaveTpl(){
 async function contractGen_doSaveTpl(name){
   toast(i18n.t('cg.tplSaving'),'i');
   try{
+    if(contractGen_state.isMapped&&!contractGen_state.mapDone&&(contractGen_state.blanks||[]).length){
+      var map0=contractGen_collectMap(contractGen_state.blanks.length);
+      contractGen_state.templateHtml=contractGen_applyMap(contractGen_state.templateHtml,contractGen_state.blanks,map0);
+      contractGen_state.mapDone=true;
+    }
     var r=await sb.from('contract_templates').insert({owner_id:getOwnerId(),name:name,template_html:contractGen_state.templateHtml,docx_name:contractGen_state.docxName||null}).select('id').single();
     if(r.error){toast(i18n.t('cg.tplSaveFail')+r.error.message,'e');return}
     contractGen_state.tplId=r.data&&r.data.id?r.data.id:null;
@@ -2368,6 +2404,163 @@ function contractGen_delTpl(id){
 function contractGen_getOccupants(t){
   if(!t.occupants||!t.occupants.length)return i18n.t('cg.none');
   return t.occupants.map(function(o){return o.name+(o.id_number?'('+o.id_number+')':'')}).join('、');
+}
+
+/* ================= v92 通用合同自动识别（纯增量，仅 contractGen_ 前缀，不动核心业务） =================
+ * 思路：上传任意 docx（mammoth 转 html）后，自动圈出"待填空位"并按上下文猜字段；
+ * 房东在界面上核对/改一次 → 存成模板（空位写成 {{CGF:字段}}）→ 以后该房东选租客自动填。
+ * 不新增数据表（映射编码进 html 的 CGF 标记），与旧 {{中文}} 占位符模板完全并存。 */
+var contractGen_FIELDS=['tenant_name','tenant_id','tenant_phone','address','monthly_rent','deposit','pay_method','lease_start','lease_end','sign_date','lease_months','occupants_count','occ1_name','occ1_id','occ1_phone','occ2_name','occ2_id','occ2_phone','occ3_name','occ3_id','occ3_phone','occ4_name','occ4_id','occ4_phone','occ_all','first_rent','total_first','cold_water_meter','hot_water_meter'];
+var contractGen_AUTOFIELDS={lease_months:1,occupants_count:1,sign_date:1,first_rent:1,total_first:1};
+function contractGen_blankText(){return '＿＿＿＿＿＿';}
+/* 在 mammoth html 上圈空，返回 {html:含{{CGB:n}}, blanks:[{n,kind,label,raw,pre,guess}]} */
+function contractGen_tokenize(h){
+  var spans=[];
+  function overlap(s,e){for(var k=0;k<spans.length;k++){if(s<spans[k][1]&&e>spans[k][0])return true;}return false;}
+  function add(s,e,kind,label){if(!overlap(s,e))spans.push([s,e,kind,label||'']);}
+  var m;
+  var reDate=/20\d{0,2}[ 　]{0,4}年[ 　]{0,4}月[ 　]{0,4}日/g;
+  while((m=reDate.exec(h))){var seg=m[0];
+    var complete=/\d{4}年/.test(seg)&&/\d{1,2}月/.test(seg)&&/\d{1,2}日/.test(seg);
+    var broken=/[ 　]{1,}年|[ 　]{1,}月|[ 　]{1,}日/.test(seg)||/20\d{0,2}[ 　]{2,}年/.test(seg);
+    if(!complete&&broken)add(m.index,m.index+seg.length,'date','');}
+  var reU=/_[ 　_]{2,}/g;
+  while((m=reU.exec(h)))add(m.index,m.index+m[0].length,'under','');
+  var LAB='身份证号|身份证|证件号|手机号码|手机|签订日期|签约日期|个月房租|月租金额|月租金|月租|每月租金|房租|租金|押金（违约金）|押金\\(违约金\\)|押金|违约金|冷水表底数|热水表底数|表底数|底数为|承诺入住人员为|入住人员为|承租人（乙方）|承租人\\(乙方\\)|承租人|乙方|姓名|电话|租期|合计|人';
+  // 有冒号且冒号后≥2连续空格=空；或无冒号标签后≥3连续空格=空
+  var reLab=new RegExp('('+LAB+')([ 　]*[:：][ 　]{2,}|[ 　]{3,})','g');
+  while((m=reLab.exec(h)))add(m.index,m.index+m[0].length,'lab',m[1]);
+  // 标签+冒号后直接换行（值在下一行）
+  var LAB3='身份证号|身份证|证件号|手机号码|手机|电话|姓名|承租人（乙方）|承租人\\(乙方\\)|承租人|乙方|押金|签订日期|签约日期';
+  var reLab3=new RegExp('('+LAB3+')([ 　]*[:：])(?=\\s*(?:<br\\s*/?>|</p>|<p[ >]))','g');
+  while((m=reLab3.exec(h)))add(m.index,m.index+m[0].length,'lab',m[1]);
+  spans.sort(function(a,b){return a[0]-b[0];});
+  var st={date:0,id:0,phone:0,name:0,water:0,partyB:false,idB:false,phB:false,nameB:false};
+  var blanks=spans.map(function(sp){
+    var s=sp[0],e=sp[1],kind=sp[2],L=sp[3],pre=h.slice(Math.max(0,s-14),s),g='blank';
+    if(kind==='date'){g=(st.date===0)?'lease_start':(st.date===1?'lease_end':'sign_date');st.date++;}
+    else if(kind==='lab'){
+      if(/承租人|乙方/.test(L)&&!/身份证|电话/.test(L)){if(!st.nameB){g='tenant_name';st.nameB=true;}st.partyB=true;}
+      else if(/身份证|证件/.test(L)){if(!st.idB&&st.partyB){g='tenant_id';st.idB=true;}else{st.id++;g='occ'+st.id+'_id';}}
+      else if(/手机|电话/.test(L)){if(!st.phB&&st.partyB){g='tenant_phone';st.phB=true;}else if(!st.partyB){g='tenant_phone';st.phB=true;}else{st.phone++;g='occ'+st.phone+'_phone';}}
+      else if(/姓名/.test(L)){st.name++;g='occ'+st.name+'_name';}
+      else if(/签订日期|签约日期/.test(L))g='sign_date';
+      else if(/押金|违约金/.test(L))g='deposit';
+      else if(/个月房租/.test(L))g='first_rent';
+      else if(/月租|每月租金|房租|租金/.test(L))g='monthly_rent';
+      else if(/合计/.test(L))g='total_first';
+      else if(/入住人员为/.test(L))g='occupants_count';
+      else if(/租期/.test(L))g='lease_months';
+      else if(/表底数|底数为/.test(L)){if(/热水/.test(pre))g='hot_water_meter';else if(/冷水/.test(pre))g='cold_water_meter';else{st.water++;g=(st.water===1)?'cold_water_meter':'hot_water_meter';}}
+    }
+    return {s:s,e:e,kind:kind,label:L,guess:g,raw:h.slice(s,e)};
+  });
+  var out=h;
+  for(var i=blanks.length-1;i>=0;i--){out=out.slice(0,blanks[i].s)+('{{CGB:'+(i+1)+'}}')+out.slice(blanks[i].e);}
+  blanks.forEach(function(b,i){b.n=i+1;});
+  return {html:out,blanks:blanks};
+}
+/* 收集界面上房东对每个空的选择，返回 {n:fieldKey}（blank=手写、keep=不是空） */
+function contractGen_collectMap(count){
+  var map={};
+  for(var i=1;i<=count;i++){
+    var el=document.getElementById('cgMapSel'+i);
+    map[i]=el?el.value:'blank';
+  }
+  return map;
+}
+/* 把临时 CGB 锚按 map 改写成可长期复用的 CGF 标记；keep 的还原原始文本 */
+function contractGen_applyMap(cgbHtml,blanks,map){
+  return cgbHtml.replace(/\{\{CGB:(\d+)\}\}/g,function(_,ns){
+    var n=parseInt(ns,10),v=map[n]||'blank',b=blanks[n-1];
+    if(v==='keep')return b?b.raw:'';
+    if(v==='blank')return '{{CGF:blank}}';
+    return '{{CGF:'+v+'}}';
+  });
+}
+function contractGen_payMonths(payMethod){
+  var s=String(payMethod||'');
+  if(/半年/.test(s)||/half/i.test(s))return 6; // 必须先于"年"，否则"半年付"含年字会误判12
+  if(/年/.test(s)||/year/i.test(s))return 12;
+  if(/季/.test(s)||/quarter/i.test(s))return 3;
+  if(/月/.test(s)||/month/i.test(s))return 1;
+  return 0;
+}
+function contractGen_monthsBetween(a,b){
+  if(!a||!b)return 0;
+  var p=String(a).split('-'),q=String(b).split('-');
+  if(p.length!==3||q.length!==3)return 0;
+  var n=(parseInt(q[0],10)-parseInt(p[0],10))*12+(parseInt(q[1],10)-parseInt(p[1],10));
+  if(parseInt(q[2],10)>=parseInt(p[2],10))n++;
+  return n>0?n:0;
+}
+/* 计算某个字段对当前租客的实际文本 */
+function contractGen_fieldValue(key,tenant,room){
+  var occ=(tenant&&tenant.occupants)||[];
+  function occLine(o,withId){if(!o)return'';return (o.name||'')+(withId&&o.id_number?'('+o.id_number+')':'');}
+  switch(key){
+    case 'tenant_name':return tenant.name||'';
+    case 'tenant_id':return tenant.id_number||'';
+    case 'tenant_phone':return tenant.phone||'';
+    case 'address':return (room&&(room.address||room.name))||'';
+    case 'monthly_rent':return tenant.rent_amount?('¥'+tenant.rent_amount.toLocaleString()):'';
+    case 'deposit':return tenant.deposit?('¥'+tenant.deposit.toLocaleString()):'';
+    case 'pay_method':return _trPay(tenant.pay_method)==='-'?'':_trPay(tenant.pay_method);
+    case 'lease_start':return contractGen_formatDate(tenant.move_in_date);
+    case 'lease_end':return contractGen_formatDate(tenant.contract_end);
+    case 'sign_date':return contractGen_formatDate(new Date().toISOString().slice(0,10));
+    case 'lease_months':{var mm=contractGen_monthsBetween(tenant.move_in_date,tenant.contract_end);return mm?String(mm):'';}
+    case 'occupants_count':return String(1+occ.length);
+    case 'occ_all':return contractGen_getOccupants(tenant);
+    case 'first_rent':{var pm=contractGen_payMonths(tenant.pay_method);return (pm&&tenant.rent_amount)?('¥'+(pm*tenant.rent_amount).toLocaleString()):'';}
+    case 'total_first':{var pm2=contractGen_payMonths(tenant.pay_method);var tot=(tenant.deposit||0)+(pm2&&tenant.rent_amount?pm2*tenant.rent_amount:0);return tot?('¥'+tot.toLocaleString()):'';}
+    case 'cold_water_meter':
+    case 'hot_water_meter':return '';
+    default:{
+      var mm2=/^occ(\d+)_(name|id|phone)$/.exec(key);
+      if(mm2){var idx=parseInt(mm2[1],10)-1,o=occ[idx];if(!o)return'';if(mm2[2]==='name')return o.name||'';if(mm2[2]==='id')return o.id_number||'';return o.phone||'';}
+      return '';
+    }
+  }
+}
+/* 渲染"字段核对"区 */
+function contractGen_renderMapArea(){
+  var area=document.getElementById('cgMapArea');
+  if(!area)return;
+  var blanks=contractGen_state.blanks||[];
+  if(!blanks.length){area.innerHTML='';area.style.display='none';return;}
+  var h='<div style="border:1px solid var(--p);border-radius:10px;padding:10px 12px;margin:10px 0;background:rgba(79,70,229,.04)">';
+  h+='<div style="font-size:13px;font-weight:700;margin-bottom:4px">🎯 '+i18n.t('cg.mapTitle')+' <span style="font-weight:400;font-size:11px;color:var(--p)">'+(i18n.t('cg.autoMark'))+'</span></div>';
+  h+='<p style="font-size:11px;color:var(--ts);margin:0 0 8px;line-height:1.6">'+i18n.t('cg.mapHint')+'</p>';
+  blanks.forEach(function(b){
+    var ctx=(b.raw||'').replace(/\s+/g,' ').trim();
+    if(ctx.length>16)ctx=ctx.slice(0,16)+'…';
+    var opts='';
+    contractGen_FIELDS.forEach(function(f){
+      opts+='<option value="'+f+'"'+(b.guess===f?' selected':'')+'>'+i18n.t('cg.fld.'+f)+(contractGen_AUTOFIELDS[f]?' ('+i18n.t('cg.autoMark')+')':'')+'</option>';
+    });
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px dashed var(--bd)">';
+    h+='<span style="flex:0 0 38%;font-size:11px;color:var(--ts);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(b.raw||'')+'">'+esc(ctx||'＿＿')+'</span>';
+    h+='<span style="color:var(--ts)">→</span>';
+    h+='<select class="fc" id="cgMapSel'+b.n+'" style="flex:1;font-size:12px;padding:5px">';
+    h+=opts;
+    h+='<option value="blank"'+(b.guess==='blank'?' selected':'')+'>✍️ '+i18n.t('cg.blankHand')+'</option>';
+    h+='<option value="keep"'+(b.guess==='keep'?' selected':'')+'>'+i18n.t('cg.notBlank')+'</option>';
+    h+='</select></div>';
+  });
+  h+='</div>';
+  area.innerHTML=h;
+  area.style.display='block';
+}
+/* 最终替换：先 CGF 字段，再旧 {{中文}}，找不到值的字段退回手写线 */
+function contractGen_finalReplace(html,tenant){
+  var room=cache.rooms.find(function(r){return r.id===tenant.room_id});
+  var h=html.replace(/\{\{CGF:([a-zA-Z0-9_]+)\}\}/g,function(_,key){
+    if(key==='blank')return contractGen_blankText();
+    var v=contractGen_fieldValue(key,tenant,room);
+    return (v===''||v===null||v===undefined)?contractGen_blankText():String(v);
+  });
+  return contractGen_replacePlaceholders(h,tenant);
 }
 
 function contractGen_replacePlaceholders(html,tenant){
@@ -2399,7 +2592,7 @@ function contractGen_replacePlaceholders(html,tenant){
 function contractGen_renderPreview(){
   var tenant=cache.tenants.find(function(x){return x.id===contractGen_state.tenantId});
   if(!tenant)return;
-  var replacedHtml=contractGen_replacePlaceholders(contractGen_state.templateHtml,tenant);
+  var replacedHtml=contractGen_finalReplace(contractGen_state.templateHtml,tenant);
   var wrap=document.getElementById('cgPreviewWrap');
   if(!wrap)return;
   var html='<div style="margin-bottom:8px;font-size:13px;font-weight:600;color:var(--g)">'+i18n.t('cg.previewReady')+'</div>';
@@ -2495,7 +2688,7 @@ async function contractGen_generatePdf(){
   try{
     var tenant=cache.tenants.find(function(x){return x.id===contractGen_state.tenantId});
     if(!tenant){toast(i18n.t('cg.tenantNotFound'),'e');return}
-    var replacedHtml=contractGen_replacePlaceholders(contractGen_state.templateHtml,tenant);
+    var replacedHtml=contractGen_finalReplace(contractGen_state.templateHtml,tenant);
     var room=cache.rooms.find(function(r){return r.id===tenant.room_id});
     var roomName=room?room.name:'';
     var insertData={

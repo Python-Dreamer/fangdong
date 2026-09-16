@@ -114,10 +114,29 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-14 v87 修复v86手机卡片化未生效 -->
+  <!-- 2026-09-17 v92 合同模板通用自动识别填充 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 17 日 · V92</span>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🤖</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          合同模板免占位符：上传任意 Word 租约，自动识别空位并填充
+          <span class="badge">新功能</span>
+        </div>
+        <div class="feat-desc">
+          现在房东上传自己的 Word 合同模板时，<b>不需要再手动添加任何占位符</b>。系统会自动扫描合同里需要填写的空位（姓名、身份证、电话、租期、租金押金、同住人、水电表底数、签订日期等），并按上下文智能猜测每个空位对应什么信息，在页面上逐行列出供您核对一次：猜对的直接保留，猜得不对点下拉改一下；需要现场手写的（如水电表底数）选"留空，签名时手写"，系统已填好真实内容、不是空位的选"不是空格（保持原样）"即可。核对确认并保存为自己的模板后，以后给任意租客生成合同时都会自动套填，老的带 <code>{{占位符}}</code> 模板也继续完全兼容。识别只在您自己的模板上生效、互不影响，原有记账、房源、租客等功能一律不变。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag" style="background:#EEF2FF;color:#64748B">V91</span>
       <span class="version-date">2026 年 9 月 17 日 · V91</span>
     </div>
     <div class="feat">
