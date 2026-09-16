@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
 Disallow: /app.html
-Sitemap: https://www.ruilifangfong.site/sitemap.xml
+Disallow: /sign.html
+Disallow: /billshare.html
+Sitemap: https://ruilifangfong.site/sitemap.xml
