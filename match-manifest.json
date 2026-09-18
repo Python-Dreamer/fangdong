@@ -1,6 +1,6 @@
 {
-  "name": "瑞丽找房 - 智能租房匹配",
-  "short_name": "瑞丽找房",
+  "name": "德宏看房 - 智能租房匹配",
+  "short_name": "德宏看房",
   "description": "瑞丽本地租房神器，智能匹配房源，找房又快又准",
   "start_url": "./match.html",
   "scope": "./",

@@ -310,7 +310,7 @@ html[data-th=dark] .bldg-ov-card{box-shadow:0 1px 3px rgba(0,0,0,.3)}
 <div class="ov" id="overlay" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal" onclick="event.stopPropagation()"></div></div>
 <div class="sb-overlay" id="sbOverlay" onclick="closeSB()"></div>
 <div class="photo-viewer-overlay" id="photoViewer" onclick="closePhotoViewer(event)"><button class="photo-viewer-close" onclick="closePhotoViewer()">×</button><span class="photo-viewer-nav" id="photoViewerPrev" onclick="event.stopPropagation();photoViewerNav(-1)">‹</span><img class="photo-viewer-img" id="photoViewerImg" src="" alt=""><span class="photo-viewer-nav" id="photoViewerNext" onclick="event.stopPropagation();photoViewerNav(1)">›</span></div>
-<script src="i18n.js?v=92"></script>
+<script src="i18n.js?v=93"></script>
 <script>
 var sbUrl=localStorage.getItem('sb_url')||'https://ruilifangfong.site',sbKey=localStorage.getItem('sb_key')||'eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8',sb=null,sdkReady=false,currentUser=null,currentProfile=null,currentPage='dashboard';
 var DEFAULT_SB_URL='https://ruilifangfong.site',DEFAULT_SB_KEY='eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8';
@@ -2166,7 +2166,7 @@ async function contractGen_start(tenantId){
   var t=cache.tenants.find(function(x){return x.id===tenantId});
   if(!t){toast(i18n.t('cg.tenantNotFound'),'e');return}
   try{var dm=await decryptTenants([tenantId]);if(dm[tenantId]){t.id_number=dm[tenantId].id_number;t.occupants=dm[tenantId].occupants||t.occupants}}catch(e){console.warn('decrypt for contract failed:',e)}
-  contractGen_state={tenantId:tenantId,templateHtml:'',step:1,fileLoaded:false,docxName:'',tplId:null,blanks:[],mapDone:false,isMapped:false};
+  contractGen_state={tenantId:tenantId,templateHtml:'',step:1,fileLoaded:false,docxName:'',tplId:null,blanks:[],mapDone:false,isMapped:false,checkFields:[]};
   contractGen_showModal();
 }
 
@@ -2202,6 +2202,7 @@ function contractGen_showModal(){
   html+='</div>';
   html+='</div>';
   html+='<div class="cg-step'+(contractGen_state.step===2?' active':'')+'" id="cgStep2">';
+  html+='<div id="cgCheckArea" style="display:none"></div>';
   html+='<div id="cgPreviewWrap"></div>';
   html+='<div class="cg-sig-section">';
   html+='<h4 style="font-size:14px;font-weight:700;margin-bottom:4px">'+i18n.t('cg.sigTitle')+'</h4>';
@@ -2230,6 +2231,7 @@ function contractGen_showModal(){
     contractGen_renderTplArea();
   }
   if(contractGen_state.step===2){
+    contractGen_renderCheckArea();
     contractGen_renderPreview();
     setTimeout(function(){contractGen_initSigCanvases()},100);
   }
@@ -2552,33 +2554,40 @@ function contractGen_renderMapArea(){
   area.innerHTML=h;
   area.style.display='block';
 }
-/* 最终替换：先 CGF 字段，再旧 {{中文}}，找不到值的字段退回手写线 */
-function contractGen_finalReplace(html,tenant){
+/* 最终替换：先 CGF 字段，再旧 {{中文}}，找不到值的字段退回手写线。
+   overrides={key:用户本次核对后的值} 优先于自动取值；__blankN 为逐处手写位 */
+function contractGen_finalReplace(html,tenant,overrides){
+  overrides=overrides||{};
   var room=cache.rooms.find(function(r){return r.id===tenant.room_id});
+  var bi=0;
   var h=html.replace(/\{\{CGF:([a-zA-Z0-9_]+)\}\}/g,function(_,key){
-    if(key==='blank')return contractGen_blankText();
+    if(key==='blank'){bi++;var bv=overrides['__blank'+bi];if(bv===undefined)return contractGen_blankText();return String(bv).trim()===''?contractGen_blankText():String(bv);}
+    var ov=overrides[key];
+    if(ov!==undefined){return String(ov).trim()===''?contractGen_blankText():String(ov);} // 出现即用户核对过：空=主动留空→下划线
     var v=contractGen_fieldValue(key,tenant,room);
     return (v===''||v===null||v===undefined)?contractGen_blankText():String(v);
   });
-  return contractGen_replacePlaceholders(h,tenant);
+  return contractGen_replacePlaceholders(h,tenant,overrides);
 }
 
-function contractGen_replacePlaceholders(html,tenant){
+function contractGen_replacePlaceholders(html,tenant,overrides){
+  overrides=overrides||{};
   var room=cache.rooms.find(function(r){return r.id===tenant.room_id});
   var todayStr=contractGen_formatDate(new Date().toISOString().slice(0,10));
+  function ov(key,auto){var v=overrides[key];if(v===undefined)return auto||'';return String(v).trim()===''?contractGen_blankText():String(v);}
   var replacements={
-    ['{{'+i18n.t('cg.tenantName')+'}}']:tenant.name||'',
-    ['{{'+i18n.t('cg.tenantId')+'}}']:tenant.id_number||'',
-    ['{{'+i18n.t('cg.tenantPhone')+'}}']:tenant.phone||'',
-    ['{{'+i18n.t('cg.tenantGender')+'}}']:_trGender(tenant.gender),
-    ['{{'+i18n.t('cg.propertyAddress')+'}}']:room?room.name:'',
-    ['{{'+i18n.t('cg.monthlyRent')+'}}']:tenant.rent_amount?'¥'+tenant.rent_amount.toLocaleString()+'/'+i18n.t('common.month2')+'':'',
-    ['{{'+i18n.t('tenant.deposit')+'}}']:tenant.deposit?'¥'+tenant.deposit.toLocaleString():'',
-    ['{{'+i18n.t('room.payMethod')+'}}']:_trPay(tenant.pay_method),
-    ['{{'+i18n.t('cg.leaseStart')+'}}']:contractGen_formatDate(tenant.move_in_date),
-    ['{{'+i18n.t('cg.leaseEnd')+'}}']:contractGen_formatDate(tenant.contract_end),
-    ['{{'+i18n.t('cg.signDate')+'}}']:todayStr,
-    ['{{'+i18n.t('tenant.occupants')+'}}']:contractGen_getOccupants(tenant)
+    ['{{'+i18n.t('cg.tenantName')+'}}']:ov('tenant_name',tenant.name||''),
+    ['{{'+i18n.t('cg.tenantId')+'}}']:ov('tenant_id',tenant.id_number||''),
+    ['{{'+i18n.t('cg.tenantPhone')+'}}']:ov('tenant_phone',tenant.phone||''),
+    ['{{'+i18n.t('cg.tenantGender')+'}}']:ov('__gender',_trGender(tenant.gender)),
+    ['{{'+i18n.t('cg.propertyAddress')+'}}']:ov('address',room?room.name:''),
+    ['{{'+i18n.t('cg.monthlyRent')+'}}']:ov('monthly_rent',tenant.rent_amount?'¥'+tenant.rent_amount.toLocaleString()+'/'+i18n.t('common.month2')+'':''),
+    ['{{'+i18n.t('tenant.deposit')+'}}']:ov('deposit',tenant.deposit?'¥'+tenant.deposit.toLocaleString():''),
+    ['{{'+i18n.t('room.payMethod')+'}}']:ov('pay_method',_trPay(tenant.pay_method)),
+    ['{{'+i18n.t('cg.leaseStart')+'}}']:ov('lease_start',contractGen_formatDate(tenant.move_in_date)),
+    ['{{'+i18n.t('cg.leaseEnd')+'}}']:ov('lease_end',contractGen_formatDate(tenant.contract_end)),
+    ['{{'+i18n.t('cg.signDate')+'}}']:ov('sign_date',todayStr),
+    ['{{'+i18n.t('tenant.occupants')+'}}']:ov('occ_all',contractGen_getOccupants(tenant))
   };
   var result=html;
   for(var key in replacements){
@@ -2589,10 +2598,80 @@ function contractGen_replacePlaceholders(html,tenant){
   return result;
 }
 
+/* v93 每次生成前核对：扫描本模板实际用到的填充字段（CGF + 旧{{中文}} + 逐处手写位），去重保序 */
+function contractGen_templateFields(templateHtml){
+  var room=null;
+  var fields=[];
+  function push(k){if(k&&fields.indexOf(k)<0)fields.push(k);}
+  var reCGF=/\{\{CGF:([a-zA-Z0-9_]+)\}\}/g,m,blankN=0;
+  while((m=reCGF.exec(templateHtml))){
+    if(m[1]==='blank'){blankN++;push('__blank'+blankN);}
+    else push(m[1]);
+  }
+  // 旧 {{中文}} 占位符反查到 CGF key
+  var zhMap={};
+  zhMap[i18n.t('cg.tenantName')]='tenant_name';
+  zhMap[i18n.t('cg.tenantId')]='tenant_id';
+  zhMap[i18n.t('cg.tenantPhone')]='tenant_phone';
+  zhMap[i18n.t('cg.tenantGender')]='__gender';
+  zhMap[i18n.t('cg.propertyAddress')]='address';
+  zhMap[i18n.t('cg.monthlyRent')]='monthly_rent';
+  zhMap[i18n.t('tenant.deposit')]='deposit';
+  zhMap[i18n.t('room.payMethod')]='pay_method';
+  zhMap[i18n.t('cg.leaseStart')]='lease_start';
+  zhMap[i18n.t('cg.leaseEnd')]='lease_end';
+  zhMap[i18n.t('cg.signDate')]='sign_date';
+  zhMap[i18n.t('tenant.occupants')]='occ_all';
+  var reZh=/\{\{([^{}]+)\}\}/g;
+  while((m=reZh.exec(templateHtml))){if(zhMap[m[1]])push(zhMap[m[1]]);}
+  return fields;
+}
+/* 收集核对区各字段的当前值（空串也收集，表示用户主动留空→下划线） */
+function contractGen_collectOverrides(){
+  var o={};
+  (contractGen_state.checkFields||[]).forEach(function(k){
+    var el=document.getElementById('cgChk_'+k);
+    if(el)o[k]=el.value;
+  });
+  return o;
+}
+function contractGen_renderCheckArea(){
+  var area=document.getElementById('cgCheckArea');
+  if(!area)return;
+  var tenant=cache.tenants.find(function(x){return x.id===contractGen_state.tenantId});
+  var fields=contractGen_state.checkFields=contractGen_templateFields(contractGen_state.templateHtml);
+  if(!fields.length){area.innerHTML='';area.style.display='none';return;}
+  var room=tenant?cache.rooms.find(function(r){return r.id===tenant.room_id}):null;
+  var h='<div style="border:1px solid var(--p);border-radius:10px;padding:10px 12px;margin:0 0 12px;background:rgba(79,70,229,.04)">';
+  h+='<div style="font-size:13px;font-weight:700;margin-bottom:2px">✏️ '+i18n.t('cg.checkTitle')+'</div>';
+  h+='<p style="font-size:11px;color:var(--ts);margin:0 0 8px;line-height:1.6">'+i18n.t('cg.checkHint')+'</p>';
+  fields.forEach(function(k){
+    var label,val='',isHand=false;
+    if(k.indexOf('__blank')===0){label=i18n.t('cg.handWrite')+' '+(parseInt(k.slice(7),10));isHand=true;}
+    else if(k==='__gender'){label=i18n.t('cg.fldLabel.gender')||i18n.t('cg.tenantGender');val=tenant?_trGender(tenant.gender):'';}
+    else {label=i18n.t('cg.fld.'+k);val=tenant?contractGen_fieldValue(k,tenant,room):'';}
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-top:1px dashed var(--bd)">';
+    h+='<label style="flex:0 0 34%;font-size:11px;color:var(--ts);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" for="cgChk_'+k+'">'+esc(label)+'</label>';
+    h+='<input class="fc" id="cgChk_'+k+'" value="'+esc(val==null?'':String(val))+'" placeholder="'+(isHand?i18n.t('cg.blankHand'):'')+'" style="flex:1;font-size:12px;padding:5px" oninput="contractGen_onCheckInput()">';
+    h+='</div>';
+  });
+  h+='</div>';
+  area.innerHTML=h;
+  area.style.display='block';
+}
+/* 核对区每次输入只刷新预览正文，不重渲染核对区（防失焦）、不动签名画布 */
+function contractGen_onCheckInput(){
+  var pc=document.getElementById('cgPreviewContent');
+  if(!pc)return;
+  var tenant=cache.tenants.find(function(x){return x.id===contractGen_state.tenantId});
+  if(!tenant)return;
+  pc.innerHTML=contractGen_finalReplace(contractGen_state.templateHtml,tenant,contractGen_collectOverrides());
+}
+
 function contractGen_renderPreview(){
   var tenant=cache.tenants.find(function(x){return x.id===contractGen_state.tenantId});
   if(!tenant)return;
-  var replacedHtml=contractGen_finalReplace(contractGen_state.templateHtml,tenant);
+  var replacedHtml=contractGen_finalReplace(contractGen_state.templateHtml,tenant,contractGen_collectOverrides());
   var wrap=document.getElementById('cgPreviewWrap');
   if(!wrap)return;
   var html='<div style="margin-bottom:8px;font-size:13px;font-weight:600;color:var(--g)">'+i18n.t('cg.previewReady')+'</div>';
@@ -2688,7 +2767,8 @@ async function contractGen_generatePdf(){
   try{
     var tenant=cache.tenants.find(function(x){return x.id===contractGen_state.tenantId});
     if(!tenant){toast(i18n.t('cg.tenantNotFound'),'e');return}
-    var replacedHtml=contractGen_finalReplace(contractGen_state.templateHtml,tenant);
+    var overrides=contractGen_collectOverrides();
+    var replacedHtml=contractGen_finalReplace(contractGen_state.templateHtml,tenant,overrides);
     var room=cache.rooms.find(function(r){return r.id===tenant.room_id});
     var roomName=room?room.name:'';
     var insertData={
