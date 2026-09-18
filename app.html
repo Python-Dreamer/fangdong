@@ -310,7 +310,7 @@ html[data-th=dark] .bldg-ov-card{box-shadow:0 1px 3px rgba(0,0,0,.3)}
 <div class="ov" id="overlay" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal" onclick="event.stopPropagation()"></div></div>
 <div class="sb-overlay" id="sbOverlay" onclick="closeSB()"></div>
 <div class="photo-viewer-overlay" id="photoViewer" onclick="closePhotoViewer(event)"><button class="photo-viewer-close" onclick="closePhotoViewer()">×</button><span class="photo-viewer-nav" id="photoViewerPrev" onclick="event.stopPropagation();photoViewerNav(-1)">‹</span><img class="photo-viewer-img" id="photoViewerImg" src="" alt=""><span class="photo-viewer-nav" id="photoViewerNext" onclick="event.stopPropagation();photoViewerNav(1)">›</span></div>
-<script src="i18n.js?v=93"></script>
+<script src="i18n.js?v=94"></script>
 <script>
 var sbUrl=localStorage.getItem('sb_url')||'https://ruilifangfong.site',sbKey=localStorage.getItem('sb_key')||'eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8',sb=null,sdkReady=false,currentUser=null,currentProfile=null,currentPage='dashboard';
 var DEFAULT_SB_URL='https://ruilifangfong.site',DEFAULT_SB_KEY='eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8';
@@ -747,11 +747,17 @@ async function uploadRoomImage(file){
   if(file.size>5*1024*1024){toast(i18n.t('img.max5mb'),'e');return ''}
   try{
     toast(i18n.t('common.compressing'),'i');
+    var origExt=(file.name.split('.').pop()||'').toLowerCase();
+    var isHeic=(origExt==='heic'||origExt==='heif');
     var compData=await compressImage(file);
-    if(compData.error){toast(i18n.t('common.compressFailDirect'),'i');var blob=file}else{var blob=compData.blob}
+    if(compData.error){
+      if(isHeic){toast(i18n.t('img.heicHint'),'e');return ''}
+      toast(i18n.t('common.compressFailDirect'),'i');var blob=file
+    }else{var blob=compData.blob}
     toast(i18n.t('common.uploading'),'i');
-    var ext=file.name.split('.').pop()||'jpg';
-    var fname='room_'+Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.'+ext;
+    // 压缩后内容统一为JPEG，扩展名必须用.jpg；原图为未压缩非JPEG时保留其扩展名
+    var outExt=(compData&&compData.blob)?'jpg':(origExt||'jpg');
+    var fname='room_'+Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.'+outExt;
     try{
       var r=await FileAPI.upload('room-images',fname,blob,'image/jpeg');
       return FileAPI.getUrl('room-images',r.path||fname);
@@ -1073,9 +1079,9 @@ async function downloadFile(path,name,tenantId){
   }catch(e){toast(i18n.t('common.downloadFailed')+e.message,'e')}
 }
 
-async function handlePhotoUpload(input,tenantId){if(!input.files||!input.files.length)return;for(var i=0;i<input.files.length;i++){await uploadContractPhoto(input.files[i],tenantId)}input.value=''}
+async function handlePhotoUpload(input,tenantId){if(!input.files||!input.files.length)return;var cur=(tenantId==='new')?(pendingPhotos['new']||[]).length:((function(){var t=cache.tenants.find(function(x){return x.id===tenantId});return t?(t.contract_photos||[]).length:0})());var roomLeft=IMG_LIMIT-cur;if(roomLeft<=0){toast(i18n.t('img.maxNPhotos',{n:IMG_LIMIT}),'w');input.value='';return}if(input.files.length>roomLeft){toast(i18n.t('img.maxNPhotosCropped',{n:IMG_LIMIT,remain:roomLeft}),'w')}var picked=Array.prototype.slice.call(input.files,0,Math.max(0,roomLeft));for(var i=0;i<picked.length;i++){await uploadContractPhoto(picked[i],tenantId)}input.value=''}
 
-async function uploadContractPhoto(file,tenantId){try{var ts=Date.now();var ext=file.name.split('.').pop()||'jpg';var path=currentUser.id+'/'+tenantId+'/'+ts+'.'+ext;var compData=await compressImage(file);if(compData.error){toast(i18n.t('img.compressFail'),'e');return}var blob=compData.blob;var r=await FileAPI.upload('contract-photos',path,blob,'image/jpeg');if(!r||!r.path){toast(i18n.t('common.uploadFailed'),'e');return}if(tenantId==='new'){if(!pendingPhotos['new'])pendingPhotos['new']=[];if(pendingPhotos['new'].indexOf(path)===-1)pendingPhotos['new'].push(path);refreshNewPhotoGrid()}else{var tenant=cache.tenants.find(function(t){return t.id===tenantId});if(!tenant){return}var photos=tenant.contract_photos||[];if(photos.indexOf(path)===-1){photos.push(path)}var upd=await sb.from('tenants').update({contract_photos:photos}).eq('id',tenantId);if(upd.error){toast(i18n.t('common.saveFailed'),'e');return}await loadAllData();var t=cache.tenants.find(function(x){return x.id===tenantId});if(t){var newHtml=renderPhotoGrid(t.contract_photos||[],tenantId);var section=document.querySelector('.photo-section');if(section){section.outerHTML=newHtml}}}}catch(e){console.error('Upload error:',e);toast(i18n.t('common.uploadFailed'),'e')}}
+async function uploadContractPhoto(file,tenantId){try{var origExt=(file.name.split('.').pop()||'').toLowerCase();var isHeic=(origExt==='heic'||origExt==='heif');var ts=Date.now()+'_'+Math.random().toString(36).slice(2,7);var path=currentUser.id+'/'+tenantId+'/'+ts+'.jpg';var compData=await compressImage(file);if(compData.error){if(isHeic){toast(i18n.t('img.heicHint'),'e');return}toast(i18n.t('img.compressFail'),'e');return}var blob=compData.blob;var r=await FileAPI.upload('contract-photos',path,blob,'image/jpeg');if(!r||!r.path){toast(i18n.t('common.uploadFailed'),'e');return}if(tenantId==='new'){if(!pendingPhotos['new'])pendingPhotos['new']=[];if(pendingPhotos['new'].indexOf(path)===-1)pendingPhotos['new'].push(path);refreshNewPhotoGrid()}else{var tenant=cache.tenants.find(function(t){return t.id===tenantId});if(!tenant){return}var photos=tenant.contract_photos||[];if(photos.indexOf(path)===-1){photos.push(path)}var upd=await sb.from('tenants').update({contract_photos:photos}).eq('id',tenantId);if(upd.error){toast(i18n.t('common.saveFailed'),'e');return}await loadAllData();var t=cache.tenants.find(function(x){return x.id===tenantId});if(t){var newHtml=renderPhotoGrid(t.contract_photos||[],tenantId);var section=document.querySelector('.photo-section');if(section){section.outerHTML=newHtml}}}}catch(e){console.error('Upload error:',e);toast(i18n.t('common.uploadFailed'),'e')}}
 
 async function compressImage(file){return new Promise(function(resolve){var reader=new FileReader();reader.onload=function(e){var img=new Image();img.onload=function(){var canvas=document.createElement('canvas');var maxW=1200;var w=img.width;var h=img.height;if(w>maxW){h=h*(maxW/w);w=maxW}canvas.width=w;canvas.height=h;var ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,w,h);canvas.toBlob(function(blob){resolve({blob:blob,error:null})},'image/jpeg',0.7)};img.onerror=function(){resolve({blob:null,error:''+i18n.t('common.imgLoadFail')+''})};img.src=e.target.result};reader.onerror=function(){resolve({blob:null,error:''+i18n.t('common.fileReadFail')+''})};reader.readAsDataURL(file)})}
 
@@ -3225,8 +3231,9 @@ async function meterUploadPhoto(input){
   var file=input.files[0];
   var st=document.getElementById('mPhotoStatus');if(st)st.textContent=i18n.t('common.uploading');
   try{
-    var ts=Date.now();var ext=file.name.split('.').pop()||'jpg';
-    var oid=getOwnerId();var path=oid+'/meter/'+ts+'.'+ext;
+    var origExt=(file.name.split('.').pop()||'').toLowerCase();var isHeic=(origExt==='heic'||origExt==='heif');
+    var ts=Date.now();
+    var oid=getOwnerId();var path=oid+'/meter/'+ts+'.jpg';
     var compData=await compressImage(file);
     if(compData.error){toast(compData.error,'e');if(st)st.textContent='';return}
     var r=await FileAPI.upload('contract-photos',path,compData.blob,'image/jpeg');

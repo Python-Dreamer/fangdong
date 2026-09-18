@@ -114,10 +114,42 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-19 v93 合同生成前逐格核对 + 德宏看房 -->
+  <!-- 2026-09-19 v94 照片上传修复+5张限制 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 19 日 · V94</span>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📷</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          修复房间照片「提示上传成功却不显示」
+          <span class="badge">修复</span>
+        </div>
+        <div class="feat-desc">
+          此前用 iPhone 拍照（HEIC 格式）或部分安卓机型上传房间照片时，系统提示成功但照片显示不出来。原因是照片压缩后内容已是 JPG、文件名却仍保留原格式后缀，浏览器无法解码。现在统一按 JPG 保存，<b>各型号手机上传后都能正常显示</b>；确实无法处理的 iPhone 实况/HEIC 原图会明确提示先转成 JPG，而不是假装成功。
+        </div>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🖼️</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          房间与合同照片统一限制「每间房 / 每位租客最多 5 张」
+          <span class="badge">优化</span>
+        </div>
+        <div class="feat-desc">
+          房间照片、租客合同照片都限制最多 5 张；一次多选超过上限时只保留前面可上传的张数并提示，已有照片数量也会计入，避免超量。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2026-09-19 v93 合同生成前逐格核对 + 德宏看房 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag">V93</span>
       <span class="version-date">2026 年 9 月 19 日 · V93</span>
     </div>
     <div class="feat">
