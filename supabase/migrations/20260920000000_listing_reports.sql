@@ -44,3 +44,14 @@ BEGIN
     EXECUTE 'GRANT SELECT, INSERT, UPDATE ON listing_reports TO service_role';
   END IF;
 END $$;
+-- 自建库兜底：覆盖 file_server 可能使用的连库角色（角色不存在则跳过）
+DO $$
+DECLARE r TEXT;
+BEGIN
+  GRANT ALL ON listing_reports TO postgres;
+  FOREACH r IN ARRAY ARRAY['service_role','authenticator','supabase_admin'] LOOP
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN
+      EXECUTE 'GRANT SELECT, INSERT, UPDATE ON listing_reports TO ' || quote_ident(r);
+    END IF;
+  END LOOP;
+END $$;
