@@ -102,6 +102,35 @@ def auth_admin_request(handler):
         return user
     return None
 
+# ===== 留言举报：简易内存限流（v95 纯增量）=====
+# 进程级；服务重启即清空，足够防刷。按 IP 限制提交频次。
+_REPORT_RATE = {}
+
+def client_ip(handler):
+    xff = handler.headers.get("X-Forwarded-For", "")
+    if xff:
+        return xff.split(",")[0].strip()
+    rip = handler.headers.get("X-Real-IP", "")
+    if rip:
+        return rip.strip()
+    try:
+        return handler.client_address[0]
+    except Exception:
+        return "0.0.0.0"
+
+def report_rate_ok(ip):
+    now = time.time()
+    # 清理超过10分钟的旧记录
+    for k in [k for k, v in _REPORT_RATE.items() if now - v[-1] > 600]:
+        _REPORT_RATE.pop(k, None)
+    arr = [t for t in _REPORT_RATE.get(ip, []) if now - t < 3600]
+    if len(arr) >= 5:  # 每 IP 每小时最多 5 条
+        _REPORT_RATE[ip] = arr
+        return False
+    arr.append(now)
+    _REPORT_RATE[ip] = arr
+    return True
+
 def http_request(method, url, headers=None, data=None):
     req = urllib.request.Request(url, method=method, headers=headers or {})
     if data is not None:
@@ -180,6 +209,37 @@ class FileHandler(BaseHTTPRequestHandler):
             else:
                 self._json(status, resp)
             return
+
+        # 留言举报 - 管理员查看举报列表（v95 纯增量）
+        if path == "/admin/reports":
+            admin = auth_admin_request(self)
+            if not admin:
+                self._json(403, {"error": "无权限"}); return
+            sk = get_service_key()
+            hdr = {"apikey": sk, "Authorization": f"Bearer {sk}"}
+            qs = urllib.parse.parse_qs(parsed.query)
+            statusf = (qs.get("status", ["all"])[0] or "all")
+            where = "select=*&order=created_at.desc&limit=300"
+            if statusf in ("pending", "resolved", "dismissed"):
+                where += f"&status=eq.{statusf}"
+            st, resp = http_request("GET", f"{REST_URL}/listing_reports?{where}", hdr)
+            if st != 200:
+                self._json(st, {"error": "查询失败", "detail": resp}); return
+            reports = resp if isinstance(resp, list) else []
+            # 补充房东账号邮箱，方便管理员直接定位到被举报用户
+            owner_ids = sorted({r.get("owner_id") for r in reports if r.get("owner_id")})
+            email_map = {}
+            if owner_ids:
+                ids = ",".join(owner_ids)
+                au, aresp = http_request("GET", f"{AUTH_URL}/admin/users?page=1&per_page=200",
+                    {"Authorization": f"Bearer {sk}", "apikey": sk})
+                if au == 200:
+                    for u in aresp.get("users", []):
+                        if u.get("id") in owner_ids:
+                            email_map[u["id"]] = u.get("email", "")
+            for r in reports:
+                r["owner_email"] = email_map.get(r.get("owner_id"), "")
+            self._json(200, {"reports": reports}); return
 
         # 文件读取（保持公开：图片要在<img>标签里加载）
         if path.startswith("/files/"):
@@ -311,6 +371,93 @@ class FileHandler(BaseHTTPRequestHandler):
                 return
             self._json(200, {"ok": True, "user_id": new_uid, "email": email, "staff_name": staff_name})
             return
+
+        # 留言举报 - 租客匿名提交（无需登录，v95 纯增量）
+        # 挂在已反代的 /upload 前缀下、且位于登录鉴权之前，供公开页匿名调用
+        if path == "/upload/report":
+            length = int(self.headers.get("Content-Length", 0))
+            if length <= 0 or length > 8192:
+                self._json(400, {"error": "内容长度不合法"}); return
+            try:
+                body = json.loads(self.rfile.read(length))
+            except Exception:
+                self._json(400, {"error": "参数错误"}); return
+            ip = client_ip(self)
+            if not report_rate_ok(ip):
+                self._json(429, {"error": "提交过于频繁，请稍后再试"}); return
+            room_id = (body.get("room_id") or "").strip()
+            reason = (body.get("reason") or "").strip()
+            detail = (body.get("detail") or "").strip()
+            contact = (body.get("contact") or "").strip()
+            if not room_id or len(room_id) > 64:
+                self._json(400, {"error": "缺少房源信息"}); return
+            if reason not in ("fake", "scam", "rented", "wrong", "other"):
+                self._json(400, {"error": "请选择举报原因"}); return
+            if len(detail) > 500 or len(contact) > 100:
+                self._json(400, {"error": "内容过长"}); return
+            sk = get_service_key()
+            hdr = {"apikey": sk, "Authorization": f"Bearer {sk}",
+                   "Content-Type": "application/json", "Prefer": "return=representation"}
+            # 校验房源存在并取 owner_id（防止乱填 room_id 攻击）
+            st, rresp = http_request("GET",
+                f"{REST_URL}/rooms?id=eq.{urllib.parse.quote(room_id)}&select=id,owner_id,name,listed,status", hdr)
+            rows = rresp if isinstance(rresp, list) else []
+            if st != 200 or not rows:
+                self._json(404, {"error": "房源不存在或已下架"}); return
+            room = rows[0]
+            rec = {
+                "id": str(uuid.uuid4()),
+                "room_id": room_id,
+                "owner_id": room.get("owner_id"),
+                "room_name": room.get("name") or "",
+                "reason": reason,
+                "detail": detail,
+                "contact": contact,
+                "reporter_ip": ip,
+                "status": "pending",
+                "created_at": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
+            }
+            st2, resp2 = http_request("POST", f"{REST_URL}/listing_reports", hdr, rec)
+            if st2 not in (200, 201):
+                err = resp2 if isinstance(resp2, str) else json.dumps(resp2, ensure_ascii=False)
+                self._json(500, {"error": "提交失败，请稍后再试 " + str(err)[:80]}); return
+            self._json(200, {"ok": True}); return
+
+        # 留言举报 - 管理员处理（需管理员白名单，v95 纯增量）
+        if path == "/admin/report-action":
+            admin = auth_admin_request(self)
+            if not admin:
+                self._json(403, {"error": "无权限"}); return
+            length = int(self.headers.get("Content-Length", 0))
+            try:
+                body = json.loads(self.rfile.read(length))
+            except Exception:
+                self._json(400, {"error": "参数错误"}); return
+            rid = (body.get("id") or "").strip()
+            action = (body.get("action") or "").strip()  # resolve / dismiss
+            note = (body.get("note") or "").strip()[:200]
+            if not rid or action not in ("resolve", "dismiss"):
+                self._json(400, {"error": "参数错误"}); return
+            sk = get_service_key()
+            hdr = {"apikey": sk, "Authorization": f"Bearer {sk}",
+                   "Content-Type": "application/json", "Prefer": "return=representation"}
+            new_status = "resolved" if action == "resolve" else "dismissed"
+            upd = {"status": new_status,
+                   "handled_by": admin["uid"],
+                   "handled_at": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
+                   "handle_note": note}
+            st, resp = http_request("PATCH", f"{REST_URL}/listing_reports?id=eq.{urllib.parse.quote(rid)}",
+                hdr, upd)
+            if st not in (200, 204):
+                self._json(500, {"error": "处理失败"}); return
+            # resolve=惩罚：把该被举报房源下架（listed=false）。可在房源管理里重新上架，不删数据。
+            if action == "resolve":
+                rows = resp if isinstance(resp, list) else []
+                target_room = rows[0].get("room_id") if rows else None
+                if target_room:
+                    http_request("PATCH", f"{REST_URL}/rooms?id=eq.{urllib.parse.quote(target_room)}",
+                        hdr, {"listed": False})
+            self._json(200, {"ok": True}); return
 
         # 文件上传（需登录）
         if path.startswith("/upload/"):

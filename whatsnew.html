@@ -114,10 +114,54 @@ body {
 
 <div class="container">
 
-  <!-- 2026-09-19 v94 照片上传修复+5张限制 -->
+  <!-- 2026-09-20 v95 房间照片彻底修复 + 留言举报 + 德宏品牌 -->
   <div class="version-card">
     <div class="version-head">
       <span class="version-tag">V 最新</span>
+      <span class="version-date">2026 年 9 月 20 日 · V95</span>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📷</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          彻底修复房间照片「上传成功却不显示」
+          <span class="badge">修复</span>
+        </div>
+        <div class="feat-desc">
+          这次定位到真正原因：房间照片保存的图片地址被多拼了一层目录，导致浏览器取不到图、预览自动隐藏，所以只看到「上传成功」。合同照片、抄表照片用的是另一套地址所以一直正常。现已从源头改正，并对之前已经存坏的房间照片地址做了自动还原，<b>新房、旧房照片都能正常显示</b>。
+        </div>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🚩</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          看房页新增「举报房源」，房东端可在「举报管理」处理
+          <span class="badge">新功能</span>
+        </div>
+        <div class="feat-desc">
+          租客在「德宏看房」房源详情里可以举报虚假房源、诈骗、已出租或信息不实，可选填说明和联系方式。举报带防刷限制。管理员登录房东端后，侧边栏出现「🚩 举报管理」，能看到被举报的房源、<b>对应房东账号、时间和原因</b>，可一键「核实违规·下架该房源」或驳回。
+        </div>
+      </div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📍</div>
+      <div class="feat-body">
+        <div class="feat-title">
+          平台名称由「瑞丽」更新为「德宏」
+          <span class="badge">优化</span>
+        </div>
+        <div class="feat-desc">
+          首页与看房页的对外名称统一改为「德宏」；地图定位用的真实地名、备案主体名称保持不变，不影响定位与合规信息。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2026-09-19 v94 照片上传修复+5张限制 -->
+  <div class="version-card">
+    <div class="version-head">
+      <span class="version-tag">V94</span>
       <span class="version-date">2026 年 9 月 19 日 · V94</span>
     </div>
     <div class="feat">

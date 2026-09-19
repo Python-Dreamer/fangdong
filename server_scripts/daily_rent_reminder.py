@@ -514,8 +514,37 @@ def _alert_fatal(today, err):
     except Exception as e2:
         print(f"FATAL alert failed too: {e2}")
 
+def _alert_delivery(today, wx_failures, mail_failures):
+    # 脚本正常跑完，但部分房东微信/邮件没送出去：显式告警，不再静默
+    if not wx_failures and not mail_failures:
+        return
+    lines = []
+    for e in wx_failures:
+        lines.append(f"微信失败：{e.get('owner_name') or ''} {e.get('to')} -> {e.get('pushplus_msg')}")
+    for e in mail_failures:
+        lines.append(f"邮件失败：{e.get('owner_name') or ''} {e.get('to')} -> {e.get('msg')}")
+    body = ("<div style='font-size:14px;line-height:1.7'>"
+            "<h3>每日提醒部分推送失败</h3>"
+            f"<p>日期 {today}，以下渠道未送达（账单数据已正常生成，仅推送通道失败）：</p>"
+            "<p style='color:#e74c3c;white-space:pre-line'>" + "<br>".join(lines) + "</p></div>")
+    try:
+        settings = http_get(f"{SB_URL}/rest/v1/workspace_settings", {
+            "select": "owner_id,notification_email,pushplus_token",
+            "notification_email": "not.is.null"
+        })
+        for s0 in (settings or []):
+            em = s0.get("notification_email")
+            if em:
+                send_reminder_email(em, f"【系统告警】每日提醒 {today} 部分推送失败", body)
+            tok = s0.get("pushplus_token")
+            if tok:
+                send_pushplus(tok, f"【系统告警】每日提醒{today}部分推送失败", body)
+    except Exception as e3:
+        print(f"delivery alert notify failed: {e3}")
+
 def main():
-    _heartbeat("START")
+    today0 = today_str()
+    _heartbeat("START", today0)
     today = today_str()
     today_dt = datetime.strptime(today, "%Y-%m-%d").date()
     remind_days = 15
@@ -667,6 +696,10 @@ def main():
                 "adjustments": adjustments, "renewals": renewals
             })
 
+    # 汇总推送失败：微信/邮件任一失败都要显式告警，避免“静默没收到”
+    wx_failures = [e for e in email_results if e.get("pushplus_success") is False]
+    mail_failures = [e for e in email_results if e.get("success") is False]
+
     if any_sent:
         output = {"date": today, "reminders": results, "email_results": email_results}
         output_path = os.environ.get("OUTPUT_PATH", "./codeact/output")
@@ -675,10 +708,18 @@ def main():
         with open(os.path.join(output_path, fname), "w") as f:
             json.dump(output, f, ensure_ascii=False, indent=2, default=str)
         print(f"REMINDER_DATA:{fname}")
-        _heartbeat("SENT", f"owners={len(results)}")
+        detail = f"{today} owners={len(results)} wxFail={len(wx_failures)} mailFail={len(mail_failures)}"
+        if wx_failures or mail_failures:
+            _heartbeat("PARTIAL", detail)
+            try:
+                _alert_delivery(today, wx_failures, mail_failures)
+            except Exception as ae:
+                print(f"delivery alert failed: {ae}")
+        else:
+            _heartbeat("SENT", detail)
     else:
         print("NO_REMINDERS")
-        _heartbeat("OK", "no reminders due")
+        _heartbeat("OK", f"{today} no reminders due")
 
 if __name__ == "__main__":
     try:
