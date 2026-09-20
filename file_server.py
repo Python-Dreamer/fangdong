@@ -420,7 +420,8 @@ class FileHandler(BaseHTTPRequestHandler):
             st2, resp2 = http_request("POST", f"{REST_URL}/listing_reports", hdr, rec)
             if st2 not in (200, 201):
                 err = resp2 if isinstance(resp2, str) else json.dumps(resp2, ensure_ascii=False)
-                self._json(500, {"error": "提交失败，请稍后再试 " + str(err)[:80]}); return
+                print(f"[report] insert failed status={st2} resp={str(err)[:200]} room={room_id}", flush=True)
+                self._json(500, {"error": "提交失败，请稍后再试"}); return
             self._json(200, {"ok": True}); return
 
         # 留言举报 - 管理员处理（需管理员白名单，v95 纯增量）
