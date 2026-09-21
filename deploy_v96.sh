@@ -48,6 +48,9 @@ echo "【3/5】修复举报写权限（自适应，幂等）..."
 if docker ps --format '{{.Names}}' | grep -q "^fd_db$"; then
   if docker exec -i fd_db psql -U postgres -d postgres < "$WORK/fix_priv.sql"; then
     echo "   ✅ listing_reports 写权限已修复"
+    # PostgREST 缓存了表权限，提权后必须热重载，否则插入仍返回 404
+    docker exec -i fd_db psql -U postgres -d postgres -c "NOTIFY pgrst, 'reload schema';" >/dev/null 2>&1 && \
+      echo "   ✅ 已通知 PostgREST 重载权限缓存"
   else
     echo "   ❌ 授权SQL执行失败"; exit 1
   fi
