@@ -310,7 +310,7 @@ html[data-th=dark] .bldg-ov-card{box-shadow:0 1px 3px rgba(0,0,0,.3)}
 <div class="ov" id="overlay" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal" onclick="event.stopPropagation()"></div></div>
 <div class="sb-overlay" id="sbOverlay" onclick="closeSB()"></div>
 <div class="photo-viewer-overlay" id="photoViewer" onclick="closePhotoViewer(event)"><button class="photo-viewer-close" onclick="closePhotoViewer()">×</button><span class="photo-viewer-nav" id="photoViewerPrev" onclick="event.stopPropagation();photoViewerNav(-1)">‹</span><img class="photo-viewer-img" id="photoViewerImg" src="" alt=""><span class="photo-viewer-nav" id="photoViewerNext" onclick="event.stopPropagation();photoViewerNav(1)">›</span></div>
-<script src="i18n.js?v=97"></script>
+<script src="i18n.js?v=98"></script>
 <script>
 var sbUrl=localStorage.getItem('sb_url')||'https://ruilifangfong.site',sbKey=localStorage.getItem('sb_key')||'eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8',sb=null,sdkReady=false,currentUser=null,currentProfile=null,currentPage='dashboard';
 var DEFAULT_SB_URL='https://ruilifangfong.site',DEFAULT_SB_KEY='eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8';
@@ -963,23 +963,34 @@ function delTenant(id){var t=cache.tenants.find(function(x){return x.id===id});i
 function doQuickPay(tenantId){var t=cache.tenants.find(function(x){return x.id===tenantId});if(!t){toast(i18n.t('cg.tenantNotFound'),'e');return}var unpaidRents=cache.rents.filter(function(r){return r.tenant_id===tenantId&&(r.status==='pending'||r.status==='overdue')}).sort(function(a,b){return(a.due_date||'').localeCompare(b.due_date||'')});if(!unpaidRents.length){if(t.move_in_date&&t.contract_end&&t.rent_amount>0){toast(''+i18n.t('rent.generating')+'...','i');autoGenerateBills(t).then(function(cnt){if(cnt>0){loadAllData().then(function(){doQuickPay(tenantId)}).catch(function(e){toast(''+i18n.t('common.opFail')+'：'+(e&&e.message||''),'e')})}else{toast(''+i18n.t('rent.noDueBills')+'，'+i18n.t('rent.manualHint')+'','i')}}).catch(function(e){toast(''+i18n.t('common.opFail')+'：'+(e&&e.message||''),'e')})}else{toast(''+i18n.t('rent.noDueBills')+'，'+i18n.t('rent.manualHint')+'','i')}return}var earliest=unpaidRents[0];var rm=cache.rooms.find(function(r){return r.id===t.room_id});var method=t.pay_method||i18n.t('pay.monthly');var interval=method===i18n.t('pay.yearly')?12:method===i18n.t('pay.halfYear')?6:method===i18n.t('pay.quarterly')?3:1;var curStart=earliest.period_start||addMonths(earliest.due_date,-interval);var curEnd=addMonths(curStart,interval);var dueDays=daysDiff(today(),curEnd);var dueText=dueDays<0?i18n.t('common.overdueNDays',{n:Math.abs(dueDays)}):(dueDays===0?''+i18n.t('common.dueToday')+'':i18n.t('common.nDaysLater',{n:dueDays}));window._payTenant=t;window._payIntervalNum=interval;window._payRentId=earliest.id;openModal('<div class="m-hd"><h3>💰 '+i18n.t('rent.payment')+' - '+esc(t.name)+'</h3><button class="m-x" onclick="closeModal()">×</button></div><div class="m-bd"><div class="dr"><div class="dl">'+i18n.t('tenant.room')+'</div><div class="dv">'+esc(rm?rm.name:'-')+'</div></div><div class="dr"><div class="dl">'+i18n.t('rent.currentBill')+'</div><div class="dv" id="payPeriodLabel">'+fmtDate(curStart)+' ~ '+fmtDate(curEnd)+' | '+dueText+'</div></div><div class="fg" style="margin-top:8px"><label>'+i18n.t('rent.adjustStart')+'</label><input class="fc" id="fCurStart" type="date" value="'+curStart+'" onchange="updatePayDates()"><div class="hint">'+i18n.t('common.afterModify')+'，'+i18n.t('rent.deadlineUpdated')+'</div></div><div class="dr"><div class="dl">'+i18n.t('rent.deadline')+'</div><div class="dv" id="payEndLabel">'+fmtDate(curEnd)+'</div></div><div class="dr"><div class="dl">'+i18n.t('rent.amount2')+'</div><div class="dv"><input class="fc" id="fPayAmount" type="number" min="0" step="1" value="'+earliest.amount+'" style="font-weight:600;color:var(--p);width:100%"></div></div><div class="dr"><div class="dl">'+i18n.t('rent.nextPayment')+'</div><div class="dv" id="payNextLabel">'+fmtDate(curEnd)+'</div><div class="hint" style="margin-top:2px">'+i18n.t('rent.nextBillStart')+'</div></div><div class="fr"><div class="fg"><label>'+i18n.t('rent.payMethod')+'</label><select class="fc" id="fPayMethod" autocomplete="off" data-lpignore="true"><option value="">'+i18n.t('common.select')+'</option><option>'+i18n.t('rent.methodWechat')+'</option><option>'+i18n.t('rent.methodAlipay')+'</option><option>'+i18n.t('rent.methodBank')+'</option><option>'+i18n.t('rent.methodCash')+'</option><option>'+i18n.t('common.other')+'</option></select></div><div class="fg"><label>'+i18n.t('common.notes')+'</label><input class="fc" id="fPayNote" placeholder="'+i18n.t('common.notesPh')+'"></div></div></div><div class="file-section"><h4>'+i18n.t('tenant.contractFiles')+'</h4><div class="file-list" id="fileListNew"></div><div class="file-upload-btn" onclick="triggerFileUpload(\'new\')"><span>+</span>'+i18n.t('tenant.uploadContractFile')+'</div><p class="file-hint">'+i18n.t('common.fileHint')+'</p><input type="file" id="fileInputNew" accept=".pdf,.doc,.docx" multiple style="display:none" onchange="handleFileUpload(this,\'new\')"></div><div class="m-ft"><button class="btn btn-gh" onclick="closeModal()">'+i18n.t('common.cancel')+'</button><button class="btn btn-p" id="confirmPayBtn" onclick="confirmQuickPay(\'' + earliest.id + '\',\'' + tenantId + '\')">'+i18n.t('rent.confirmPayment')+'</button></div>')}
 function updatePayDates(){var s=document.getElementById('fCurStart');var lbl=document.getElementById('payPeriodLabel');var elbl=document.getElementById('payEndLabel');var nlbl=document.getElementById('payNextLabel');var t=window._payTenant;var iv=window._payIntervalNum;if(!s||!lbl||!t)return;var newStart=s.value;if(!newStart)return;var newEnd=addMonths(newStart,iv);var dueDays=daysDiff(today(),newEnd);var dueText=dueDays<0?''+i18n.t('common.overdue2')+''+Math.abs(dueDays)+i18n.t('common.day'):(dueDays===0?''+i18n.t('common.dueToday')+'':i18n.t('common.nDaysLater',{n:dueDays}));lbl.textContent=fmtDate(newStart)+' ~ '+fmtDate(newEnd)+' | '+dueText;if(elbl)elbl.textContent=fmtDate(newEnd);if(nlbl)nlbl.textContent=fmtDate(newEnd)}
 async function confirmQuickPay(rentId,tenantId){if(window._saving)return;var btn=document.getElementById('confirmPayBtn');if(btn){btn.textContent=i18n.t('common.processing');btn.disabled=true}window._saving=true;try{var t=cache.tenants.find(function(x){return x.id===tenantId});var rent=cache.rents.find(function(x){return x.id===rentId});if(!t||!rent){closeModal();return}var startInput=document.getElementById('fCurStart');var newStart=startInput?startInput.value:(rent.period_start||addMonths(rent.due_date,-(window._payIntervalNum||1)));var interval=window._payIntervalNum;var newEnd=addMonths(newStart,interval);var updateData={status:'paid',pay_date:today(),amount:parseFloat(document.getElementById('fPayAmount').value)||rent.amount,pay_method:document.getElementById('fPayMethod').value,notes:document.getElementById('fPayNote').value.trim()||rent.notes,due_date:newEnd,period_start:newStart};var r=await sb.from('rents').update(updateData).eq('id',rentId);if(r.error){toast(r.error.message,'e');closeModal();return}var method=t.pay_method||i18n.t('pay.monthly');var nextStart=newEnd;var nextEnd=addMonths(nextStart,interval);var contractEnd=t.contract_end||'2099-12-31';if(nextEnd<=contractEnd){var exists=cache.rents.some(function(x){return x.tenant_id===tenantId&&x.due_date===nextEnd&&x.id!==rentId});if(!exists){var newBill={owner_id:getOwnerId(),tenant_id:tenantId,room_id:t.room_id,amount:parseFloat(document.getElementById('fPayAmount').value)||rent.amount,due_date:nextEnd,period_start:nextStart,status:nextEnd<today()?'overdue':'pending',pay_method:'',notes:method+i18n.t('room.rent')};var nr=await sb.from('rents').insert(newBill);if(nr.error)console.error('Create next bill error:',nr.error)}}closeModal();toast(''+i18n.t('rent.paymentSuccess')+'');await loadAllData();renderPage()}catch(e){toast(''+i18n.t('common.opFail')+'：'+(e&&e.message||''),'e');closeModal()}finally{window._saving=false;var b=document.getElementById('confirmPayBtn');if(b){b.textContent=''+i18n.t('rent.confirmPayment')+'';b.disabled=false}}}
-// ========== 催租助手（v97 纯增量） ==========
+// ========== 催租助手（v97 纯增量；v98 修正口径） ==========
 var REMIND_AHEAD_DAYS = 3;
+function _billEff(r){ return r.period_start || r.due_date; } // 系统口径：账期起始日为准（与租金页/倒计时一致）
 function _remindCollect(){
   var td = today();
-  var groups = {overdue:[], today:[], soon:[]};
+  var groups = {overdue:[], today:[], soon:[], history:[]};
   cache.tenants.forEach(function(t){
-    if(!t || t.status !== 'active') return;
-    var bills = cache.rents.filter(function(r){
-      return r.tenant_id === t.id && r.status !== 'paid' && r.due_date;
-    }).sort(function(a,b){return (a.due_date||'').localeCompare(b.due_date||'')});
-    if(!bills.length) return;
-    var d = daysDiff(td, bills[0].due_date);
+    if(!t || !t.id) return;
+    var rm = cache.rooms.find(function(x){return x.id === t.room_id});
+    var unpaid = cache.rents.filter(function(r){
+      return r.tenant_id === t.id && r.status !== 'paid' && _billEff(r);
+    });
+    if(!unpaid.length) return;
+    var sorted = unpaid.slice().sort(function(a,b){return _billEff(a).localeCompare(_billEff(b))});
+    if(t.status !== 'active'){
+      // 已退租：欠款单列「历史欠款」，全部列出
+      var htot = unpaid.reduce(function(a,b){return a + _billNum(b.amount)},0);
+      groups.history.push({kind:'history', tenant:t, room:rm, bills:unpaid, days:daysDiff(td,_billEff(sorted[0])), total:htot});
+      return;
+    }
+    var d = daysDiff(td, _billEff(sorted[0])); // 与 getNextPayDate / 倒计时完全一致
     var bucket = d < 0 ? 'overdue' : d === 0 ? 'today' : d <= REMIND_AHEAD_DAYS ? 'soon' : null;
     if(!bucket) return;
-    var rm = cache.rooms.find(function(x){return x.id === t.room_id});
-    var total = bills.reduce(function(a,b){return a + _billNum(b.amount)},0);
-    groups[bucket].push({tenant:t, room:rm, bills:bills, days:d, total:total});
+    // 卡片只列“已经该收”的账单（生效日<=今天），不把未来未到期账单算进催款额
+    var dueBills = sorted.filter(function(b){return _billEff(b) <= td;});
+    if(!dueBills.length) dueBills = [sorted[0]];
+    var total = dueBills.reduce(function(a,b){return a + _billNum(b.amount)},0);
+    groups[bucket].push({tenant:t, room:rm, bills:dueBills, anchor:_billEff(sorted[0]), days:d, total:total});
   });
   return groups;
 }
@@ -1003,7 +1014,7 @@ function _remindMsg(item){
   }else{
     body = i18n.t('remind.soon', {room:roomName, period:period, amount:amt, n:item.days});
   }
-  var tail = (cache.settings.pay_qr_path ? i18n.t('remind.qrTail') : i18n.t('remind.tail'));
+  var tail = ((cache.settings && cache.settings.pay_qr_path) ? i18n.t('remind.qrTail') : i18n.t('remind.tail'));
   return head + body + tail;
 }
 function _copyText(text, okMsg){
@@ -1038,7 +1049,7 @@ function remindSend(tenantId){
 }
 function _remindFind(tenantId){
   var g = _remindCollect();
-  var all = g.overdue.concat(g.today).concat(g.soon);
+  var all = g.overdue.concat(g.today).concat(g.soon).concat(g.history);
   return all.find(function(x){return x.tenant.id === tenantId});
 }
 function remindSettle(tenantId){
@@ -1048,10 +1059,25 @@ function remindSettle(tenantId){
 }
 function _remindCard(item){
   var color = item.days < 0 ? 'var(--d)' : item.days === 0 ? 'var(--w)' : 'var(--p)';
-  var statusTxt = item.days < 0
-    ? i18n.t('remind.overdueBadge',{n:Math.abs(item.days)})
-    : item.days === 0 ? i18n.t('remind.todayBadge')
-    : i18n.t('remind.soonBadge',{n:item.days});
+  var statusTxt;
+  if(item.kind === 'history'){
+    statusTxt = i18n.t('remind.historyBadge');
+  }else if(item.days < 0){
+    statusTxt = i18n.t('remind.overdueBadge',{n:Math.abs(item.days)});
+  }else if(item.days === 0){
+    statusTxt = i18n.t('remind.todayBadge');
+  }else{
+    statusTxt = i18n.t('remind.soonBadge',{n:item.days});
+  }
+  var actions;
+  if(item.kind === 'history'){
+    actions = '<button class="btn btn-gh" style="flex:1;padding:9px 4px;font-size:13px" onclick="remindCopy(\''+item.tenant.id+'\')">📋 '+i18n.t('remind.copyBtn')+'</button>'
+      + '<button class="btn btn-g" style="flex:1;padding:9px 4px;font-size:13px" onclick="remindSettle(\''+item.tenant.id+'\')">✅ '+i18n.t('remind.settleBtn')+'</button>';
+  }else{
+    actions = '<button class="btn btn-gh" style="flex:1;padding:9px 4px;font-size:13px" onclick="remindCopy(\''+item.tenant.id+'\')">📋 '+i18n.t('remind.copyBtn')+'</button>'
+      + '<button class="btn btn-p" style="flex:1;padding:9px 4px;font-size:13px" onclick="remindSend(\''+item.tenant.id+'\')">💬 '+i18n.t('remind.sendBtn')+'</button>'
+      + '<button class="btn btn-g" style="flex:1;padding:9px 4px;font-size:13px" onclick="remindSettle(\''+item.tenant.id+'\')">✅ '+i18n.t('remind.settleBtn')+'</button>';
+  }
   return '<div class="card" style="margin-bottom:10px;padding:14px">'
     + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
     + '<div style="min-width:0"><div style="font-size:15px;font-weight:700">'+esc(item.tenant.name||'-')+'</div>'
@@ -1059,11 +1085,7 @@ function _remindCard(item){
     + '<span style="flex:0 0 auto;font-size:11px;font-weight:700;color:'+color+';background:var(--bg);border-radius:20px;padding:3px 9px">'+esc(statusTxt)+'</span>'
     + '</div>'
     + '<div style="font-size:20px;font-weight:800;color:'+color+';margin:10px 0 12px">¥'+item.total.toLocaleString()+'</div>'
-    + '<div style="display:flex;gap:8px">'
-    + '<button class="btn btn-gh" style="flex:1;padding:9px 4px;font-size:13px" onclick="remindCopy(\''+item.tenant.id+'\')">📋 '+i18n.t('remind.copyBtn')+'</button>'
-    + '<button class="btn btn-p" style="flex:1;padding:9px 4px;font-size:13px" onclick="remindSend(\''+item.tenant.id+'\')">💬 '+i18n.t('remind.sendBtn')+'</button>'
-    + '<button class="btn btn-g" style="flex:1;padding:9px 4px;font-size:13px" onclick="remindSettle(\''+item.tenant.id+'\')">✅ '+i18n.t('remind.settleBtn')+'</button>'
-    + '</div>'
+    + '<div style="display:flex;gap:8px">'+actions+'</div>'
     + '</div>';
 }
 function rRemind(){
@@ -1083,9 +1105,10 @@ function rRemind(){
       + '<div style="font-size:44px;margin-bottom:12px">🎉</div>'
       + '<div style="font-size:15px">'+i18n.t('remind.empty')+'</div></div>';
   }else{
-    body = section('overdue','🔴 '+i18n.t('remind.groupOverdue'),g.overdue)
+  body = section('overdue','🔴 '+i18n.t('remind.groupOverdue'),g.overdue)
       + section('today','🟡 '+i18n.t('remind.groupToday'),g.today)
-      + section('soon','🟢 '+i18n.t('remind.groupSoon'),g.soon);
+      + section('soon','🟢 '+i18n.t('remind.groupSoon'),g.soon)
+      + section('history','💸 '+i18n.t('remind.groupHistory'),g.history);
   }
   document.getElementById('mainContent').innerHTML =
     '<div class="page-hd" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
@@ -1111,13 +1134,67 @@ function showPayQrModal(){
     + '<button class="btn btn-p" onclick="document.getElementById(\'payQrInput\').click()">'+i18n.t('remind.uploadQr')+'</button></div>';
   openModal(html);
 }
+var _zxingPromise = null;
+function loadZXing(){
+  if(window.ZXing) return Promise.resolve(window.ZXing);
+  if(_zxingPromise) return _zxingPromise;
+  _zxingPromise = new Promise(function(resolve,reject){
+    var s = document.createElement('script');
+    s.src = 'vendor/zxing.min.js';
+    s.onload = function(){ window.ZXing ? resolve(window.ZXing) : reject(new Error('zxing load fail')); };
+    s.onerror = function(){ reject(new Error('zxing load fail')); };
+    document.head.appendChild(s);
+  });
+  return _zxingPromise;
+}
+// 只接受“收款码”，自动拒绝“付款码”
+// 规则：①解码 ②凡出现一维条形码(CODE_128/39/EAN等)且为纯长数字→付款码→拒 ③二维码内容须匹配微信/支付宝/银联收款
+var _COLLECT_PATTERNS = [
+  /^wxp:\/\//i, /weixin\.qq\.com\/(?:sp\/|x\/)/i, /payapp\.weixin/i,
+  /qr\.alipay\.com/i, /render\.alipay\.com/i, /^https?:\/\/[a-z]*alipay/i,
+  /qr\.95516\.com/i, /unionpay/i, /^mqqapi:\/\//i, /tenpay/i
+];
+function _looksCollectPayload(text){
+  if(!text) return false;
+  var s = String(text).trim();
+  for(var i=0;i<_COLLECT_PATTERNS.length;i++){ if(_COLLECT_PATTERNS[i].test(s)) return true; }
+  return false;
+}
+async function classifyPayQr(file){
+  var ZXing = await loadZXing();
+  var dataUrl = await new Promise(function(res){ var r=new FileReader(); r.onload=function(){res(r.result)}; r.readAsDataURL(file); });
+  var img = await new Promise(function(res,rej){ var im=new Image(); im.onload=function(){res(im)}; im.onerror=rej; im.src=dataUrl; });
+  var reader = new ZXing.BrowserMultiFormatReader();
+  var result;
+  try{ result = reader.decodeFromImage(img); }catch(e){ result = null; }
+  if(!result){ return {ok:false, reason:'notfound'}; }
+  var fmt = result.getBarcodeFormat();
+  var text = result.getText() || '';
+  var is1D = fmt !== ZXing.BarcodeFormat.QR_CODE && fmt !== ZXing.BarcodeFormat.DATA_MATRIX && fmt !== ZXing.BarcodeFormat.PDF_417 && fmt !== ZXing.BarcodeFormat.AZTEC;
+  if(is1D || /^\d{14,25}$/.test(text.replace(/\s/g,''))){
+    return {ok:false, reason:'paycode'};
+  }
+  if(!_looksCollectPayload(text)){
+    return {ok:false, reason:'notcollect'};
+  }
+  return {ok:true, text:text, format:fmt};
+}
 async function handlePayQr(input){
   if(!input.files || !input.files.length) return;
   var file = input.files[0];
   input.value = '';
-  toast(i18n.t('remind.uploading'),'i');
+  toast(i18n.t('remind.recognizing'),'i');
+  var verdict;
+  try{ verdict = await classifyPayQr(file); }
+  catch(e){ verdict = {ok:false, reason:'engine'}; }
+  if(!verdict.ok){
+    var map = {paycode:'remind.rejectPaycode', notfound:'remind.rejectNotFound', notcollect:'remind.rejectNotCollect', engine:'remind.rejectEngine'};
+    toast(i18n.t(map[verdict.reason] || map.engine),'e');
+    return;
+  }
+  toast(i18n.t('remind.recognizeOk'),'s');
   var compData = await compressImage(file);
-  var blob = compData.blob;
+  var blob = compData && compData.blob;
   if(!blob){ toast(i18n.t('img.compressFail'),'e'); return; }
   var ts = Date.now()+'_'+Math.random().toString(36).slice(2,7);
   var path = currentUser.id + '/' + ts + '.jpg';
