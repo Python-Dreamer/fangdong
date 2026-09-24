@@ -310,7 +310,7 @@ html[data-th=dark] .bldg-ov-card{box-shadow:0 1px 3px rgba(0,0,0,.3)}
 <div class="ov" id="overlay" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal" onclick="event.stopPropagation()"></div></div>
 <div class="sb-overlay" id="sbOverlay" onclick="closeSB()"></div>
 <div class="photo-viewer-overlay" id="photoViewer" onclick="closePhotoViewer(event)"><button class="photo-viewer-close" onclick="closePhotoViewer()">×</button><span class="photo-viewer-nav" id="photoViewerPrev" onclick="event.stopPropagation();photoViewerNav(-1)">‹</span><img class="photo-viewer-img" id="photoViewerImg" src="" alt=""><span class="photo-viewer-nav" id="photoViewerNext" onclick="event.stopPropagation();photoViewerNav(1)">›</span></div>
-<script src="i18n.js?v=98"></script>
+<script src="i18n.js?v=99"></script>
 <script>
 var sbUrl=localStorage.getItem('sb_url')||'https://ruilifangfong.site',sbKey=localStorage.getItem('sb_key')||'eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8',sb=null,sdkReady=false,currentUser=null,currentProfile=null,currentPage='dashboard';
 var DEFAULT_SB_URL='https://ruilifangfong.site',DEFAULT_SB_KEY='eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAic3VwYWJhc2UiLCAicmVmIjogImZhbmdkb25nLWxvY2FsIiwgInJvbGUiOiAiYW5vbiIsICJpYXQiOiAxNzg2MDM4ODkxLCAiZXhwIjogMjEwMTM5ODg5MX0.nxnIKzPFgMaawkZ6u_oWICgZqI3c4k1w6OhkwBnL-e8';
@@ -723,8 +723,8 @@ async function doToggleStaffAccount(flag){
   if(r.error){toast(r.error.message,'e');return}
   closeModal();toast(i18n.t('common.updateSuccess'),'s');if(typeof rCommission==='function')rCommission();
 }
-function renderApp(){document.getElementById('app').innerHTML='<div class="app-wrap"><button class="mob-btn" onclick="toggleSB()">☰</button><div class="sidebar" id="sidebar"><div class="sidebar-hd"><h1>🏠 '+i18n.t('common.appName')+'</h1><div class="user-info" style="cursor:pointer" onclick="editName()">'+esc(currentProfile.name||currentUser.email)+' <span style="font-size:10px;opacity:.6">✏️</span></div></div><div class="nav-item on" data-p="dashboard" onclick="goPage(\'dashboard\')"><span class="ico">📊</span>'+i18n.t('common.dashboard')+'</div><div class="nav-item" data-p="rooms" onclick="goPage(\'rooms\')"><span class="ico">🏘️</span>'+i18n.t('common.roomsMgmt')+'</div><div class="nav-item" data-p="tenants" onclick="goPage(\'tenants\')"><span class="ico">👥</span>'+i18n.t('common.tenantsMgmt')+'</div><div class="nav-item" data-p="rent" onclick="goPage(\'rent\')"><span class="ico">💰</span>'+i18n.t('common.rentMgmt')+'<span class="badge" id="bOd" style="display:none">0</span></div><div class="nav-item" data-p="remind" onclick="goPage(\'remind\')"><span class="ico">📣</span>'+i18n.t('remind.title')+'</div><div class="nav-item" data-p="finance" onclick="goPage(\'finance\')"><span class="ico">🧾</span>'+i18n.t('common.financeMgmt')+'<span class="badge" id="bAdj" style="display:none">0</span></div><div class="nav-item" data-p="commission" onclick="goPage(\'commission\')" style="display:none"><span class="ico">💼</span>'+i18n.t('comm.title')+'</div><div class="nav-item" data-p="feedback" onclick="goPage(\'feedback\')" id="navFeedback" style="display:none"><span class="ico">💬</span>'+i18n.t('common.feedbackMgmt')+'<span class="badge" id="bFb" style="display:none">0</span></div><div class="nav-item" data-p="reports" onclick="goPage(\'reports\')" id="navReports" style="display:none"><span class="ico">🚩</span>举报管理<span class="badge" id="bRp" style="display:none">0</span></div><div class="nav-item" data-p="settings" onclick="goPage(\'settings\')"><span class="ico">⚙️</span>'+i18n.t('nav.settings')+'</div><a class="nav-item" href="tools.html" target="_blank" style="text-decoration:none"><span class="ico">🧰</span>'+i18n.t('nav.tools')+'</a><a class="nav-item" href="services.html" target="_blank" style="text-decoration:none"><span class="ico">🛎️</span>'+i18n.t('nav.services')+'</a><div class="sidebar-ft"><div class="th-label">🎨 '+i18n.t('common.theme')+'</div>'+(function(){var cs=[['blue','🔵'],['green','🟢'],['orange','🟠'],['dark','🌙']];var cur='blue';try{cur=localStorage.getItem('app-theme')||'blue'}catch(e){}return cs.map(function(t){return '<button type="button" class="th-dot'+(cur===t[0]?' on':'')+'" data-thv="'+t[0]+'" onclick="setTheme(\''+t[0]+'\')">'+t[1]+'</button>'}).join('')})()+'<button class="btn btn-gh" id="langToggle" style="width:100%;justify-content:center;margin-bottom:8px" onclick="i18n.toggleLang()">'+(i18n.getLang()==='zh-CN'?'🌐 English':'🌐 中文')+'</button><button class="btn btn-gh" style="width:100%;justify-content:center;margin-bottom:8px" onclick="showFeedbackModal()">'+i18n.t('nav.feedbackBtn')+'</button><button class="btn btn-gh" style="width:100%;justify-content:center" onclick="doSignOut()">'+i18n.t('nav.logout')+'</button></div></div><div class="main" id="mainContent"></div></div><div class="rt-ind"><div class="rt-dot" id="rtDot"></div><span id="rtText">'+i18n.t('nav.realtimeSync')+'</span></div>';if(isAdmin()){document.getElementById("navFeedback").style.display="";var _nr=document.getElementById("navReports");if(_nr)_nr.style.display=""}try{_commNavSync()}catch(e){}renderPage();updateBadges()}
-function renderPage(){_fullRender=true;var fn={dashboard:rDashboard,rooms:rRooms,tenants:rTenants,rent:rRent,remind:rRemind,finance:rFinance,commission:rCommission,settings:rSettings,feedback:rFeedback,reports:rReports};(fn[currentPage]||rDashboard)();updateBadges();mselInject();mselAddBtn()}
+function renderApp(){document.getElementById('app').innerHTML='<div class="app-wrap"><button class="mob-btn" onclick="toggleSB()">☰</button><div class="sidebar" id="sidebar"><div class="sidebar-hd"><h1>🏠 '+i18n.t('common.appName')+'</h1><div class="user-info" style="cursor:pointer" onclick="editName()">'+esc(currentProfile.name||currentUser.email)+' <span style="font-size:10px;opacity:.6">✏️</span></div></div><div class="nav-item on" data-p="dashboard" onclick="goPage(\'dashboard\')"><span class="ico">📊</span>'+i18n.t('common.dashboard')+'</div><div class="nav-item" data-p="rooms" onclick="goPage(\'rooms\')"><span class="ico">🏘️</span>'+i18n.t('common.roomsMgmt')+'</div><div class="nav-item" data-p="tenants" onclick="goPage(\'tenants\')"><span class="ico">👥</span>'+i18n.t('common.tenantsMgmt')+'</div><div class="nav-item" data-p="rent" onclick="goPage(\'rent\')"><span class="ico">💰</span>'+i18n.t('common.rentMgmt')+'<span class="badge" id="bOd" style="display:none">0</span></div><div class="nav-item" data-p="finance" onclick="goPage(\'finance\')"><span class="ico">🧾</span>'+i18n.t('common.financeMgmt')+'<span class="badge" id="bAdj" style="display:none">0</span></div><div class="nav-item" data-p="commission" onclick="goPage(\'commission\')" style="display:none"><span class="ico">💼</span>'+i18n.t('comm.title')+'</div><div class="nav-item" data-p="feedback" onclick="goPage(\'feedback\')" id="navFeedback" style="display:none"><span class="ico">💬</span>'+i18n.t('common.feedbackMgmt')+'<span class="badge" id="bFb" style="display:none">0</span></div><div class="nav-item" data-p="reports" onclick="goPage(\'reports\')" id="navReports" style="display:none"><span class="ico">🚩</span>举报管理<span class="badge" id="bRp" style="display:none">0</span></div><div class="nav-item" data-p="settings" onclick="goPage(\'settings\')"><span class="ico">⚙️</span>'+i18n.t('nav.settings')+'</div><a class="nav-item" href="tools.html" target="_blank" style="text-decoration:none"><span class="ico">🧰</span>'+i18n.t('nav.tools')+'</a><a class="nav-item" href="services.html" target="_blank" style="text-decoration:none"><span class="ico">🛎️</span>'+i18n.t('nav.services')+'</a><div class="sidebar-ft"><div class="th-label">🎨 '+i18n.t('common.theme')+'</div>'+(function(){var cs=[['blue','🔵'],['green','🟢'],['orange','🟠'],['dark','🌙']];var cur='blue';try{cur=localStorage.getItem('app-theme')||'blue'}catch(e){}return cs.map(function(t){return '<button type="button" class="th-dot'+(cur===t[0]?' on':'')+'" data-thv="'+t[0]+'" onclick="setTheme(\''+t[0]+'\')">'+t[1]+'</button>'}).join('')})()+'<button class="btn btn-gh" id="langToggle" style="width:100%;justify-content:center;margin-bottom:8px" onclick="i18n.toggleLang()">'+(i18n.getLang()==='zh-CN'?'🌐 English':'🌐 中文')+'</button><button class="btn btn-gh" style="width:100%;justify-content:center;margin-bottom:8px" onclick="showFeedbackModal()">'+i18n.t('nav.feedbackBtn')+'</button><button class="btn btn-gh" style="width:100%;justify-content:center" onclick="doSignOut()">'+i18n.t('nav.logout')+'</button></div></div><div class="main" id="mainContent"></div></div><div class="rt-ind"><div class="rt-dot" id="rtDot"></div><span id="rtText">'+i18n.t('nav.realtimeSync')+'</span></div>';if(isAdmin()){document.getElementById("navFeedback").style.display="";var _nr=document.getElementById("navReports");if(_nr)_nr.style.display=""}try{_commNavSync()}catch(e){}renderPage();updateBadges()}
+function renderPage(){_fullRender=true;var fn={dashboard:rDashboard,rooms:rRooms,tenants:rTenants,rent:rRent,finance:rFinance,commission:rCommission,settings:rSettings,feedback:rFeedback,reports:rReports};(fn[currentPage]||rDashboard)();updateBadges();mselInject();mselAddBtn()}
 function updateBadges(){var rentRemindDays=cache.settings.rent_remind_days||5;var od=cache.rents.filter(function(r){if(r.status!=='pending'&&r.status!=='overdue')return false;if(!cache.settings.enable_reminders)return false;var tn=cache.tenants.find(function(x){return x.id===r.tenant_id});if(tn&&tn.status==='inactive')return false;var d=daysDiff(today(),r.due_date);return d<=rentRemindDays||d<0}).length;var daysWarn=cache.settings.contract_remind_days||30;var ex=cache.tenants.filter(function(t){return t.status==='active'&&t.contract_end&&daysDiff(today(),t.contract_end)<=daysWarn}).length;var adjDue=cache.adjustments.filter(function(a){if(a.status!=='pending')return false;var tn=cache.tenants.find(function(x){return x.id===a.tenant_id});if(tn&&tn.status==='inactive')return false;return daysDiff(today(),a.adjust_date)<=7}).length;var b1=document.getElementById('bOd');if(b1){b1.style.display=(od+ex)?'inline':'none';b1.textContent=od+ex};var bAdj=document.getElementById('bAdj');if(bAdj){bAdj.style.display=adjDue?'inline':'none';bAdj.textContent=adjDue};if(isAdmin()&&cache.feedback){var unreadFb=cache.feedback.filter(function(x){return x.status==='unread'}).length;var bFb=document.getElementById('bFb');if(bFb){bFb.style.display=unreadFb?'inline':'none';bFb.textContent=unreadFb}}if(isAdmin()&&cache.reports){var pendRp=cache.reports.filter(function(x){return x.status==='pending'}).length;var bRp=document.getElementById('bRp');if(bRp){bRp.style.display=pendRp?'inline':'none';bRp.textContent=pendRp}}}
 
 // ========== 工作台 ==========
@@ -963,177 +963,8 @@ function delTenant(id){var t=cache.tenants.find(function(x){return x.id===id});i
 function doQuickPay(tenantId){var t=cache.tenants.find(function(x){return x.id===tenantId});if(!t){toast(i18n.t('cg.tenantNotFound'),'e');return}var unpaidRents=cache.rents.filter(function(r){return r.tenant_id===tenantId&&(r.status==='pending'||r.status==='overdue')}).sort(function(a,b){return(a.due_date||'').localeCompare(b.due_date||'')});if(!unpaidRents.length){if(t.move_in_date&&t.contract_end&&t.rent_amount>0){toast(''+i18n.t('rent.generating')+'...','i');autoGenerateBills(t).then(function(cnt){if(cnt>0){loadAllData().then(function(){doQuickPay(tenantId)}).catch(function(e){toast(''+i18n.t('common.opFail')+'：'+(e&&e.message||''),'e')})}else{toast(''+i18n.t('rent.noDueBills')+'，'+i18n.t('rent.manualHint')+'','i')}}).catch(function(e){toast(''+i18n.t('common.opFail')+'：'+(e&&e.message||''),'e')})}else{toast(''+i18n.t('rent.noDueBills')+'，'+i18n.t('rent.manualHint')+'','i')}return}var earliest=unpaidRents[0];var rm=cache.rooms.find(function(r){return r.id===t.room_id});var method=t.pay_method||i18n.t('pay.monthly');var interval=method===i18n.t('pay.yearly')?12:method===i18n.t('pay.halfYear')?6:method===i18n.t('pay.quarterly')?3:1;var curStart=earliest.period_start||addMonths(earliest.due_date,-interval);var curEnd=addMonths(curStart,interval);var dueDays=daysDiff(today(),curEnd);var dueText=dueDays<0?i18n.t('common.overdueNDays',{n:Math.abs(dueDays)}):(dueDays===0?''+i18n.t('common.dueToday')+'':i18n.t('common.nDaysLater',{n:dueDays}));window._payTenant=t;window._payIntervalNum=interval;window._payRentId=earliest.id;openModal('<div class="m-hd"><h3>💰 '+i18n.t('rent.payment')+' - '+esc(t.name)+'</h3><button class="m-x" onclick="closeModal()">×</button></div><div class="m-bd"><div class="dr"><div class="dl">'+i18n.t('tenant.room')+'</div><div class="dv">'+esc(rm?rm.name:'-')+'</div></div><div class="dr"><div class="dl">'+i18n.t('rent.currentBill')+'</div><div class="dv" id="payPeriodLabel">'+fmtDate(curStart)+' ~ '+fmtDate(curEnd)+' | '+dueText+'</div></div><div class="fg" style="margin-top:8px"><label>'+i18n.t('rent.adjustStart')+'</label><input class="fc" id="fCurStart" type="date" value="'+curStart+'" onchange="updatePayDates()"><div class="hint">'+i18n.t('common.afterModify')+'，'+i18n.t('rent.deadlineUpdated')+'</div></div><div class="dr"><div class="dl">'+i18n.t('rent.deadline')+'</div><div class="dv" id="payEndLabel">'+fmtDate(curEnd)+'</div></div><div class="dr"><div class="dl">'+i18n.t('rent.amount2')+'</div><div class="dv"><input class="fc" id="fPayAmount" type="number" min="0" step="1" value="'+earliest.amount+'" style="font-weight:600;color:var(--p);width:100%"></div></div><div class="dr"><div class="dl">'+i18n.t('rent.nextPayment')+'</div><div class="dv" id="payNextLabel">'+fmtDate(curEnd)+'</div><div class="hint" style="margin-top:2px">'+i18n.t('rent.nextBillStart')+'</div></div><div class="fr"><div class="fg"><label>'+i18n.t('rent.payMethod')+'</label><select class="fc" id="fPayMethod" autocomplete="off" data-lpignore="true"><option value="">'+i18n.t('common.select')+'</option><option>'+i18n.t('rent.methodWechat')+'</option><option>'+i18n.t('rent.methodAlipay')+'</option><option>'+i18n.t('rent.methodBank')+'</option><option>'+i18n.t('rent.methodCash')+'</option><option>'+i18n.t('common.other')+'</option></select></div><div class="fg"><label>'+i18n.t('common.notes')+'</label><input class="fc" id="fPayNote" placeholder="'+i18n.t('common.notesPh')+'"></div></div></div><div class="file-section"><h4>'+i18n.t('tenant.contractFiles')+'</h4><div class="file-list" id="fileListNew"></div><div class="file-upload-btn" onclick="triggerFileUpload(\'new\')"><span>+</span>'+i18n.t('tenant.uploadContractFile')+'</div><p class="file-hint">'+i18n.t('common.fileHint')+'</p><input type="file" id="fileInputNew" accept=".pdf,.doc,.docx" multiple style="display:none" onchange="handleFileUpload(this,\'new\')"></div><div class="m-ft"><button class="btn btn-gh" onclick="closeModal()">'+i18n.t('common.cancel')+'</button><button class="btn btn-p" id="confirmPayBtn" onclick="confirmQuickPay(\'' + earliest.id + '\',\'' + tenantId + '\')">'+i18n.t('rent.confirmPayment')+'</button></div>')}
 function updatePayDates(){var s=document.getElementById('fCurStart');var lbl=document.getElementById('payPeriodLabel');var elbl=document.getElementById('payEndLabel');var nlbl=document.getElementById('payNextLabel');var t=window._payTenant;var iv=window._payIntervalNum;if(!s||!lbl||!t)return;var newStart=s.value;if(!newStart)return;var newEnd=addMonths(newStart,iv);var dueDays=daysDiff(today(),newEnd);var dueText=dueDays<0?''+i18n.t('common.overdue2')+''+Math.abs(dueDays)+i18n.t('common.day'):(dueDays===0?''+i18n.t('common.dueToday')+'':i18n.t('common.nDaysLater',{n:dueDays}));lbl.textContent=fmtDate(newStart)+' ~ '+fmtDate(newEnd)+' | '+dueText;if(elbl)elbl.textContent=fmtDate(newEnd);if(nlbl)nlbl.textContent=fmtDate(newEnd)}
 async function confirmQuickPay(rentId,tenantId){if(window._saving)return;var btn=document.getElementById('confirmPayBtn');if(btn){btn.textContent=i18n.t('common.processing');btn.disabled=true}window._saving=true;try{var t=cache.tenants.find(function(x){return x.id===tenantId});var rent=cache.rents.find(function(x){return x.id===rentId});if(!t||!rent){closeModal();return}var startInput=document.getElementById('fCurStart');var newStart=startInput?startInput.value:(rent.period_start||addMonths(rent.due_date,-(window._payIntervalNum||1)));var interval=window._payIntervalNum;var newEnd=addMonths(newStart,interval);var updateData={status:'paid',pay_date:today(),amount:parseFloat(document.getElementById('fPayAmount').value)||rent.amount,pay_method:document.getElementById('fPayMethod').value,notes:document.getElementById('fPayNote').value.trim()||rent.notes,due_date:newEnd,period_start:newStart};var r=await sb.from('rents').update(updateData).eq('id',rentId);if(r.error){toast(r.error.message,'e');closeModal();return}var method=t.pay_method||i18n.t('pay.monthly');var nextStart=newEnd;var nextEnd=addMonths(nextStart,interval);var contractEnd=t.contract_end||'2099-12-31';if(nextEnd<=contractEnd){var exists=cache.rents.some(function(x){return x.tenant_id===tenantId&&x.due_date===nextEnd&&x.id!==rentId});if(!exists){var newBill={owner_id:getOwnerId(),tenant_id:tenantId,room_id:t.room_id,amount:parseFloat(document.getElementById('fPayAmount').value)||rent.amount,due_date:nextEnd,period_start:nextStart,status:nextEnd<today()?'overdue':'pending',pay_method:'',notes:method+i18n.t('room.rent')};var nr=await sb.from('rents').insert(newBill);if(nr.error)console.error('Create next bill error:',nr.error)}}closeModal();toast(''+i18n.t('rent.paymentSuccess')+'');await loadAllData();renderPage()}catch(e){toast(''+i18n.t('common.opFail')+'：'+(e&&e.message||''),'e');closeModal()}finally{window._saving=false;var b=document.getElementById('confirmPayBtn');if(b){b.textContent=''+i18n.t('rent.confirmPayment')+'';b.disabled=false}}}
-// ========== 催租助手（v97 纯增量；v98 修正口径） ==========
-var REMIND_AHEAD_DAYS = 3;
-function _billEff(r){ return r.period_start || r.due_date; } // 系统口径：账期起始日为准（与租金页/倒计时一致）
-function _remindCollect(){
-  var td = today();
-  var groups = {overdue:[], today:[], soon:[], history:[]};
-  cache.tenants.forEach(function(t){
-    if(!t || !t.id) return;
-    var rm = cache.rooms.find(function(x){return x.id === t.room_id});
-    var unpaid = cache.rents.filter(function(r){
-      return r.tenant_id === t.id && r.status !== 'paid' && _billEff(r);
-    });
-    if(!unpaid.length) return;
-    var sorted = unpaid.slice().sort(function(a,b){return _billEff(a).localeCompare(_billEff(b))});
-    if(t.status !== 'active'){
-      // 已退租：欠款单列「历史欠款」，全部列出
-      var htot = unpaid.reduce(function(a,b){return a + _billNum(b.amount)},0);
-      groups.history.push({kind:'history', tenant:t, room:rm, bills:unpaid, days:daysDiff(td,_billEff(sorted[0])), total:htot});
-      return;
-    }
-    var d = daysDiff(td, _billEff(sorted[0])); // 与 getNextPayDate / 倒计时完全一致
-    var bucket = d < 0 ? 'overdue' : d === 0 ? 'today' : d <= REMIND_AHEAD_DAYS ? 'soon' : null;
-    if(!bucket) return;
-    // 卡片只列“已经该收”的账单（生效日<=今天），不把未来未到期账单算进催款额
-    var dueBills = sorted.filter(function(b){return _billEff(b) <= td;});
-    if(!dueBills.length) dueBills = [sorted[0]];
-    var total = dueBills.reduce(function(a,b){return a + _billNum(b.amount)},0);
-    groups[bucket].push({tenant:t, room:rm, bills:dueBills, anchor:_billEff(sorted[0]), days:d, total:total});
-  });
-  return groups;
-}
-function _remindPeriodText(bills, t){
-  var iv = _payInterval(t.pay_method);
-  var first = bills[0], last = bills[bills.length-1];
-  var s = first.period_start || addMonths(first.due_date, -iv);
-  var e = last.due_date;
-  return fmtShortPeriod(first, t) + (bills.length > 1 ? (' 等'+bills.length+'期') : '');
-}
-function _remindMsg(item){
-  var t = item.tenant, name = t.name || '你好', roomName = item.room ? item.room.name : '';
-  var period = _remindPeriodText(item.bills, t);
-  var amt = item.total.toLocaleString();
-  var head = i18n.t('remind.hello', {name:name});
-  var body;
-  if(item.days < 0){
-    body = i18n.t('remind.overdue', {room:roomName, period:period, amount:amt, n:Math.abs(item.days)});
-  }else if(item.days === 0){
-    body = i18n.t('remind.today', {room:roomName, period:period, amount:amt});
-  }else{
-    body = i18n.t('remind.soon', {room:roomName, period:period, amount:amt, n:item.days});
-  }
-  var tail = ((cache.settings && cache.settings.pay_qr_path) ? i18n.t('remind.qrTail') : i18n.t('remind.tail'));
-  return head + body + tail;
-}
-function _copyText(text, okMsg){
-  function done(){toast(okMsg || i18n.t('common.copySuccess') || '已复制')}
-  function fallback(){
-    try{
-      var ta = document.createElement('textarea');
-      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-      document.body.appendChild(ta); ta.focus(); ta.select();
-      var ok = document.execCommand('copy');
-      document.body.removeChild(ta);
-      if(ok){done()}else{toast(i18n.t('remind.copyFail'),'w')}
-    }catch(e){toast(i18n.t('remind.copyFail'),'w')}
-  }
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(done).catch(fallback);
-  }else{fallback()}
-}
-function remindCopy(tenantId){
-  var item = _remindFind(tenantId);
-  if(!item) return;
-  _copyText(_remindMsg(item), i18n.t('remind.copied'));
-}
-function remindSend(tenantId){
-  var item = _remindFind(tenantId);
-  if(!item) return;
-  _copyText(_remindMsg(item), i18n.t('remind.copiedOpenWx'));
-  var name = encodeURIComponent(item.tenant.name || '');
-  var url = 'weixin://dl/search?query=' + name;
-  try{ window.location.href = url; }catch(e){}
-  setTimeout(function(){ toast(i18n.t('remind.wxHint',{name:item.tenant.name||''}),'i'); }, 600);
-}
-function _remindFind(tenantId){
-  var g = _remindCollect();
-  var all = g.overdue.concat(g.today).concat(g.soon).concat(g.history);
-  return all.find(function(x){return x.tenant.id === tenantId});
-}
-function remindSettle(tenantId){
-  var t = cache.tenants.find(function(x){return x.id === tenantId});
-  if(!t) return;
-  doQuickPay(tenantId);
-}
-function _remindCard(item){
-  var color = item.days < 0 ? 'var(--d)' : item.days === 0 ? 'var(--w)' : 'var(--p)';
-  var statusTxt;
-  if(item.kind === 'history'){
-    statusTxt = i18n.t('remind.historyBadge');
-  }else if(item.days < 0){
-    statusTxt = i18n.t('remind.overdueBadge',{n:Math.abs(item.days)});
-  }else if(item.days === 0){
-    statusTxt = i18n.t('remind.todayBadge');
-  }else{
-    statusTxt = i18n.t('remind.soonBadge',{n:item.days});
-  }
-  var actions;
-  if(item.kind === 'history'){
-    actions = '<button class="btn btn-gh" style="flex:1;padding:9px 4px;font-size:13px" onclick="remindCopy(\''+item.tenant.id+'\')">📋 '+i18n.t('remind.copyBtn')+'</button>'
-      + '<button class="btn btn-g" style="flex:1;padding:9px 4px;font-size:13px" onclick="remindSettle(\''+item.tenant.id+'\')">✅ '+i18n.t('remind.settleBtn')+'</button>';
-  }else{
-    actions = '<button class="btn btn-gh" style="flex:1;padding:9px 4px;font-size:13px" onclick="remindCopy(\''+item.tenant.id+'\')">📋 '+i18n.t('remind.copyBtn')+'</button>'
-      + '<button class="btn btn-p" style="flex:1;padding:9px 4px;font-size:13px" onclick="remindSend(\''+item.tenant.id+'\')">💬 '+i18n.t('remind.sendBtn')+'</button>'
-      + '<button class="btn btn-g" style="flex:1;padding:9px 4px;font-size:13px" onclick="remindSettle(\''+item.tenant.id+'\')">✅ '+i18n.t('remind.settleBtn')+'</button>';
-  }
-  return '<div class="card" style="margin-bottom:10px;padding:14px">'
-    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
-    + '<div style="min-width:0"><div style="font-size:15px;font-weight:700">'+esc(item.tenant.name||'-')+'</div>'
-    + '<div style="font-size:12px;color:var(--ts);margin-top:2px">'+esc(item.room?item.room.name:'-')+' · '+esc(_remindPeriodText(item.bills,item.tenant))+'</div></div>'
-    + '<span style="flex:0 0 auto;font-size:11px;font-weight:700;color:'+color+';background:var(--bg);border-radius:20px;padding:3px 9px">'+esc(statusTxt)+'</span>'
-    + '</div>'
-    + '<div style="font-size:20px;font-weight:800;color:'+color+';margin:10px 0 12px">¥'+item.total.toLocaleString()+'</div>'
-    + '<div style="display:flex;gap:8px">'+actions+'</div>'
-    + '</div>';
-}
-function rRemind(){
-  var g = _remindCollect();
-  var totalCount = g.overdue.length + g.today.length + g.soon.length;
-  function section(key, title, list){
-    if(!list.length) return '';
-    var sum = list.reduce(function(a,x){return a+x.total},0);
-    var h = '<div style="display:flex;align-items:center;gap:8px;margin:18px 0 10px">'
-      + '<span style="font-size:15px;font-weight:700">'+title+'</span>'
-      + '<span style="font-size:12px;color:var(--ts)">'+list.length+i18n.t('common.unitPerson')+' · ¥'+sum.toLocaleString()+'</span></div>';
-    return h + list.map(_remindCard).join('');
-  }
-  var body;
-  if(totalCount === 0){
-    body = '<div style="text-align:center;padding:60px 20px;color:var(--ts)">'
-      + '<div style="font-size:44px;margin-bottom:12px">🎉</div>'
-      + '<div style="font-size:15px">'+i18n.t('remind.empty')+'</div></div>';
-  }else{
-  body = section('overdue','🔴 '+i18n.t('remind.groupOverdue'),g.overdue)
-      + section('today','🟡 '+i18n.t('remind.groupToday'),g.today)
-      + section('soon','🟢 '+i18n.t('remind.groupSoon'),g.soon)
-      + section('history','💸 '+i18n.t('remind.groupHistory'),g.history);
-  }
-  document.getElementById('mainContent').innerHTML =
-    '<div class="page-hd" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
-    + '<h2 style="margin:0">📣 '+i18n.t('remind.title')+'</h2>'
-    + '<button class="btn btn-sm btn-gh" onclick="showPayQrModal()">⚙️ '+i18n.t('remind.paySetting')+'</button></div>'
-    + body;
-}
-function showPayQrModal(){
-  var qrPath = cache.settings.pay_qr_path || '';
-  var qrUrl = qrPath ? FileAPI.getUrl('pay-qrcodes', qrPath) : '';
-  var html = '<div class="m-hd"><h3>⚙️ '+i18n.t('remind.paySetting')+'</h3><button class="m-x" onclick="closeModal()">×</button></div>'
-    + '<div class="m-bd">'
-    + '<div id="payQrPreview" style="text-align:center">'
-    + (qrUrl ? '<img src="'+esc(qrUrl)+'" style="max-width:220px;width:70%;border-radius:10px;border:1px solid var(--bd)">'
-       + '<p style="font-size:11px;color:var(--ts);margin-top:6px">'+i18n.t('remind.qrLongPress')+'</p>'
-       : '<div style="padding:30px 10px;color:var(--ts);font-size:13px">'+i18n.t('remind.noQr')+'</div>')
-    + '</div>'
-    + '<input type="file" id="payQrInput" accept="image/*" style="display:none" onchange="handlePayQr(this)">'
-    + '</div>'
-    + '<div class="m-ft">'
-    + (qrPath ? '<button class="btn btn-gh" style="color:var(--d);border:1px solid var(--d)" onclick="removePayQr()">'+i18n.t('remind.removeQr')+'</button>' : '')
-    + '<button class="btn btn-gh" onclick="closeModal()">'+i18n.t('common.close')+'</button>'
-    + '<button class="btn btn-p" onclick="document.getElementById(\'payQrInput\').click()">'+i18n.t('remind.uploadQr')+'</button></div>';
-  openModal(html);
-}
+// ========== 收款码设置（v99；供原有催租账单弹窗使用） ==========
+// 收款码上传后自动识别：只接受“收款码”，自动拦截“付款码”
 var _zxingPromise = null;
 function loadZXing(){
   if(window.ZXing) return Promise.resolve(window.ZXing);
@@ -1147,8 +978,6 @@ function loadZXing(){
   });
   return _zxingPromise;
 }
-// 只接受“收款码”，自动拒绝“付款码”
-// 规则：①解码 ②凡出现一维条形码(CODE_128/39/EAN等)且为纯长数字→付款码→拒 ③二维码内容须匹配微信/支付宝/银联收款
 var _COLLECT_PATTERNS = [
   /^wxp:\/\//i, /weixin\.qq\.com\/(?:sp\/|x\/)/i, /payapp\.weixin/i,
   /qr\.alipay\.com/i, /render\.alipay\.com/i, /^https?:\/\/[a-z]*alipay/i,
@@ -1162,7 +991,7 @@ function _looksCollectPayload(text){
 }
 async function classifyPayQr(file){
   var ZXing = await loadZXing();
-  var dataUrl = await new Promise(function(res){ var r=new FileReader(); r.onload=function(){res(r.result)}; r.readAsDataURL(file); });
+  var dataUrl = await new Promise(function(res){ var rd=new FileReader(); rd.onload=function(){res(rd.result)}; rd.readAsDataURL(file); });
   var img = await new Promise(function(res,rej){ var im=new Image(); im.onload=function(){res(im)}; im.onerror=rej; im.src=dataUrl; });
   var reader = new ZXing.BrowserMultiFormatReader();
   var result;
@@ -1197,8 +1026,8 @@ async function handlePayQr(input){
   var blob = compData && compData.blob;
   if(!blob){ toast(i18n.t('img.compressFail'),'e'); return; }
   var ts = Date.now()+'_'+Math.random().toString(36).slice(2,7);
-  var path = currentUser.id + '/' + ts + '.jpg';
-  var r = await FileAPI.upload('pay-qrcodes', path, blob, 'image/jpeg');
+  var pth = currentUser.id + '/' + ts + '.jpg';
+  var r = await FileAPI.upload('pay-qrcodes', pth, blob, 'image/jpeg');
   if(!r || !r.path){ toast(i18n.t('common.uploadFailed'),'e'); return; }
   var relPath = r.path;
   if(relPath.indexOf('pay-qrcodes/') === 0) relPath = relPath.substring('pay-qrcodes/'.length);
@@ -1210,7 +1039,7 @@ async function handlePayQr(input){
   toast(i18n.t('remind.qrSaved'));
   showPayQrModal();
 }
-async function savePayQrPath(path){
+async function savePayQrPath(pth){
   var s = cache.settings;
   var payload = {
     owner_id: getOwnerId(),
@@ -1219,12 +1048,30 @@ async function savePayQrPath(path){
     rent_remind_days: s.rent_remind_days || 5,
     notification_email: s.notification_email || '',
     pushplus_token: s.pushplus_token || '',
-    pay_qr_path: path
+    pay_qr_path: pth
   };
   var r = await sb.from('workspace_settings').upsert(payload, {onConflict:'owner_id'});
   if(r.error){ console.warn('save pay qr', r.error.message); return false; }
-  cache.settings.pay_qr_path = path;
+  cache.settings.pay_qr_path = pth;
   return true;
+}
+function showPayQrModal(){
+  var qrPath = cache.settings.pay_qr_path || '';
+  var qrUrl = qrPath ? FileAPI.getUrl('pay-qrcodes', qrPath) : '';
+  var html = '<div class="m-hd"><h3>⚙️ '+i18n.t('remind.paySetting')+'</h3><button class="m-x" onclick="closeModal()">×</button></div>'
+    + '<div class="m-bd">'
+    + '<div id="payQrPreview" style="text-align:center">'
+    + (qrUrl ? '<img src="'+esc(qrUrl)+'" style="max-width:220px;width:70%;border-radius:10px;border:1px solid var(--bd)">'
+       + '<p style="font-size:11px;color:var(--ts);margin-top:6px">'+i18n.t('remind.qrLongPress')+'</p>'
+       : '<div style="padding:30px 10px;color:var(--ts);font-size:13px">'+i18n.t('remind.noQr')+'</div>')
+    + '</div>'
+    + '<input type="file" id="payQrInput" accept="image/*" style="display:none" onchange="handlePayQr(this)">'
+    + '</div>'
+    + '<div class="m-ft">'
+    + (qrPath ? '<button class="btn btn-gh" style="color:var(--d);border:1px solid var(--d)" onclick="removePayQr()">'+i18n.t('remind.removeQr')+'</button>' : '')
+    + '<button class="btn btn-gh" onclick="closeModal()">'+i18n.t('common.close')+'</button>'
+    + '<button class="btn btn-p" onclick="document.getElementById(\'payQrInput\').click()">'+i18n.t('remind.uploadQr')+'</button></div>';
+  openModal(html);
 }
 async function removePayQr(){
   var oldPath = cache.settings.pay_qr_path;
@@ -3931,17 +3778,21 @@ function showBillModal(targetType,targetId){
     +'<div id="b_other_rows"></div>'
     +(md.otherFee>0?('<div style="display:none" id="b_other_preset">'+(md.otherNames.length?esc(md.otherNames.join('、')):i18n.t('meter.otherFee'))+'|'+md.otherFee.toFixed(2)+'</div>'):'')
     +'<button class="btn btn-sm btn-gh" style="margin:8px 0 2px;width:100%" onclick="_billAddOther()">➕ '+i18n.t('bill.addOther')+'</button>'
+    +'<div id="b_payqr_box"></div>'
     +'<div class="fg" style="margin-top:8px"><label>'+i18n.t('bill.note')+'</label><input class="fc" id="b_note" placeholder="'+i18n.t('bill.notePh')+'"></div>'
     +'<div style="display:flex;justify-content:space-between;align-items:center;background:var(--p);color:#fff;border-radius:10px;padding:12px 16px;margin-top:12px">'
     +'<span style="font-size:14px;font-weight:600">'+i18n.t('bill.total')+'</span>'
     +'<b id="b_total" style="font-size:22px">¥'+_billFmt(rentTotal)+'</b>'
     +'</div>'
     +'</div>'
-    +'<div class="m-ft"><button class="btn btn-gh" onclick="_billCopyText()">📋 '+i18n.t('bill.copyText')+'</button>'
-    +'<button class="btn btn-gh" onclick="_genBillShareQR()">📷 '+i18n.t("bqr.btn")+'</button>'
-    +'<button class="btn btn-p" onclick="_billGenImage()">🖼️ '+i18n.t('bill.saveImage')+'</button></div>';
+    +'<div class="m-ft" style="display:flex;flex-wrap:wrap;gap:6px">'
+    +'<button class="btn btn-p" style="flex:1 1 100%" onclick="_billSendWx()">💬 '+i18n.t('bill.sendWx')+'</button>'
+    +'<button class="btn btn-gh" style="flex:1" onclick="_billCopyText()">📋 '+i18n.t('bill.copyText')+'</button>'
+    +'<button class="btn btn-gh" style="flex:1" onclick="_genBillShareQR()">📷 '+i18n.t("bqr.btn")+'</button>'
+    +'<button class="btn btn-gh" style="flex:1" onclick="_billGenImage()">🖼️ '+i18n.t('bill.saveImage')+'</button></div>';
   openModal(html2);
   try{var pre=document.getElementById('b_other_preset');if(pre){var parts=pre.textContent.split('|');_billAddOther(parts[0],parseFloat(parts[1])||0)}}catch(e){console.warn('preset other fee',e)}
+  _billRenderPayQr();
   _billCalc();
 }
 function _billAddOther(presetName,presetAmt){
@@ -3975,6 +3826,50 @@ function _billCollect(){
   return{rent:rent,cw:cw,hw:hw,el:el,others:others,note:noteEl?noteEl.value:'',total:total};
 }
 function _billCalc(){var el=document.getElementById('b_total');if(el){var d=_billCollect();el.textContent='¥'+_billFmt(d.total)}}
+function _billRenderPayQr(){
+  var box=document.getElementById('b_payqr_box'); if(!box)return;
+  var p=cache.settings&&cache.settings.pay_qr_path;
+  if(p){
+    var url=FileAPI.getUrl('pay-qrcodes',p);
+    box.innerHTML='<div style="margin-top:12px;border:1px dashed var(--bd);border-radius:10px;padding:10px;text-align:center">'
+      +'<div style="font-size:12px;color:var(--ts);margin-bottom:6px">'+i18n.t('bill.qrHint')+'</div>'
+      +'<img src="'+esc(url)+'" style="width:150px;height:150px;object-fit:contain;border-radius:6px">'
+      +'<div style="margin-top:6px"><button class="btn btn-sm btn-gh" onclick="showPayQrModal()">⚙️ '+i18n.t('remind.paySetting')+'</button></div>'
+      +'</div>';
+  }else{
+    box.innerHTML='<button class="btn btn-sm btn-gh" style="margin-top:10px;width:100%" onclick="showPayQrModal()">➕ '+i18n.t('bill.addQr')+'</button>';
+  }
+}
+function _billBuildText(){
+  var d=_billCollect(),ctx=window._billCtx; if(!ctx)return '';
+  var t=ctx.tenant,rm=ctx.room;
+  var lang=localStorage.getItem('lang')||'zh-CN';
+  var lines=[];
+  if(d.rent>0)lines.push(i18n.t('bill.rent')+' ¥'+_billFmt(d.rent));
+  if(d.cw>0)lines.push(i18n.t('meter.coldWater')+' ¥'+_billFmt(d.cw));
+  if(d.hw>0)lines.push(i18n.t('meter.hotWater')+' ¥'+_billFmt(d.hw));
+  if(d.el>0)lines.push(i18n.t('meter.electricity')+' ¥'+_billFmt(d.el));
+  d.others.forEach(function(o){lines.push(o.name+' ¥'+_billFmt(o.amount))});
+  var s;
+  if(lang==='en'){
+    s='Hi '+t.name+(rm?(' ('+rm.name+')'):'')+', payment notice:\n'+lines.join('\n')+'\n'+i18n.t('bill.total')+': ¥'+_billFmt(d.total)+'. '+i18n.t('bill.thanksEn');
+    if(d.note)s+='\n'+d.note;
+  }else{
+    s='你好'+t.name+(rm?('（'+rm.name+'）'):'')+'，本期缴费明细：\n'+lines.join('\n')+'\n'+i18n.t('bill.total')+'：¥'+_billFmt(d.total)+'，请安排时间缴纳，谢谢！';
+    if(d.note)s+='\n备注：'+d.note;
+    if(cache.settings&&cache.settings.pay_qr_path)s+='\n'+i18n.t('bill.qrInText');
+  }
+  return s;
+}
+function _billSendWx(){
+  var ctx=window._billCtx; if(!ctx)return;
+  var s=_billBuildText();
+  if(!s)return;
+  _copyText(s);
+  var name=encodeURIComponent(ctx.tenant.name||'');
+  try{ window.location.href='weixin://dl/search?query='+name; }catch(e){}
+  setTimeout(function(){ toast(i18n.t('bill.wxHint',{name:ctx.tenant.name||''}),'i'); },600);
+}
 function _billCopyText(){
   var d=_billCollect(),ctx=window._billCtx;if(!ctx)return;
   var t=ctx.tenant,rm=ctx.room;
