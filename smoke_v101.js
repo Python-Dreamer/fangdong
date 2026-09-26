@@ -6,8 +6,8 @@ let pass=0,fail=0;
 function ok(c,m){ if(c){pass++}else{fail++;console.log('✗',m)} }
 
 // 结构 / 版本
-ok(/fangdong-v100/.test(fs.readFileSync(path.join(REPO,'sw.js'),'utf8')),'sw v100');
-ok(/i18n\.js\?v=100/.test(app),'i18n ref v100');
+ok(/fangdong-v101/.test(fs.readFileSync(path.join(REPO,'sw.js'),'utf8')),'sw v101');
+ok(/i18n\.js\?v=101/.test(app),'i18n ref v101');
 ok(!app.includes('data-p="remind"'),'independent remind nav removed');
 ok(!app.includes('remind:rRemind'),'remind dispatch removed');
 ok(!/function rRemind\b/.test(app),'rRemind removed');
@@ -19,7 +19,7 @@ ok(/function showPayQrModal\b/.test(app),'showPayQrModal kept');
 ok(!app.includes('weixin://dl/search'),'fake search scheme removed');
 ok(app.includes("window.location.href='weixin://'"),'reliable weixin:// open');
 ok(fs.existsSync(path.join(REPO,'vendor/zxing.min.js')),'zxing vendor');
-ok(fs.existsSync(path.join(REPO,'deploy_v100.sh')),'deploy script');
+ok(fs.existsSync(path.join(REPO,'deploy_v101.sh')),'deploy script');
 // i18n keys
 ok(i18nSrc.includes('"bill.sendWx": "发给TA（打开微信）"'),'bill.sendWx zh');
 ok(i18nSrc.includes('"bill.addQr": "上传我的收款码'),'bill.addQr zh');
@@ -80,6 +80,16 @@ function grab(name){
   ok(/decodeFromImageElement/.test(fn),'uses decodeFromImageElement');
   ok(/TRY_HARDER/.test(fn),'uses TRY_HARDER hint');
 }
+
+
+// v101: 收款码进账单图片 + 缴费截图请求
+ok(/function _billDrawCanvas\(scale,qrImg,qrHint,payQrImg\)/.test(app),'draw canvas accepts payQrImg');
+ok(/_qrH=\(payQrImg\?330:0\)\+\(qrImg\?300:0\)/.test(app),'height accounts for both qrs');
+ok(/bill\.payQrTip/.test(app),'pay qr tip drawn');
+ok(i18nSrc.includes('"bill.screenshotReq": "转完账后请将缴费截图给我，有个证明"'),'screenshotReq zh');
+ok(i18nSrc.includes('"bill.screenshotReq": "After paying, please send me a screenshot'),'screenshotReq en');
+ok(i18nSrc.includes('"bill.payQrTip": "微信 / 支付宝扫码付款"'),'payQrTip zh');
+ok(fs.existsSync(path.join(REPO,'deploy_v101.sh')),'deploy v101 script');
 
 console.log(`\n${pass} 通过, ${fail} 失败`);
 process.exit(fail?1:0);

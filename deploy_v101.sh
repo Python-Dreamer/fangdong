@@ -30,5 +30,5 @@ curl -sS "https://ruilifangfong.site/app.html" -o /dev/null -w "app HTTP %{http_
 
 echo "【5/5】清理 ..."
 rm -f app.html sw.js i18n.js whatsnew.html zxing.min.js pay_qr.sql
-echo "================ v99 部署完成 ================"
+echo "================ v101 部署完成 ================"
 echo "手机请强刷或关闭后台重开。"
